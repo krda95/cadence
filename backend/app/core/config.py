@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import PostgresDsn
+from pydantic import AnyHttpUrl, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +11,8 @@ class Settings(BaseSettings):
 
     frontend_url: str = "http://localhost:4200"
     database_url: PostgresDsn
+    supabase_url: AnyHttpUrl
+    supabase_api_key: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
