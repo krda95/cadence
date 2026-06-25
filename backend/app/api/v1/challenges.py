@@ -7,7 +7,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.dependencies.auth import CurrentUser, get_current_user
 from app.models.challenge import Challenge
-from app.schemas.challenge import ChallengeCreate, ChallengeResponse
+from app.schemas.challenge import ChallengeCreate, ChallengeResponse, ChallengeUpdate
+async def get_owned_challenge_or_404(
+    challenge_id: uuid.UUID,
+    owner_id: uuid.UUID,
+    session: AsyncSession,
+) -> Challenge:
+    result = await session.execute(
+        select(Challenge).where(
+            Challenge.id == challenge_id,
+            Challenge.owner_id == owner_id,
+        )
+    )
+
+    challenge = result.scalar_one_or_none()
+
+    if challenge is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Challenge not found",
+        )
+
+    return challenge
+
 
 
 router = APIRouter(
@@ -70,19 +92,58 @@ async def get_my_challenge(
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> Challenge:
-    result = await session.execute(
-        select(Challenge).where(
-            Challenge.id == challenge_id,
-            Challenge.owner_id == current_user.id,
-        )
+    return await get_owned_challenge_or_404(
+        challenge_id=challenge_id,
+        owner_id=current_user.id,
+        session=session,
     )
 
-    challenge = result.scalar_one_or_none()
 
-    if challenge is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Challenge not found",
-        )
+@router.patch(
+    "/{challenge_id}",
+    response_model=ChallengeResponse,
+)
+async def update_my_challenge(
+    challenge_id: uuid.UUID,
+    payload: ChallengeUpdate,
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> Challenge:
+    challenge = await get_owned_challenge_or_404(
+        challenge_id=challenge_id,
+        owner_id=current_user.id,
+        session=session,
+    )
+
+    update_data = payload.model_dump(exclude_unset=True)
+
+    for field_name, value in update_data.items():
+        setattr(challenge, field_name, value)
+
+    await session.commit()
+    await session.refresh(challenge)
+
+    return challenge
+
+
+@router.delete(
+    "/{challenge_id}",
+    response_model=ChallengeResponse,
+)
+async def archive_my_challenge(
+    challenge_id: uuid.UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> Challenge:
+    challenge = await get_owned_challenge_or_404(
+        challenge_id=challenge_id,
+        owner_id=current_user.id,
+        session=session,
+    )
+
+    challenge.is_active = False
+
+    await session.commit()
+    await session.refresh(challenge)
 
     return challenge
