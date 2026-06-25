@@ -1,3 +1,4 @@
+from datetime import date
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -7,7 +8,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.dependencies.auth import CurrentUser, get_current_user
 from app.models.challenge import Challenge
-from app.schemas.challenge import ChallengeCreate, ChallengeResponse, ChallengeUpdate
+from app.models.challenge_entry import ChallengeEntry
+from app.schemas.challenge_entry import (
+    ChallengeEntryNoteUpdate,
+    ChallengeEntryResponse,
+    ChallengeEntryUpsert,
+)
+from app.schemas.challenge import (
+    ChallengeCreate,
+    ChallengeResponse,
+    ChallengeUpdate,
+)
+
+
+router = APIRouter(
+    prefix="/challenges",
+    tags=["Challenges"],
+)
+
+
 async def get_owned_challenge_or_404(
     challenge_id: uuid.UUID,
     owner_id: uuid.UUID,
@@ -31,13 +50,6 @@ async def get_owned_challenge_or_404(
     return challenge
 
 
-
-router = APIRouter(
-    prefix="/challenges",
-    tags=["Challenges"],
-)
-
-
 @router.post(
     "",
     response_model=ChallengeResponse,
@@ -57,7 +69,7 @@ async def create_challenge(
         target_type=payload.target_type,
         target_value=payload.target_value,
         is_active=payload.is_active,
-        )
+    )
 
     session.add(challenge)
     await session.commit()
@@ -147,3 +159,155 @@ async def archive_my_challenge(
     await session.refresh(challenge)
 
     return challenge
+
+
+@router.put(
+    "/{challenge_id}/entries/{entry_date}",
+    response_model=ChallengeEntryResponse,
+)
+async def upsert_challenge_entry(
+    challenge_id: uuid.UUID,
+    entry_date: date,
+    payload: ChallengeEntryUpsert,
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> ChallengeEntry:
+    await get_owned_challenge_or_404(
+        challenge_id=challenge_id,
+        owner_id=current_user.id,
+        session=session,
+    )
+
+    result = await session.execute(
+        select(ChallengeEntry).where(
+            ChallengeEntry.challenge_id == challenge_id,
+            ChallengeEntry.entry_date == entry_date,
+        )
+    )
+    entry = result.scalar_one_or_none()
+
+    if entry is None:
+        entry = ChallengeEntry(
+            challenge_id=challenge_id,
+            entry_date=entry_date,
+            value=payload.value,
+            note=payload.note,
+        )
+        session.add(entry)
+    else:
+        entry.value = payload.value
+        entry.note = payload.note
+
+    await session.commit()
+    await session.refresh(entry)
+
+    return entry
+
+
+@router.patch(
+    "/{challenge_id}/entries/{entry_date}/note",
+    response_model=ChallengeEntryResponse,
+)
+async def update_challenge_entry_note(
+    challenge_id: uuid.UUID,
+    entry_date: date,
+    payload: ChallengeEntryNoteUpdate,
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> ChallengeEntry:
+    await get_owned_challenge_or_404(
+        challenge_id=challenge_id,
+        owner_id=current_user.id,
+        session=session,
+    )
+
+    result = await session.execute(
+        select(ChallengeEntry).where(
+            ChallengeEntry.challenge_id == challenge_id,
+            ChallengeEntry.entry_date == entry_date,
+        )
+    )
+    entry = result.scalar_one_or_none()
+
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Challenge entry not found",
+        )
+
+    entry.note = payload.note
+
+    await session.commit()
+    await session.refresh(entry)
+
+    return entry
+
+
+@router.get(
+    "/{challenge_id}/entries",
+    response_model=list[ChallengeEntryResponse],
+)
+async def list_challenge_entries(
+    challenge_id: uuid.UUID,
+    date_from: date,
+    date_to: date,
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[ChallengeEntry]:
+    if date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="date_from cannot be later than date_to",
+        )
+
+    await get_owned_challenge_or_404(
+        challenge_id=challenge_id,
+        owner_id=current_user.id,
+        session=session,
+    )
+
+    result = await session.execute(
+        select(ChallengeEntry)
+        .where(
+            ChallengeEntry.challenge_id == challenge_id,
+            ChallengeEntry.entry_date >= date_from,
+            ChallengeEntry.entry_date <= date_to,
+        )
+        .order_by(ChallengeEntry.entry_date.asc())
+    )
+
+    return list(result.scalars().all())
+
+
+@router.delete(
+    "/{challenge_id}/entries/{entry_date}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_challenge_entry(
+    challenge_id: uuid.UUID,
+    entry_date: date,
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    await get_owned_challenge_or_404(
+        challenge_id=challenge_id,
+        owner_id=current_user.id,
+        session=session,
+    )
+
+    result = await session.execute(
+        select(ChallengeEntry).where(
+            ChallengeEntry.challenge_id == challenge_id,
+            ChallengeEntry.entry_date == entry_date,
+        )
+    )
+    entry = result.scalar_one_or_none()
+
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Challenge entry not found",
+        )
+
+    await session.delete(entry)
+    await session.commit()
