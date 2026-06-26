@@ -1,18 +1,6 @@
 from enum import Enum
 
 
-class ChallengeStatus(str, Enum):
-    DRAFT = "draft"
-    ACTIVE = "active"
-    COMPLETED = "completed"
-    ARCHIVED = "archived"
-
-
-class ChallengeVisibility(str, Enum):
-    PRIVATE = "private"
-    SHARED = "shared"
-
-
 class ChallengePeriod(str, Enum):
     DAILY = "daily"
     WEEKLY = "weekly"
@@ -22,4 +10,11 @@ class ChallengePeriod(str, Enum):
 class ChallengeTargetType(str, Enum):
     MIN = "min"
     MAX = "max"
-    EXACT = "exact"
+
+class ProgressStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    PARTIALLY_ACHIEVED = "partially_achieved"
+    ACHIEVED = "achieved"
+    EXCEEDED = "exceeded"
+    MISSED = "missed"

@@ -1,7 +1,7 @@
 from datetime import date
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +19,12 @@ from app.schemas.challenge import (
     ChallengeResponse,
     ChallengeUpdate,
 )
+from app.schemas.progress import DailyProgressResponse
+from app.services.progress_service import (
+    calculate_daily_progress,
+    get_warsaw_today,
+)
+
 
 
 router = APIRouter(
@@ -94,6 +100,31 @@ async def list_my_challenges(
 
     return list(result.scalars().all())
 
+@router.get(
+    "/progress/daily",
+    response_model=DailyProgressResponse,
+)
+async def get_daily_progress(
+    progress_date: date | None = Query(
+        default=None,
+        alias="date",
+    ),
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> DailyProgressResponse:
+    try:
+        progress = await calculate_daily_progress(
+            session=session,
+            owner_id=current_user.id,
+            reference_date=progress_date or get_warsaw_today(),
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(error),
+        ) from error
+
+    return DailyProgressResponse(**progress)
 
 @router.get(
     "/{challenge_id}",
