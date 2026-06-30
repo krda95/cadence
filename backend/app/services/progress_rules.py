@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from app.models.enums import ProgressStatus
+from app.models.enums import ChallengeTargetType
 
 
 @dataclass(frozen=True)
@@ -128,3 +129,49 @@ def causes_period_max_daily_penalty(
         entry_value_for_day > 0
         and total_after_day > target_value
     )
+
+def calculate_period_score(
+    target_type: ChallengeTargetType,
+    current_value: float,
+    target_value: float,
+) -> float:
+    """
+    Calculates the final score for a completed weekly or monthly challenge.
+    MIN:
+    - proportional score, maximum 100
+    MAX:
+    - 100 while within the limit
+    - 0 after exceeding the limit
+    """
+    if target_type == ChallengeTargetType.MIN:
+        return calculate_min_score(
+            current_value=current_value,
+            target_value=target_value,
+        )
+
+    return calculate_max_score(
+        current_value=current_value,
+        target_value=target_value,
+    )
+
+def calculate_average_score(scores: list[float]) -> float | None:
+    """
+    Returns an equally weighted average of challenge scores.
+    Every challenge contributes once:
+    - a daily challenge contributes its weekly daily-score average;
+    - a weekly challenge contributes its final weekly score.
+    """
+    if not scores:
+        return None
+    return round(sum(scores) / len(scores), 2)
+
+def calculate_weekly_score(
+    challenge_scores: list[float],
+    is_week_final: bool,
+) -> float | None:
+    """
+    Official weekly score exists only after the week is finished.
+    """
+    if not is_week_final:
+        return None
+    return calculate_average_score(challenge_scores)

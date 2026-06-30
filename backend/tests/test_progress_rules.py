@@ -1,12 +1,15 @@
 import pytest
 
-from app.models.enums import ProgressStatus
+from app.models.enums import ProgressStatus, ChallengeTargetType
 from app.services.progress_rules import (
     calculate_daily_max_result,
     calculate_daily_min_result,
     calculate_max_score,
     calculate_min_score,
     causes_period_max_daily_penalty,
+    calculate_period_score,
+    calculate_weekly_score,
+    calculate_average_score,
 )
 
 
@@ -185,3 +188,86 @@ def test_period_max_penalty_only_applies_on_the_day_of_positive_entry(
         total_before_day=total_before_day,
         target_value=target_value,
     ) is expected_penalty
+
+@pytest.mark.parametrize(
+    (
+        "target_type",
+        "current_value",
+        "target_value",
+        "expected_score",
+    ),
+    [
+        # Weekly MIN: 2 workouts out of 4 = 50%.
+        (ChallengeTargetType.MIN, 2, 4, 50.0),
+
+        # Weekly MIN: target reached.
+        (ChallengeTargetType.MIN, 4, 4, 100.0),
+
+        # Weekly MIN: above the target remains 100%.
+        (ChallengeTargetType.MIN, 5, 4, 100.0),
+
+        # Weekly MAX: 50% of the limit
+        (ChallengeTargetType.MAX, 1, 2, 100.0),
+
+        # Weekly MAX: within the limit.
+        (ChallengeTargetType.MAX, 2, 2, 100.0),
+
+        # Weekly MAX: limit exceeded.
+        (ChallengeTargetType.MAX, 3, 2, 0.0),
+    ],
+)
+def test_calculate_final_period_score(
+    target_type: ChallengeTargetType,
+    current_value: float,
+    target_value: float,
+    expected_score: float,
+) -> None:
+    assert calculate_period_score(
+        target_type=target_type,
+        current_value=current_value,
+        target_value=target_value,
+    ) == expected_score
+
+
+def test_daily_challenge_contributes_one_weekly_average() -> None:
+    """
+    One daily challenge must contribute once to weekly_score,
+    even though it has seven daily values.
+
+    100 + 50 + 0 + 100 + 100 + 0 + 100 = 450
+    450 / 7 = 64.29
+    """
+    daily_scores = [100.0, 50.0, 0.0, 100.0, 100.0, 0.0, 100.0]
+
+    assert calculate_average_score(daily_scores) == 64.29
+
+
+def test_weekly_score_weights_each_challenge_equally() -> None:
+    """
+    Daily challenge average: 85
+    Daily challenge average: 100
+    Weekly MIN challenge: 50
+    Weekly MAX challenge: 0
+
+    (85 + 100 + 50 + 0) / 4 = 58.75
+    """
+    challenge_scores = [85.0, 100.0, 50.0, 0.0]
+
+    assert calculate_weekly_score(
+        challenge_scores=challenge_scores,
+        is_week_final=True,
+    ) == 58.75
+
+
+def test_weekly_score_is_not_final_before_sunday_ends() -> None:
+    assert calculate_weekly_score(
+        challenge_scores=[85.0, 100.0, 50.0, 0.0],
+        is_week_final=False,
+    ) is None
+
+
+def test_weekly_score_without_eligible_challenges_is_none() -> None:
+    assert calculate_weekly_score(
+        challenge_scores=[],
+        is_week_final=True,
+    ) is None

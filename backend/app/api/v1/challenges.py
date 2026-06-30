@@ -19,9 +19,10 @@ from app.schemas.challenge import (
     ChallengeResponse,
     ChallengeUpdate,
 )
-from app.schemas.progress import DailyProgressResponse
+from app.schemas.progress import DailyProgressResponse, WeeklyProgressResponse
 from app.services.progress_service import (
     calculate_daily_progress,
+    calculate_weekly_progress,
     get_warsaw_today,
 )
 
@@ -125,6 +126,32 @@ async def get_daily_progress(
         ) from error
 
     return DailyProgressResponse(**progress)
+
+@router.get(
+    "/progress/weekly",
+    response_model=WeeklyProgressResponse,
+)
+async def get_weekly_progress(
+    progress_date: date | None = Query(
+        default=None,
+        alias="date",
+    ),
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> WeeklyProgressResponse:
+    try:
+        progress = await calculate_weekly_progress(
+            session=session,
+            owner_id=current_user.id,
+            reference_date=progress_date or get_warsaw_today(),
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(error),
+        ) from error
+
+    return WeeklyProgressResponse(**progress)
 
 @router.get(
     "/{challenge_id}",
