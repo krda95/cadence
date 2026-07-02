@@ -1,0 +1,30 @@
+:root {
+  /* ===== Colors ===== */
+  --color-background: #15171c;
+
+  --color-surface: rgb(255 255 255 / 4%);
+  --color-border: rgb(255 255 255 / 9%);
+
+  --color-primary: #9bd6bd;
+  --color-secondary: #f7d2bb;
+  --color-tertiary: #c6d6f4;
+  --color-fourth: #d9cbf2;
+
+  --color-text-primary: #eceef1;
+  --color-text-secondary: #9aa0aa;
+
+  --color-button-text: #13241e;
+
+  /* ===== Radius ===== */
+  --radius-md: 13px;
+
+  /* ===== Shadows ===== */
+  --shadow-primary:
+    0 8px 24px rgb(155 214 189 / 18%);
+
+  /* ===== Font ===== */
+  --font-family:
+    "Plus Jakarta Sans",
+    system-ui,
+    sans-serif;
+}

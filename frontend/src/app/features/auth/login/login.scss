@@ -1,0 +1,105 @@
+.login {
+  width: 100%;
+  max-width: 360px;
+
+  h1 {
+    margin: 0;
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
+  }
+
+  p {
+    margin: 7px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+
+  form {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-size: 13px;
+  }
+
+  input {
+    width: 100%;
+    padding: 13px 15px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font-size: 14.5px;
+    outline: none;
+
+    transition:
+      border-color .2s,
+      box-shadow .2s,
+      background .2s;
+
+    &::placeholder {
+      color: var(--color-text-secondary);
+    }
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgb(155 214 189 / 12%);
+    }
+  }
+  .password-container {
+    position: relative;
+  }
+
+  .password-container input {
+    padding-right: 40px;
+  }
+
+  .password-toggle {
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9aa0aa;
+    background: transparent;
+  }
+
+  .password-toggle:hover {
+    color: var(--color-primary);
+  }
+}

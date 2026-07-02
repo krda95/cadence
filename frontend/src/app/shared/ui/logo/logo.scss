@@ -1,0 +1,22 @@
+:host {
+  display: inline-flex;
+}
+
+svg {
+  width: 34px;
+  height: 34px;
+  color: var(--color-primary);
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-left: 0.5rem;
+  color: var(--color-text-primary);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
