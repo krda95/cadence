@@ -1,27 +1,19 @@
-import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { LucideEye, LucideEyeClosed } from '@lucide/angular';
+import { Component, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Button } from '../../../shared/ui/button/button';
+import { InputComponent } from '../../../shared/ui/input/input';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, LucideEye, LucideEyeClosed],
+  imports: [ReactiveFormsModule, Button, InputComponent],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
 export class Login {
-  passwordVisible = false;
-  email = '';
-  password = '';
+  private readonly fb = inject(FormBuilder);
 
-  togglePassword(): void {
-    this.passwordVisible = !this.passwordVisible;
-  }
-
-  get isFormValid(): boolean {
-    return this.email.trim() !== '' && this.password.trim() !== '';
-  }
-
-  get isPasswordValid(): boolean {
-    return this.password.length > 0;
-  }
+  readonly loginForm = this.fb.nonNullable.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', Validators.required],
+  });
 }

@@ -4,47 +4,31 @@
     Sign in to pick up where you left off.
   </p>
 
-  <form>
-    <div class="field">
-      <label>Email</label>
-      <input
-        type="email"
-        placeholder="you@email.com"
-        [(ngModel)]="email"
-        name="email">
-    </div>
+  <form [formGroup]="loginForm">
+    <app-input
+      formControlName="email"
+      label="Email"
+      type="email"
+      placeholder="you@email.com"/>
 
-    <div class="field">
-      <div class="field-header">
-        <label>Password</label>
-        <a href="#">
-          Forgot?
-        </a>
-      </div>
+    <app-input
+      formControlName="password"
+      label="Password"
+      type="password"
+      placeholder="••••••••">
+      <a
+        input-action
+        class="forgot-link"
+        routerLink="/forgot-password">
+        Forgot?
+      </a>
+    </app-input>
 
-      <div class="password-container">
-        <input
-          [type]="passwordVisible ? 'text' : 'password'"
-          placeholder="••••••••"
-          [(ngModel)]="password"
-          name="password">
-          @if (isPasswordValid) {
-            <button
-              type="button"
-              class="password-toggle"
-              (click)="togglePassword()">
-              @if (!passwordVisible) {
-                <svg lucideEye></svg>
-              } @else {
-                <svg lucideEyeClosed></svg>
-              }
-            </button>
-          }
-      </div>
-    </div>
-
-    <button [disabled]="!isFormValid">
+    <app-button
+      [type]="'submit'"
+      [disabled]="loginForm.invalid"
+      [variant]="'primary'">
       Sign in
-    </button>
+    </app-button>
   </form>
 </div>
