@@ -1,4 +1,4 @@
-import { Component, computed, input, signal, forwardRef, Injector, OnInit, inject } from '@angular/core';
+import { Component, computed, input, signal, forwardRef, Injector, OnInit, inject, ViewChild, ElementRef } from '@angular/core';
 import { LucideEye, LucideEyeClosed } from '@lucide/angular';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl} from '@angular/forms';
 
@@ -19,6 +19,8 @@ export class InputComponent implements ControlValueAccessor, OnInit {
   readonly label = input('');
   readonly placeholder = input('');
   readonly type = input<'text' | 'email' | 'password'>('text');
+  readonly autoFocus = input(false);
+  readonly tabIndex = input<number>(0);
 
   readonly value = signal('');
   readonly disabled = signal(false);
@@ -28,10 +30,19 @@ export class InputComponent implements ControlValueAccessor, OnInit {
   private readonly injector = inject(Injector);
   private ngControl: NgControl | null = null;
 
+  @ViewChild('input')
+  private input!: ElementRef<HTMLInputElement>;
+
   ngOnInit(): void {
     this.ngControl = this.injector.get(NgControl, null, { self: true });
   }
-  
+
+  ngAfterViewInit() {
+    if (this.autoFocus()) {
+        this.input.nativeElement.focus();
+    }
+  }
+
   readonly inputType = computed(() => {  
     return this.type() === 'password' ? (this.passwordVisible() ? 'text' : 'password') : this.type();
   });
@@ -105,6 +116,10 @@ export class InputComponent implements ControlValueAccessor, OnInit {
       const length = control.errors['minlength']['requiredLength'];
 
       return `Use at least ${length} characters.`;
+    }
+
+    if (control.errors['passwordMismatch']) {
+      return 'Passwords do not match.';
     }
 
     return 'The value is invalid.';

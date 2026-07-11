@@ -5,7 +5,7 @@
 .input {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 
     label {
         font-size: 13px;
@@ -78,6 +78,8 @@
     .error-message {
         color: var(--color-danger, #ef6b73);
         font-size: 12px;
-        line-height: 1.4;
+    }
+    .error-message-placeholder {
+        min-height: 14px;
     }
 }

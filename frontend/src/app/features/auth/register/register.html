@@ -1,0 +1,63 @@
+<div class="register">
+    <a
+    class="back-link"
+    routerLink="/login"
+    >
+    <svg lucideArrowLeft></svg>
+    Back to sign in
+    </a>
+
+    <h1>Create your account</h1>
+    <p class="subtitle">
+        Start tracking your goals in under a minute.
+    </p>
+
+    <form
+        [formGroup]="registerForm"
+        (ngSubmit)="submit()"
+    >
+    <app-input
+      formControlName="username"
+      label="Username"
+      type="text"
+      placeholder="Name"
+      [autoFocus]=true
+      [tabIndex]="1"
+    />
+    <app-input
+      formControlName="email"
+      label="Email"
+      type="email"
+      placeholder="you@email.com"
+      [tabIndex]="2"
+    />
+    <app-input
+      formControlName="password"
+      label="Password"
+      type="password"
+      placeholder="••••••••"
+      [tabIndex]="3"
+    />
+    <app-input
+      formControlName="confirmPassword"
+      label="Confirm Password"
+      type="password"
+      placeholder="••••••••"
+      [tabIndex]="5"
+    />
+
+    <app-button
+      type="submit"
+      style="margin-top: 10px;"
+      [disabled]="registerForm.invalid"
+      [tabIndex]="6"
+    >
+    Create account
+    </app-button>
+  </form>
+
+  <p class="footer">
+    Already have an account?
+    <a routerLink="/login" [tabindex]="7">Sign in</a>
+  </p>
+</div>

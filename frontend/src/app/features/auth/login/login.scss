@@ -21,7 +21,20 @@
     margin-top: 32px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 12px;
+  }
+
+  .footer {
+    margin: 24px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    text-align: center;
+
+    a {
+      color: var(--color-primary);
+      font-weight: 600;
+      text-decoration: none;
+    }
   }
 
   .forgot-link {

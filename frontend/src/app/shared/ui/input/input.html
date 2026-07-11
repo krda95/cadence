@@ -9,9 +9,11 @@
 
     <div class="control" [class.invalid]="hasError()">
         <input
+            #input
             [type]="inputType()"
             [placeholder]="placeholder()"
             [value]="value()"
+            [attr.tabindex]="tabIndex()"
             (input)="handleInput($event)"
             (blur)="handleBlur()">
 
@@ -19,6 +21,7 @@
             <button
             type="button"
             aria-label="Toggle password visibility"
+            [attr.tabindex]="tabIndex()+1"
             [disabled]="disabled()"
             (click)="togglePassword()">
             @if (passwordVisible()) {
@@ -35,5 +38,7 @@
             role="alert">
             {{ message }}
         </span>
+    } @else {
+        <span class="error-message-placeholder"></span>
     }
 </div>

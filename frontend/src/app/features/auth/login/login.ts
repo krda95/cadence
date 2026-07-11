@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Button } from '../../../shared/ui/button/button';
 import { InputComponent } from '../../../shared/ui/input/input';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, Button, InputComponent],
+  imports: [ReactiveFormsModule, RouterLink, Button, InputComponent],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })

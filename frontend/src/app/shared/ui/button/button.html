@@ -1,8 +1,8 @@
 <button
   [type]="type()"
   [disabled]="disabled()"
-  [class]="variant()">
+  [class]="variant()"
+  [attr.tabindex]="tabIndex()">
 
   <ng-content />
-
 </button>

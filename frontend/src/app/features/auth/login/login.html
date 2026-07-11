@@ -9,17 +9,22 @@
       formControlName="email"
       label="Email"
       type="email"
+      [autoFocus]=true
+      [tabIndex]="1"
       placeholder="you@email.com"/>
 
     <app-input
       formControlName="password"
       label="Password"
       type="password"
+      [tabIndex]="2"
       placeholder="••••••••">
       <a
         input-action
         class="forgot-link"
-        routerLink="/forgot-password">
+        routerLink="/forgot-password"
+        [tabIndex]="5"
+        >
         Forgot?
       </a>
     </app-input>
@@ -27,8 +32,13 @@
     <app-button
       [type]="'submit'"
       [disabled]="loginForm.invalid"
-      [variant]="'primary'">
+      [variant]="'primary'"
+      [tabIndex]="4">
       Sign in
     </app-button>
   </form>
+  <p class="footer">
+    New to Cadence?
+    <a routerLink="/register">Sign up</a>
+  </p>
 </div>
