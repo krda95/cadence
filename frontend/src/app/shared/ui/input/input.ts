@@ -1,4 +1,4 @@
-import { Component, computed, input, signal, forwardRef, Injector, OnInit, inject, ViewChild, ElementRef } from '@angular/core';
+import { Component, computed, input, signal, forwardRef, Injector, OnInit, AfterViewInit, OnDestroy, inject, ViewChild, ElementRef } from '@angular/core';
 import { LucideEye, LucideEyeClosed } from '@lucide/angular';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl} from '@angular/forms';
 
@@ -15,7 +15,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl} from '@angular/form
     }
   ]
 })
-export class InputComponent implements ControlValueAccessor, OnInit {
+export class InputComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnDestroy {
   readonly label = input('');
   readonly placeholder = input('');
   readonly type = input<'text' | 'email' | 'password'>('text');
@@ -29,6 +29,7 @@ export class InputComponent implements ControlValueAccessor, OnInit {
 
   private readonly injector = inject(Injector);
   private ngControl: NgControl | null = null;
+  private validationTimeout: ReturnType<typeof setTimeout> | null = null;
 
   @ViewChild('input')
   private input!: ElementRef<HTMLInputElement>;
@@ -41,6 +42,13 @@ export class InputComponent implements ControlValueAccessor, OnInit {
     if (this.autoFocus()) {
         this.input.nativeElement.focus();
     }
+
+    this.ngControl?.control?.statusChanges.subscribe(() => {
+      const control = this.ngControl?.control;
+      if ((control?.touched || control?.dirty) && this.type() === 'password') {
+        this.scheduleValidationUpdate();
+      }
+    });
   }
 
   readonly inputType = computed(() => {  
@@ -73,13 +81,29 @@ export class InputComponent implements ControlValueAccessor, OnInit {
     this.value.set(value);
     this.onChange(value);
     if(this.type() === 'password') {
-      this.validationMessage.set(this.getCurrentErrorMessage());
+      this.scheduleValidationUpdate();
     }
   }
 
   handleBlur(): void {
     this.onTouched();
-    this.validationMessage.set(this.getCurrentErrorMessage());
+    this.scheduleValidationUpdate();
+  }
+
+  ngOnDestroy(): void {
+    if (this.validationTimeout) {
+      clearTimeout(this.validationTimeout);
+    }
+  }
+
+  private scheduleValidationUpdate(): void {
+    if (this.validationTimeout) {
+      clearTimeout(this.validationTimeout);
+    }
+
+    this.validationTimeout = setTimeout(() => {
+      this.validationMessage.set(this.getCurrentErrorMessage());
+    }, 200);
   }
 
   togglePassword() {

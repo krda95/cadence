@@ -39,7 +39,7 @@ export class Register {
 
     const password = passwordControl.value;
     const confirmPassword = confirmPasswordControl.value;
-    
+
     if (password !== confirmPassword) {
       confirmPasswordControl.setErrors({ passwordMismatch: true });
     } else {
@@ -47,16 +47,23 @@ export class Register {
     }
     return null;
   };
+  
   readonly registerForm = this.formBuilder.nonNullable.group({
     username: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
     confirmPassword: ['', Validators.required],
     },
-    { 
+    {
       validators: this.passwordsMatchValidator
     }
   );
+
+  constructor() {
+    this.registerForm.get('password')?.valueChanges.subscribe(() => {
+      this.registerForm.updateValueAndValidity({ emitEvent: false });
+    });
+  }
 
   submit(): void {
     if (this.registerForm.invalid) {
