@@ -20,9 +20,10 @@ async def get_my_profile(
         select(Profile).where(Profile.id == current_user.id)
     )
     profile = result.scalar_one_or_none()
+    print("current user", current_user)
 
     if profile is None:
-        profile = Profile(id=current_user.id)
+        profile = Profile(id=current_user.id, display_name=current_user.username)
         session.add(profile)
         await session.commit()
         await session.refresh(profile)

@@ -1,19 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  token_type: string;
-}
+import { LoginRequest, LoginResponse } from '@models/loginModel';
+import { RegisterRequest, RegisterResponse } from '@models/registerModel';
 
 @Injectable({ providedIn: 'root'})
 export class AuthService {
@@ -28,6 +18,14 @@ export class AuthService {
             .post<LoginResponse>(`${this.apiAuthUrl}/login`, credentials)
             .pipe(
                 tap((response) => this.saveSession(response)),
+            );
+    }
+
+    register(credentials: RegisterRequest): Observable<RegisterResponse> {
+        return this.http
+            .post<RegisterResponse>(`${this.apiAuthUrl}/register`, credentials)
+            .pipe(
+                tap((response) => console.log(response)),
             );
     }
 
@@ -58,5 +56,25 @@ export class AuthService {
 
     getCurrentUser() {
         return this.http.get(`${this.apiMeUrl}`);
+    }
+
+    initializeSession() {
+        const token = this.getAccessToken();
+
+        if (!token) {
+            console.log('no token');
+            return of(false);
+        }
+        
+        console.log('yes token');
+        return this.getCurrentUser().pipe(
+            map(() => true),
+            catchError(() => {
+                this.logout();
+                console.log('logout');
+                
+                return of(false);
+            })
+        );
     }
 }

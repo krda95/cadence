@@ -7,11 +7,13 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { Button } from '@shared/ui/button/button';
 import { InputComponent } from '@shared/ui/input/input';
 import { LucideArrowLeft } from '@lucide/angular';
+import { AuthService } from '@core/services/auth.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-register',
@@ -28,6 +30,8 @@ import { LucideArrowLeft } from '@lucide/angular';
 
 export class Register {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   passwordsMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
     const passwordControl = control.get('password');
@@ -70,7 +74,31 @@ export class Register {
       this.registerForm.markAllAsTouched();
       return;
     }
+    const { email, password, username } = this.registerForm.getRawValue();
 
-    console.log(this.registerForm.getRawValue());
+    this.authService.register({ email, password, username}).subscribe({
+      next: () => {
+        this.router.navigate(['/login'])
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error(error)
+        if (error.status === 401) {
+          this.registerForm.controls.password.setErrors({
+            invalidCredentials: true,
+          });
+          this.registerForm.controls.password.markAsTouched();
+          return;
+        }
+        if (error.status === 0) {
+          this.registerForm.setErrors({
+            serverUnavailable: true,
+          });
+          return;
+        }
+        this.registerForm.setErrors({
+          unknownError: true,
+        });
+      }
+    });
   }
 }

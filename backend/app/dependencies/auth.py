@@ -15,6 +15,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 class CurrentUser:
     id: uuid.UUID
     email: str | None
+    username: str | None
 
 
 async def get_current_user(
@@ -52,11 +53,13 @@ async def get_current_user(
         )
 
     user_data = response.json()
+    user_metadata = user_data.get("user_metadata") or {}
 
     try:
         return CurrentUser(
             id=uuid.UUID(user_data["id"]),
             email=user_data.get("email"),
+            username=user_metadata.get("display_name")
         )
     except (KeyError, ValueError) as error:
         raise HTTPException(

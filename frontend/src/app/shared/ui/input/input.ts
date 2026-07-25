@@ -40,7 +40,7 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
 
   ngAfterViewInit() {
     if (this.autoFocus()) {
-        this.input.nativeElement.focus();
+      this.input.nativeElement.focus();
     }
 
     this.ngControl?.control?.statusChanges.subscribe(() => {
@@ -144,6 +144,10 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
 
     if (control.errors['passwordMismatch']) {
       return 'Passwords do not match.';
+    }
+
+    if (control.hasError('invalidCredentials')) {
+      return 'Incorrect email or password.';
     }
 
     return 'The value is invalid.';
