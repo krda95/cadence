@@ -27,9 +27,7 @@ export const guestGuard: CanActivateFn = () => {
       if (isAuthenticated) {
         console.log('navigate to dahsboard');
         return router.createUrlTree(['/dashboard']);
-      }
-      
-      console.log('dont navigate to dahsboard');
+      }      
       return true;
     })
   );

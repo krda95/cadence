@@ -4,6 +4,8 @@ import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse } from '@models/loginModel';
 import { RegisterRequest, RegisterResponse } from '@models/registerModel';
+import { ForgotPasswordRequest, MessageResponse } from '@models/forgotModel';
+import { ResetPasswordRequest } from '@models/resetModel';
 
 @Injectable({ providedIn: 'root'})
 export class AuthService {
@@ -62,19 +64,23 @@ export class AuthService {
         const token = this.getAccessToken();
 
         if (!token) {
-            console.log('no token');
             return of(false);
         }
         
-        console.log('yes token');
         return this.getCurrentUser().pipe(
             map(() => true),
             catchError(() => {
-                this.logout();
-                console.log('logout');
-                
+                this.logout();                
                 return of(false);
             })
         );
+    }
+
+    forgotPassword(request: ForgotPasswordRequest): Observable<MessageResponse> {
+        return this.http.post<MessageResponse>(`${this.apiAuthUrl}/forgot-password`,request);
+    }
+
+    resetPassword(request: ResetPasswordRequest): Observable<MessageResponse> {
+        return this.http.post<MessageResponse>(`${this.apiAuthUrl}/reset-password`,request);
     }
 }

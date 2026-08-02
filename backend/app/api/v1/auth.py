@@ -1,9 +1,8 @@
 import httpx
 from fastapi import APIRouter, HTTPException, status
 from pydantic import ValidationError
-
 from app.core.config import get_settings
-from app.schemas.auth import LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
+from app.schemas.auth import ForgotPasswordRequest, LoginRequest, LoginResponse, MessageResponse, RegisterRequest, RegisterResponse, ResetPasswordRequest
 
 
 router = APIRouter(
@@ -118,4 +117,108 @@ async def register(payload: RegisterRequest) -> RegisterResponse:
         user_id=user["id"],
         email=user["email"],
         email_confirmation_required=auth_data.get("session") is None,
+    )
+
+@router.post(
+    "/forgot-password",
+    response_model=MessageResponse,
+)
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+) -> MessageResponse:
+    settings = get_settings()
+
+    redirect_url = (
+        f"{settings.frontend_url.rstrip('/')}/reset-password"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"{settings.supabase_url.rstrip('/')}/auth/v1/recover",
+                params={
+                    "redirect_to": redirect_url,
+                },
+                headers={
+                    "apikey": settings.supabase_api_key,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "email": str(payload.email),
+                },
+            )
+    except httpx.RequestError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service is temporarily unavailable",
+        ) from error
+
+    if response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Please wait before requesting another reset email",
+        )
+
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unable to send password reset email",
+        )
+
+    return MessageResponse(
+        message=(
+            "If an account exists for this email, "
+            "a password reset link has been sent."
+        ),
+    )
+
+@router.post(
+    "/reset-password",
+    response_model=MessageResponse,
+)
+async def reset_password(
+    payload: ResetPasswordRequest,
+) -> MessageResponse:
+    settings = get_settings()
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.put(
+                f"{settings.supabase_url.rstrip('/')}/auth/v1/user",
+                headers={
+                    "apikey": settings.supabase_api_key,
+                    "Authorization": (
+                        f"Bearer {payload.access_token}"
+                    ),
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "password": payload.password,
+                },
+            )
+    except httpx.RequestError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Authentication service is temporarily unavailable"
+            ),
+        ) from error
+
+    if response.status_code in {
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN,
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Password reset link is invalid or expired",
+        )
+
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unable to update password",
+        )
+
+    return MessageResponse(
+        message="Password has been updated successfully",
     )

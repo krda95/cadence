@@ -5,7 +5,6 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-
 class LoginResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -21,3 +20,13 @@ class RegisterResponse(BaseModel):
     user_id: str
     email: EmailStr
     email_confirmation_required: bool
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class MessageResponse(BaseModel):
+    message: str
+
+class ResetPasswordRequest(BaseModel):
+    access_token: str
+    password: str = Field(min_length=8)

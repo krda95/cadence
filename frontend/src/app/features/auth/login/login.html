@@ -31,10 +31,10 @@
 
     <app-button
       [type]="'submit'"
-      [disabled]="loginForm.invalid || isSubmitting"
+      [disabled]="loginForm.invalid || isSubmitting()"
       [variant]="'primary'"
       [tabIndex]="4">
-      @if (isSubmitting) {
+      @if (isSubmitting()) {
         <span class="spinner" aria-hidden="true"></span>
         <span>Signing in...</span>
       } @else {

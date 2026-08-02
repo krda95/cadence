@@ -26,6 +26,7 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
   readonly disabled = signal(false);
   readonly passwordVisible = signal(false);
   private readonly validationMessage = signal<string | null>(null);
+  private readonly suppressUntilBlur = signal(false);
 
   private readonly injector = inject(Injector);
   private ngControl: NgControl | null = null;
@@ -45,7 +46,7 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
 
     this.ngControl?.control?.statusChanges.subscribe(() => {
       const control = this.ngControl?.control;
-      if ((control?.touched || control?.dirty) && this.type() === 'password') {
+      if (control?.touched) {
         this.scheduleValidationUpdate();
       }
     });
@@ -80,13 +81,12 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
 
     this.value.set(value);
     this.onChange(value);
-    if(this.type() === 'password') {
-      this.scheduleValidationUpdate();
-    }
+    this.suppressUntilBlur.set(true);
   }
 
   handleBlur(): void {
     this.onTouched();
+    this.suppressUntilBlur.set(false);
     this.scheduleValidationUpdate();
   }
 
@@ -114,11 +114,11 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
   }
 
   hasError(): boolean {
-    return this.validationMessage() !== null;
+    return !this.suppressUntilBlur() && this.validationMessage() !== null;
   }
 
   errorMessage(): string | null {
-    return this.validationMessage();
+    return this.suppressUntilBlur() ? null : this.validationMessage();
   }
 
   private getCurrentErrorMessage(): string | null {
@@ -148,6 +148,18 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
 
     if (control.hasError('invalidCredentials')) {
       return 'Incorrect email or password.';
+    }
+
+    if (control.hasError('serverUnavailable')) {
+      return 'The server is unavailable.';
+    }
+
+    if (control.hasError('accountExists')) {
+      return 'An account with this email already exists.';
+    }
+
+    if (control.hasError('unknownError')) {
+      return 'An unknown error occurred. Please try again later.';
     }
 
     return 'The value is invalid.';

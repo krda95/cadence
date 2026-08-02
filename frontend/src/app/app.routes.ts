@@ -6,6 +6,7 @@ import { Register } from '@features/auth/register/register';
 import { authGuard, guestGuard } from '@core/guards/auth.guard';
 import { Dashboard } from '@features/dashboard/dashboard';
 import { AppLayout } from '@layout/app-layout/app-layout';
+import { ResetPassword } from '@features/auth/reset-password/reset-password';
 
 export const routes: Routes = [
   {
@@ -31,7 +32,12 @@ export const routes: Routes = [
         path: 'register',
         component: Register,
         canActivate: [guestGuard]
-      }
+      },
+      {
+        path: 'reset-password',
+        component: ResetPassword,
+        canActivate: [guestGuard]
+      },
     ]
   },
   {

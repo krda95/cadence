@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -14,6 +14,26 @@ import { InputComponent } from '@shared/ui/input/input';
 import { LucideArrowLeft } from '@lucide/angular';
 import { AuthService } from '@core/services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { finalize } from 'rxjs';
+
+export const passwordsMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+    const passwordControl = control.get('password');
+    const confirmPasswordControl = control.get('confirmPassword');
+
+    if (!passwordControl || !confirmPasswordControl) {
+      return null;
+    }
+
+    const password = passwordControl.value;
+    const confirmPassword = confirmPasswordControl.value;
+
+    if (password !== confirmPassword) {
+      confirmPasswordControl.setErrors({ passwordMismatch: true });
+    } else {
+      confirmPasswordControl.setErrors(null);
+    }
+    return null;
+  };
 
 @Component({
   selector: 'app-register',
@@ -32,25 +52,7 @@ export class Register {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-
-  passwordsMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
-    const passwordControl = control.get('password');
-    const confirmPasswordControl = control.get('confirmPassword');
-
-    if (!passwordControl || !confirmPasswordControl) {
-      return null;
-    }
-
-    const password = passwordControl.value;
-    const confirmPassword = confirmPasswordControl.value;
-
-    if (password !== confirmPassword) {
-      confirmPasswordControl.setErrors({ passwordMismatch: true });
-    } else {
-      confirmPasswordControl.setErrors(null);
-    }
-    return null;
-  };
+  readonly isSubmitting = signal(false);
   
   readonly registerForm = this.formBuilder.nonNullable.group({
     username: ['', Validators.required],
@@ -59,7 +61,7 @@ export class Register {
     confirmPassword: ['', Validators.required],
     },
     {
-      validators: this.passwordsMatchValidator
+      validators: passwordsMatchValidator
     }
   );
 
@@ -75,8 +77,15 @@ export class Register {
       return;
     }
     const { email, password, username } = this.registerForm.getRawValue();
+    this.isSubmitting.set(true);
 
-    this.authService.register({ email, password, username}).subscribe({
+    this.authService.register({ email, password, username})
+    .pipe(
+      finalize(() => {
+        this.isSubmitting.set(false);
+      })
+    )
+    .subscribe({
       next: () => {
         this.router.navigate(['/login'])
       },
@@ -86,16 +95,21 @@ export class Register {
           this.registerForm.controls.password.setErrors({
             invalidCredentials: true,
           });
-          this.registerForm.controls.password.markAsTouched();
+          return;
+        }
+        if (error.status === 422) {
+          this.registerForm.controls.username.setErrors({
+            accountExists: true,
+          });
           return;
         }
         if (error.status === 0) {
-          this.registerForm.setErrors({
+          this.registerForm.controls.username.setErrors({
             serverUnavailable: true,
           });
           return;
         }
-        this.registerForm.setErrors({
+        this.registerForm.controls.username.setErrors({
           unknownError: true,
         });
       }

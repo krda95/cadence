@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from '../../../shared/ui/button/button';
@@ -17,7 +17,7 @@ export class Login {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  isSubmitting = false;
+  readonly isSubmitting = signal(false);
 
   readonly loginForm = this.fb.nonNullable.group({
       email: ['', [Validators.required, Validators.email]],
@@ -29,12 +29,12 @@ export class Login {
       this.loginForm.markAllAsTouched();
       return;
     }
-    this.isSubmitting = true;
+    this.isSubmitting.set(true);
 
     this.authService.login(this.loginForm.getRawValue())
     .pipe(
       finalize(() => {
-        this.isSubmitting = false;
+        this.isSubmitting.set(false);
       }),
     )
     .subscribe({
@@ -47,7 +47,6 @@ export class Login {
           this.loginForm.controls.password.setErrors({
             invalidCredentials: true,
           });
-          this.loginForm.controls.password.markAsTouched();
           return;
         }
         if (error.status === 0) {
