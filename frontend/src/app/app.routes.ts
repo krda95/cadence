@@ -7,6 +7,10 @@ import { authGuard, guestGuard } from '@core/guards/auth.guard';
 import { Dashboard } from '@features/dashboard/dashboard';
 import { AppLayout } from '@layout/app-layout/app-layout';
 import { ResetPassword } from '@features/auth/reset-password/reset-password';
+import { Goals } from '@features/goals/goals';
+import { Settings } from '@features/settings/settings';
+import { Today } from '@features/today/today';
+import { History } from '@features/history/history';
 
 export const routes: Routes = [
   {
@@ -45,9 +49,26 @@ export const routes: Routes = [
     component: AppLayout,
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: Dashboard,
-        canActivate: [authGuard],
-       },
+      {
+        path: 'dashboard',
+        component: Dashboard,
+      },
+      {
+        path: 'today',
+        component: Today,
+      },
+      {
+        path: 'history',
+        component: History,
+      },
+      {
+        path: 'goals',
+        component: Goals,
+      },
+      {
+        path: 'settings',
+        component: Settings,
+      },
     ]
   }
 ];

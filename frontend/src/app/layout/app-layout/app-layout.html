@@ -1,1 +1,76 @@
-<router-outlet />
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar__logo">
+            <app-logo />
+        </div>
+
+        <nav class="sidebar__nav">
+            <a routerLink="/dashboard" routerLinkActive="active" class="sidebar__link">
+            <svg lucideLayoutDashboard></svg>
+            <span>Dashboard</span>
+            </a>
+            <a routerLink="/today" routerLinkActive="active" class="sidebar__link">
+            <svg lucideCalendarDays></svg>
+            <span>Today</span>
+            </a>
+            <a routerLink="/history" routerLinkActive="active" class="sidebar__link">
+            <svg lucideHistory></svg>
+            <span>History</span>
+            </a>
+            <a routerLink="/goals" routerLinkActive="active" class="sidebar__link">
+            <svg lucideTarget></svg>
+            <span>Goals</span>
+            </a>
+            <a routerLink="/settings" routerLinkActive="active" class="sidebar__link">
+            <svg lucideSettings></svg>
+            <span>Settings</span>
+            </a>
+        </nav>
+
+        <div class="sidebar__bottom">
+            <div class="user-menu" #userMenu>
+                @if (isUserMenuOpen) {
+                    <div class="user-menu__popover">
+                        <button
+                            type="button"
+                            class="user-menu__logout"
+                            (click)="logout()"
+                        >
+                            <svg lucideLogOut></svg>
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                }
+                <button
+                    type="button"
+                    class="user-card"
+                    (click)="toggleUserMenu()"
+                >
+                    <div class="user-avatar">
+                    K
+                    </div>
+
+                    <div class="user-card__details">
+                        <div class="user-name">
+                            Krystian
+                        </div>
+                        <div class="user-email">
+                            you@email.com
+                        </div>
+                    </div>
+
+                    @if (isUserMenuOpen) {
+                        <svg lucideChevronDown class="user-card__chevron"></svg>
+                    } @else {
+                        <svg lucideChevronUp class="user-card__chevron"></svg>
+                    }
+                </button>
+            </div>
+        </div>
+    </aside>
+    <main class="content">
+        <div class="page-container">
+            <router-outlet />
+        </div>
+    </main>
+</div>

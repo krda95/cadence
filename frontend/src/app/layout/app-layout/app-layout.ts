@@ -1,10 +1,68 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from "@angular/router";
+import { Component, ElementRef, HostListener, inject, ViewChild } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
+import { Logo } from "@shared/ui/logo/logo";
+import {
+  LucideLayoutDashboard,
+  LucideCalendarDays,
+  LucideHistory,
+  LucideTarget,
+  LucideSettings,
+  LucideLogOut,
+  LucideChevronUp,
+  LucideChevronDown
+} from '@lucide/angular';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-app-layout',
-  imports: [RouterOutlet],
+  standalone: true,
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    Logo,
+    LucideLayoutDashboard,
+    LucideCalendarDays,
+    LucideHistory,
+    LucideTarget,
+    LucideSettings,
+    LucideLogOut,
+    LucideChevronUp,
+    LucideChevronDown
+],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
 })
-export class AppLayout {}
+export class AppLayout {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  isUserMenuOpen = false;
+
+  @ViewChild('userMenu')
+  private userMenu?: ElementRef<HTMLElement>;
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.isUserMenuOpen) {
+      return;
+    }
+
+    const target = event.target as Node;
+
+    const clickedInside =
+    this.userMenu?.nativeElement.contains(target);
+
+    if (!clickedInside) {
+        this.isUserMenuOpen = false;
+    }
+  }
+
+  toggleUserMenu(): void {
+    this.isUserMenuOpen = !this.isUserMenuOpen;
+  }
+
+  logout() {    
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+}
