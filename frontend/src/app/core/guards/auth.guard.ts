@@ -25,7 +25,6 @@ export const guestGuard: CanActivateFn = () => {
   return authService.initializeSession().pipe(
     map((isAuthenticated) => {
       if (isAuthenticated) {
-        console.log('navigate to dahsboard');
         return router.createUrlTree(['/dashboard']);
       }      
       return true;

@@ -9,7 +9,7 @@ svg {
 }
 
 .logo-text {
-  font-size: 1.5rem;
+  font-size: var(--font-size-2xl);
   font-weight: bold;
   margin-left: 0.5rem;
   color: var(--color-text-primary);

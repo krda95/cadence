@@ -8,8 +8,8 @@
     gap: 4px;
 
     label {
-        font-size: 13px;
-        font-weight: 600;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-semibold);
         color: var(--color-text-primary);
     }
 
@@ -38,7 +38,7 @@
         border: 1px solid var(--color-border);
         background: var(--color-surface);
         color: var(--color-text-primary);
-        font-size: 14.5px;
+        font-size: var(--font-size-md);
         outline: none;
 
         transition:
@@ -77,7 +77,7 @@
 
     .error-message {
         color: var(--color-danger, #ef6b73);
-        font-size: 12px;
+        font-size: var(--font-size-xs);
     }
 
     .error-message-placeholder {

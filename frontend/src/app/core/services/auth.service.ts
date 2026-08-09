@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { LoginRequest, LoginResponse } from '@models/loginModel';
+import { LoginRequest, LoginResponse, UserProfile } from '@models/loginModel';
 import { RegisterRequest, RegisterResponse } from '@models/registerModel';
 import { ForgotPasswordRequest, MessageResponse } from '@models/forgotModel';
 import { ResetPasswordRequest } from '@models/resetModel';
@@ -56,8 +56,8 @@ export class AuthService {
         );
     }
 
-    getCurrentUser() {
-        return this.http.get(`${this.apiMeUrl}`);
+    getCurrentUser(): Observable<UserProfile> {
+        return this.http.get<UserProfile>(`${this.apiMeUrl}`);
     }
 
     initializeSession() {

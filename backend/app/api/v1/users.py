@@ -28,4 +28,11 @@ async def get_my_profile(
         await session.commit()
         await session.refresh(profile)
 
-    return profile
+    return ProfileResponse(
+        id=profile.id,
+        email=current_user.email,
+        display_name=profile.display_name,
+        avatar_url=profile.avatar_url,
+        created_at=profile.created_at,
+        updated_at=profile.updated_at,
+    )

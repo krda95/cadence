@@ -47,15 +47,15 @@
                     (click)="toggleUserMenu()"
                 >
                     <div class="user-avatar">
-                    K
+                        {{initials}}
                     </div>
 
                     <div class="user-card__details">
                         <div class="user-name">
-                            Krystian
+                            {{currentUser?.display_name}}
                         </div>
                         <div class="user-email">
-                            you@email.com
+                            {{currentUser?.email}}
                         </div>
                     </div>
 

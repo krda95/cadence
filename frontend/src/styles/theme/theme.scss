@@ -1,40 +1,6 @@
-:root {
-  --color-background: #15171c;
-
-  --color-surface: #1A1D23;
-  --color-surface-hover: rgb(255 255 255 / 6%);
-  --color-surface-active: #ffffff15;
-
-  --color-border: rgb(255 255 255 / 9%);
-
-  --color-primary: #9bd6bd;
-  --color-secondary: #f7d2bb;
-  --color-tertiary: #c6d6f4;
-  --color-fourth: #d9cbf2;
-
-  --color-text-primary: #eceef1;
-  --color-text-secondary: #9aa0aa;
-
-  --color-button-text: #13241e;
-
-  --radius-sm: 8px;
-  --radius-md: 13px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-
-  --transition-fast: .15s ease;
-  --transition-normal: .25s ease;
-
-  --shadow-primary: 0 8px 24px rgb(155 214 189 / 18%);
-
-  --font-family: "Plus Jakarta Sans", system-ui, sans-serif;
-}
+@use 'colors';
+@use 'spacing';
+@use 'radius';
+@use 'shadows';
+@use 'typography';
+@use 'transitions';

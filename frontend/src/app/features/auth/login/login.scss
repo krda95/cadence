@@ -4,16 +4,15 @@
 
   h1 {
     margin: 0;
-    font-size: 25px;
-    font-weight: 800;
-    letter-spacing: -0.01em;
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
     color: var(--color-text-primary);
   }
 
   p {
     margin: 7px 0 0;
     color: var(--color-text-secondary);
-    font-size: 14.5px;
+    font-size: var(--font-size-sm);
     line-height: 1.5;
   }
 
@@ -27,20 +26,20 @@
   .footer {
     margin: 24px 0 0;
     color: var(--color-text-secondary);
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     text-align: center;
 
     a {
       color: var(--color-primary);
-      font-weight: 600;
+      font-weight: var(--font-weight-semibold);
       text-decoration: none;
     }
   }
 
   .forgot-link {
     color: var(--color-primary);
-    font-size: 13px;
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-regular);
     text-decoration: none;
     transition: opacity .2s ease;
 
