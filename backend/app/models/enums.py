@@ -1,13 +1,13 @@
 from enum import Enum
 
 
-class ChallengePeriod(str, Enum):
+class GoalPeriod(str, Enum):
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"
 
 
-class ChallengeTargetType(str, Enum):
+class GoalTargetType(str, Enum):
     MIN = "min"
     MAX = "max"
 

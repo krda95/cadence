@@ -209,17 +209,17 @@ Test integracyjny potrzebuje działającego backendu oraz tokenu użytkownika te
 export CADENCE_TEST_TOKEN='TU_WKLEJ_ACCESS_TOKEN'
 ```
 
-### Prefix endpointów challenge
+### Prefix endpointów goals
 
 ```bash
-export CADENCE_CHALLENGES_PATH='/api/v1/challenges'
+export CADENCE_GOALS_PATH='/api/v1/goals'
 ```
 
 ### Sprawdzenie ustawionych wartości
 
 ```bash
 echo $CADENCE_TEST_TOKEN
-echo $CADENCE_CHALLENGES_PATH
+echo $CADENCE_GOALS_PATH
 ```
 
 ### Usunięcie tokenu z bieżącego terminala

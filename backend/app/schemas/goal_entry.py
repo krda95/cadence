@@ -4,20 +4,20 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class ChallengeEntryUpsert(BaseModel):
+class GoalEntryUpsert(BaseModel):
     value: float = Field(ge=0)
     note: str | None = Field(default=None, max_length=200)
 
 
-class ChallengeEntryNoteUpdate(BaseModel):
+class GoalEntryNoteUpdate(BaseModel):
     note: str | None = Field(max_length=200)
 
 
-class ChallengeEntryResponse(BaseModel):
+class GoalEntryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    challenge_id: UUID
+    goal_id: UUID
     entry_date: date
     value: float
     note: str | None

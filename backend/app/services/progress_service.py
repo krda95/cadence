@@ -8,11 +8,10 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.challenge import Challenge
-from app.models.challenge_entry import ChallengeEntry
+from app.models import goal
+from app.models.goal import Goal, GoalPeriod, GoalTargetType
+from app.models.goal_entry import GoalEntry
 from app.models.enums import (
-    ChallengePeriod,
-    ChallengeTargetType,
     ProgressStatus,
 )
 from app.services.progress_rules import (
@@ -44,20 +43,20 @@ def get_warsaw_today() -> date:
 
 
 def get_period_bounds(
-    period: ChallengePeriod,
+    period: GoalPeriod,
     reference_date: date,
 ) -> tuple[date, date]:
-    if period == ChallengePeriod.DAILY:
+    if period == GoalPeriod.DAILY:
         return reference_date, reference_date
 
-    if period == ChallengePeriod.WEEKLY:
+    if period == GoalPeriod.WEEKLY:
         period_start = reference_date - timedelta(
             days=reference_date.weekday()
         )
         period_end = period_start + timedelta(days=6)
         return period_start, period_end
 
-    if period == ChallengePeriod.MONTHLY:
+    if period == GoalPeriod.MONTHLY:
         period_start = reference_date.replace(day=1)
 
         if reference_date.month == 12:
@@ -91,53 +90,53 @@ def calculate_limit_usage_percent(
     return min((current_value / target_value) * 100, 100.0)
 
 
-async def load_active_challenges(
+async def load_active_goals(
     session: AsyncSession,
     owner_id: UUID,
-) -> list[Challenge]:
+) -> list[Goal]:
     result = await session.execute(
-        select(Challenge)
+        select(Goal)
         .where(
-            Challenge.owner_id == owner_id,
-            Challenge.is_active.is_(True),
+            Goal.owner_id == owner_id,
+            Goal.is_active.is_(True),
         )
-        .order_by(Challenge.created_at.asc())
+        .order_by(Goal.created_at.asc())
     )
 
     return list(result.scalars().all())
 
 
-async def load_entries_by_challenge(
+async def load_entries_by_goal(
     session: AsyncSession,
-    challenge_ids: list[UUID],
+    goal_ids: list[UUID],
     date_from: date,
     date_to: date,
 ) -> dict[UUID, dict[date, float]]:
-    if not challenge_ids:
+    if not goal_ids:
         return {}
 
     result = await session.execute(
         select(
-            ChallengeEntry.challenge_id,
-            ChallengeEntry.entry_date,
-            ChallengeEntry.value,
+            GoalEntry.goal_id,
+            GoalEntry.entry_date,
+            GoalEntry.value,
         ).where(
-            ChallengeEntry.challenge_id.in_(challenge_ids),
-            ChallengeEntry.entry_date >= date_from,
-            ChallengeEntry.entry_date <= date_to,
+            GoalEntry.goal_id.in_(goal_ids),
+            GoalEntry.entry_date >= date_from,
+            GoalEntry.entry_date <= date_to,
         )
     )
 
-    entries_by_challenge: dict[UUID, dict[date, float]] = defaultdict(dict)
+    entries_by_goal: dict[UUID, dict[date, float]] = defaultdict(dict)
 
-    for challenge_id, entry_date, value in result.all():
-        entries_by_challenge[challenge_id][entry_date] = float(value)
+    for goal_id, entry_date, value in result.all():
+        entries_by_goal[goal_id][entry_date] = float(value)
 
-    return entries_by_challenge
+    return entries_by_goal
 
 
-def get_challenge_created_date(challenge: Challenge) -> date:
-    created_at = challenge.created_at
+def get_goal_created_date(goal: Goal) -> date:
+    created_at = goal.created_at
 
     if created_at.tzinfo is None:
         return created_at.date()
@@ -157,19 +156,19 @@ async def calculate_daily_progress(
 
     is_day_final = reference_date < today
 
-    challenges = await load_active_challenges(
+    goals = await load_active_goals(
         session=session,
         owner_id=owner_id,
     )
 
-    # Challenge utworzony później nie powinien wpływać na starszy dzień.
-    applicable_challenges = [
-        challenge
-        for challenge in challenges
-        if get_challenge_created_date(challenge) <= reference_date
+    # Goal utworzony później nie powinien wpływać na starszy dzień.
+    applicable_goals = [
+        goal
+        for goal in goals
+        if get_goal_created_date(goal) <= reference_date
     ]
 
-    if not applicable_challenges:
+    if not applicable_goals:
         return {
             "date": reference_date,
             "timezone": TIMEZONE_NAME,
@@ -183,18 +182,18 @@ async def calculate_daily_progress(
 
     earliest_date = reference_date
 
-    for challenge in applicable_challenges:
+    for goal in applicable_goals:
         period_start, _ = get_period_bounds(
-            challenge.period,
+            goal.period,
             reference_date,
         )
         earliest_date = min(earliest_date, period_start)
 
-    entries_by_challenge = await load_entries_by_challenge(
+    entries_by_goal = await load_entries_by_goal(
         session=session,
-        challenge_ids=[
-            challenge.id
-            for challenge in applicable_challenges
+        goal_ids=[
+            goal.id
+            for goal in applicable_goals
         ],
         date_from=earliest_date,
         date_to=reference_date,
@@ -205,53 +204,53 @@ async def calculate_daily_progress(
     component_scores: list[float] = []
     pending_components_count = 0
 
-    for challenge in applicable_challenges:
-        challenge_entries = entries_by_challenge.get(
-            challenge.id,
+    for goal in applicable_goals:
+        goal_entries = entries_by_goal.get(
+            goal.id,
             {},
         )
 
-        entry_exists = reference_date in challenge_entries
-        entry_value = challenge_entries.get(reference_date, 0.0)
+        entry_exists = reference_date in goal_entries
+        entry_value = goal_entries.get(reference_date, 0.0)
 
         period_start, period_end = get_period_bounds(
-            challenge.period,
+            goal.period,
             reference_date,
         )
 
         period_current_value = sum(
             value
-            for entry_day, value in challenge_entries.items()
+            for entry_day, value in goal_entries.items()
             if period_start <= entry_day <= reference_date
         )
 
         is_period_final = period_end < today
 
         base_component = {
-            "challenge_id": challenge.id,
-            "name": challenge.name,
-            "unit": challenge.unit,
-            "period": challenge.period,
-            "target_type": challenge.target_type,
-            "target_value": float(challenge.target_value),
+            "goal_id": goal.id,
+            "name": goal.name,
+            "unit": goal.unit,
+            "period": goal.period,
+            "target_type": goal.target_type,
+            "target_value": float(goal.target_value),
         }
 
         # ------------------------------------------------------------
-        # DAILY CHALLENGES
+        # DAILY GOALS
         # ------------------------------------------------------------
-        if challenge.period == ChallengePeriod.DAILY:
-            if challenge.target_type == ChallengeTargetType.MIN:
+        if goal.period == GoalPeriod.DAILY:
+            if goal.target_type == GoalTargetType.MIN:
                 result = calculate_daily_min_result(
                     entry_exists=entry_exists,
                     entry_value=entry_value,
-                    target_value=float(challenge.target_value),
+                    target_value=float(goal.target_value),
                     is_day_final=is_day_final,
                 )
             else:
                 result = calculate_daily_max_result(
                     entry_exists=entry_exists,
                     entry_value=entry_value,
-                    target_value=float(challenge.target_value),
+                    target_value=float(goal.target_value),
                     is_day_final=is_day_final,
                 )
 
@@ -279,15 +278,15 @@ async def calculate_daily_progress(
             continue
 
         # ------------------------------------------------------------
-        # WEEKLY / MONTHLY CHALLENGES
+        # WEEKLY / MONTHLY GOALS
         # ------------------------------------------------------------
-        if challenge.target_type == ChallengeTargetType.MIN:
+        if goal.target_type == GoalTargetType.MIN:
             period_score = calculate_min_score(
                 current_value=period_current_value,
-                target_value=float(challenge.target_value),
+                target_value=float(goal.target_value),
             )
 
-            if period_current_value >= float(challenge.target_value):
+            if period_current_value >= float(goal.target_value):
                 period_status = ProgressStatus.ACHIEVED
             elif is_period_final and period_current_value == 0:
                 period_status = ProgressStatus.MISSED
@@ -303,12 +302,12 @@ async def calculate_daily_progress(
         else:
             period_score = calculate_max_score(
                 current_value=period_current_value,
-                target_value=float(challenge.target_value),
+                target_value=float(goal.target_value),
             )
             period_result = calculate_daily_max_result(
                 entry_exists=True,
                 entry_value=period_current_value,
-                target_value=float(challenge.target_value),
+                target_value=float(goal.target_value),
                 is_day_final=is_period_final,
             )
             period_status = period_result.status
@@ -317,20 +316,20 @@ async def calculate_daily_progress(
             limit_usage_percent = round(
                 calculate_limit_usage_percent(
                     current_value=period_current_value,
-                    target_value=float(challenge.target_value),
+                    target_value=float(goal.target_value),
                 ),
                 2,
             )
 
             total_before_day = sum(
                 value
-                for entry_day, value in challenge_entries.items()
+                for entry_day, value in goal_entries.items()
                 if period_start <= entry_day < reference_date
             )
             caused_daily_penalty = causes_period_max_daily_penalty(
                 entry_value_for_day=entry_value,
                 total_before_day=total_before_day,
-                target_value=float(challenge.target_value),
+                target_value=float(goal.target_value),
             )
 
             if caused_daily_penalty:
@@ -384,7 +383,7 @@ def get_weekly_item_status(
     is_week_final: bool,
 ) -> ProgressStatus:
     """
-    Status agregatu challenge'u w widoku tygodniowym.
+    Status agregatu goal'u w widoku tygodniowym.
 
     Dla tygodnia w toku nie ogłaszamy finalnego wyniku,
     nawet jeśli cel jest już aktualnie osiągnięty.
@@ -443,7 +442,7 @@ async def calculate_weekly_progress(
     - Monday is the first day of the week.
     - Sunday is the last day of the week.
     - Final weekly_score exists only after Sunday has ended.
-    - Monthly challenges are intentionally excluded for MVP.
+    - Monthly goals are intentionally excluded for MVP.
     """
     today = get_warsaw_today()
 
@@ -451,30 +450,30 @@ async def calculate_weekly_progress(
         raise ValueError("date cannot be in the future")
 
     week_start, week_end = get_period_bounds(
-        ChallengePeriod.WEEKLY,
+        GoalPeriod.WEEKLY,
         reference_date,
     )
 
     is_week_final = week_end < today
     calculation_end = week_end if is_week_final else reference_date
 
-    challenges = await load_active_challenges(
+    goals = await load_active_goals(
         session=session,
         owner_id=owner_id,
     )
 
-    # Monthly challenges do not participate in weekly progress yet.
-    applicable_challenges = [
-        challenge
-        for challenge in challenges
-        if challenge.period in {
-            ChallengePeriod.DAILY,
-            ChallengePeriod.WEEKLY,
+    # Monthly goals do not participate in weekly progress yet.
+    applicable_goals = [
+        goal
+        for goal in goals
+        if goal.period in {
+            GoalPeriod.DAILY,
+            GoalPeriod.WEEKLY,
         }
-        and get_challenge_created_date(challenge) <= calculation_end
+        and get_goal_created_date(goal) <= calculation_end
     ]
 
-    if not applicable_challenges:
+    if not applicable_goals:
         return {
             "date": reference_date,
             "timezone": TIMEZONE_NAME,
@@ -485,73 +484,73 @@ async def calculate_weekly_progress(
             "items": [],
         }
 
-    entries_by_challenge = await load_entries_by_challenge(
+    entries_by_goal = await load_entries_by_goal(
         session=session,
-        challenge_ids=[
-            challenge.id
-            for challenge in applicable_challenges
+        goal_ids=[
+            goal.id
+            for goal in applicable_goals
         ],
         date_from=week_start,
         date_to=calculation_end,
     )
 
     items: list[dict[str, Any]] = []
-    final_challenge_scores: list[float] = []
+    final_goal_scores: list[float] = []
 
-    for challenge in applicable_challenges:
-        challenge_entries = entries_by_challenge.get(
-            challenge.id,
+    for goal in applicable_goals:
+        goal_entries = entries_by_goal.get(
+            goal.id,
             {},
         )
 
-        challenge_created_date = get_challenge_created_date(challenge)
+        goal_created_date = get_goal_created_date(goal)
 
-        # Challenge utworzony w środku tygodnia nie jest oceniany
+        # Goal utworzony w środku tygodnia nie jest oceniany
         # za dni przed jego powstaniem.
-        challenge_start_date = max(
+        goal_start_date = max(
             week_start,
-            challenge_created_date,
+            goal_created_date,
         )
 
         base_item = {
-            "challenge_id": challenge.id,
-            "name": challenge.name,
-            "unit": challenge.unit,
-            "period": challenge.period,
-            "target_type": challenge.target_type,
-            "target_value": float(challenge.target_value),
+            "goal_id": goal.id,
+            "name": goal.name,
+            "unit": goal.unit,
+            "period": goal.period,
+            "target_type": goal.target_type,
+            "target_value": float(goal.target_value),
         }
 
         # ----------------------------------------------------------
-        # DAILY CHALLENGES
+        # DAILY GOALS
         # ----------------------------------------------------------
-        if challenge.period == ChallengePeriod.DAILY:
+        if goal.period == GoalPeriod.DAILY:
             daily_scores: list[float] = []
 
             for current_day in iter_dates(
-                challenge_start_date,
+                goal_start_date,
                 calculation_end,
             ):
-                entry_exists = current_day in challenge_entries
-                entry_value = challenge_entries.get(
+                entry_exists = current_day in goal_entries
+                entry_value = goal_entries.get(
                     current_day,
                     0.0,
                 )
 
                 is_day_final = current_day < today
 
-                if challenge.target_type == ChallengeTargetType.MIN:
+                if goal.target_type == GoalTargetType.MIN:
                     result = calculate_daily_min_result(
                         entry_exists=entry_exists,
                         entry_value=entry_value,
-                        target_value=float(challenge.target_value),
+                        target_value=float(goal.target_value),
                         is_day_final=is_day_final,
                     )
                 else:
                     result = calculate_daily_max_result(
                         entry_exists=entry_exists,
                         entry_value=entry_value,
-                        target_value=float(challenge.target_value),
+                        target_value=float(goal.target_value),
                         is_day_final=is_day_final,
                     )
 
@@ -562,7 +561,7 @@ async def calculate_weekly_progress(
 
             daily_average_score = calculate_average_score(daily_scores)
 
-            # Daily challenge wpływa na finalny weekly_score dopiero,
+            # Daily goal wpływa na finalny weekly_score dopiero,
             # gdy cały tydzień jest zamknięty.
             final_score = (
                 daily_average_score
@@ -571,7 +570,7 @@ async def calculate_weekly_progress(
             )
 
             if final_score is not None:
-                final_challenge_scores.append(final_score)
+                final_goal_scores.append(final_score)
 
             items.append(
                 {
@@ -594,26 +593,26 @@ async def calculate_weekly_progress(
             continue
 
         # ----------------------------------------------------------
-        # WEEKLY CHALLENGES
+        # WEEKLY GOALS
         # ----------------------------------------------------------
         weekly_current_value = sum(
             value
-            for entry_day, value in challenge_entries.items()
-            if challenge_start_date <= entry_day <= calculation_end
+            for entry_day, value in goal_entries.items()
+            if goal_start_date <= entry_day <= calculation_end
         )
 
         period_score = calculate_period_score(
-            target_type=challenge.target_type,
+            target_type=goal.target_type,
             current_value=weekly_current_value,
-            target_value=float(challenge.target_value),
+            target_value=float(goal.target_value),
         )
 
         final_score = period_score if is_week_final else None
 
         if final_score is not None:
-            final_challenge_scores.append(final_score)
+            final_goal_scores.append(final_score)
 
-        if challenge.target_type == ChallengeTargetType.MIN:
+        if goal.target_type == GoalTargetType.MIN:
             status = get_weekly_item_status(
                 score=final_score,
                 is_week_final=is_week_final,
@@ -623,13 +622,13 @@ async def calculate_weekly_progress(
         else:
             status = get_weekly_max_status(
                 current_value=weekly_current_value,
-                target_value=float(challenge.target_value),
+                target_value=float(goal.target_value),
                 is_week_final=is_week_final,
             )
             progress_percent = None
             limit_usage_percent = calculate_limit_usage_percent(
                 current_value=weekly_current_value,
-                target_value=float(challenge.target_value),
+                target_value=float(goal.target_value),
             )
 
         items.append(
@@ -664,7 +663,7 @@ async def calculate_weekly_progress(
         )
 
     weekly_score = calculate_weekly_score(
-        challenge_scores=final_challenge_scores,
+        goal_scores=final_goal_scores,
         is_week_final=is_week_final,
     )
 

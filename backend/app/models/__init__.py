@@ -1,5 +1,5 @@
-from app.models.challenge import Challenge
+from app.models.goal import GoalPeriod
 from app.models.profile import Profile
-from app.models.challenge_entry import ChallengeEntry
+from app.models.goal_entry import GoalEntry
 
-__all__ = ["Challenge", "Profile", "ChallengeEntry"]
+__all__ = ["Goal", "Profile", "GoalEntry"]

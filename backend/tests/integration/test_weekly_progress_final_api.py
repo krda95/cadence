@@ -15,9 +15,9 @@ pytestmark = pytest.mark.integration
 
 WARSAW_TIMEZONE = ZoneInfo("Europe/Warsaw")
 
-CHALLENGES_PATH = os.getenv(
-    "CADENCE_CHALLENGES_PATH",
-    "/challenges",
+GOALS_PATH = os.getenv(
+    "CADENCE_GOALS_PATH",
+    "/goals",
 )
 
 TEST_TOKEN = os.getenv("CADENCE_TEST_TOKEN")
@@ -30,7 +30,7 @@ if not TEST_TOKEN:
     )
 
 
-def create_challenge(
+def create_goal(
     client: TestClient,
     headers: dict[str, str],
     *,
@@ -41,7 +41,7 @@ def create_challenge(
     target_value: float,
 ) -> dict:
     response = client.post(
-        CHALLENGES_PATH,
+        GOALS_PATH,
         headers=headers,
         json={
             "name": name,
@@ -62,13 +62,13 @@ def upsert_entry(
     client: TestClient,
     headers: dict[str, str],
     *,
-    challenge_id: str,
+    goal_id: str,
     entry_date: str,
     value: float,
     note: Optional[str] = None,
 ) -> None:
     response = client.put(
-        f"{CHALLENGES_PATH}/{challenge_id}/entries/{entry_date}",
+        f"{GOALS_PATH}/{goal_id}/entries/{entry_date}",
         headers=headers,
         json={
             "value": value,
@@ -79,13 +79,13 @@ def upsert_entry(
     assert response.status_code == 200, response.text
 
 
-def archive_challenge(
+def archive_goal(
     client: TestClient,
     headers: dict[str, str],
-    challenge_id: str,
+    goal_id: str,
 ) -> None:
     response = client.delete(
-        f"{CHALLENGES_PATH}/{challenge_id}",
+        f"{GOALS_PATH}/{goal_id}",
         headers=headers,
     )
 
@@ -115,8 +115,8 @@ def test_weekly_progress_is_final_after_simulated_week(
     """
     Scenario:
 
-    1. On the challenge creation day:
-       - create four challenges;
+    1. On the goal creation day:
+       - create four goals;
        - add one set of entries for that day.
 
     2. Simulate that the ISO week has finished.
@@ -129,7 +129,7 @@ def test_weekly_progress_is_final_after_simulated_week(
     - Workouts weekly MIN: 2 / 4 -> 50%.
     - Alcohol weekly MAX: 3 / 2 -> 0%.
 
-    Daily challenge averages always add up to 100:
+    Daily goal averages always add up to 100:
     - steps:    100 / days_counted
     - calories: remaining percentage
 
@@ -141,7 +141,7 @@ def test_weekly_progress_is_final_after_simulated_week(
     }
 
     suffix = uuid.uuid4().hex[:8]
-    created_challenge_ids: list[str] = []
+    created_goal_ids: list[str] = []
 
     with TestClient(app) as client:
         try:
@@ -150,7 +150,7 @@ def test_weekly_progress_is_final_after_simulated_week(
             workouts_name = f"[TEST {suffix}] Workouts weekly"
             alcohol_name = f"[TEST {suffix}] Alcohol weekly"
 
-            steps = create_challenge(
+            steps = create_goal(
                 client,
                 headers,
                 name=steps_name,
@@ -159,9 +159,9 @@ def test_weekly_progress_is_final_after_simulated_week(
                 target_type="min",
                 target_value=10_000,
             )
-            created_challenge_ids.append(steps["id"])
+            created_goal_ids.append(steps["id"])
 
-            calories = create_challenge(
+            calories = create_goal(
                 client,
                 headers,
                 name=calories_name,
@@ -170,9 +170,9 @@ def test_weekly_progress_is_final_after_simulated_week(
                 target_type="max",
                 target_value=2_200,
             )
-            created_challenge_ids.append(calories["id"])
+            created_goal_ids.append(calories["id"])
 
-            workouts = create_challenge(
+            workouts = create_goal(
                 client,
                 headers,
                 name=workouts_name,
@@ -181,9 +181,9 @@ def test_weekly_progress_is_final_after_simulated_week(
                 target_type="min",
                 target_value=4,
             )
-            created_challenge_ids.append(workouts["id"])
+            created_goal_ids.append(workouts["id"])
 
-            alcohol = create_challenge(
+            alcohol = create_goal(
                 client,
                 headers,
                 name=alcohol_name,
@@ -192,7 +192,7 @@ def test_weekly_progress_is_final_after_simulated_week(
                 target_type="max",
                 target_value=2,
             )
-            created_challenge_ids.append(alcohol["id"])
+            created_goal_ids.append(alcohol["id"])
 
             scenario_date = parse_warsaw_date(steps["created_at"])
 
@@ -205,7 +205,7 @@ def test_weekly_progress_is_final_after_simulated_week(
             upsert_entry(
                 client,
                 headers,
-                challenge_id=steps["id"],
+                goal_id=steps["id"],
                 entry_date=scenario_date_string,
                 value=12_000,
             )
@@ -213,7 +213,7 @@ def test_weekly_progress_is_final_after_simulated_week(
             upsert_entry(
                 client,
                 headers,
-                challenge_id=calories["id"],
+                goal_id=calories["id"],
                 entry_date=scenario_date_string,
                 value=2_300,
             )
@@ -221,7 +221,7 @@ def test_weekly_progress_is_final_after_simulated_week(
             upsert_entry(
                 client,
                 headers,
-                challenge_id=workouts["id"],
+                goal_id=workouts["id"],
                 entry_date=scenario_date_string,
                 value=2,
             )
@@ -229,7 +229,7 @@ def test_weekly_progress_is_final_after_simulated_week(
             upsert_entry(
                 client,
                 headers,
-                challenge_id=alcohol["id"],
+                goal_id=alcohol["id"],
                 entry_date=scenario_date_string,
                 value=3,
             )
@@ -241,7 +241,7 @@ def test_weekly_progress_is_final_after_simulated_week(
             )
 
             response = client.get(
-                f"{CHALLENGES_PATH}/progress/weekly",
+                f"{GOALS_PATH}/progress/weekly",
                 headers=headers,
                 params={
                     "date": week_end.isoformat(),
@@ -258,8 +258,8 @@ def test_weekly_progress_is_final_after_simulated_week(
             assert payload["timezone"] == "Europe/Warsaw"
             assert payload["is_final"] is True
 
-            # Challenge was created today, so only today through Sunday
-            # should be counted for daily challenges.
+            # Goal was created today, so only today through Sunday
+            # should be counted for daily goals.
             expected_days_counted = (
                 (week_end - scenario_date).days + 1
             )
@@ -331,9 +331,9 @@ def test_weekly_progress_is_final_after_simulated_week(
             assert alcohol_item["included_in_weekly_score"] is True
 
         finally:
-            for challenge_id in created_challenge_ids:
-                archive_challenge(
+            for goal_id in created_goal_ids:
+                archive_goal(
                     client,
                     headers,
-                    challenge_id,
+                    goal_id,
                 )

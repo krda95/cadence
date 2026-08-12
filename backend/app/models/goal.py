@@ -6,16 +6,16 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
-from app.models.enums import ChallengePeriod, ChallengeTargetType
+from app.models.enums import GoalPeriod, GoalTargetType
 
 
-class Challenge(Base):
-    __tablename__ = "challenges"
+class Goal(Base):
+    __tablename__ = "goals"
 
     __table_args__ = (
         CheckConstraint(
             "target_value >= 0",
-            name="ck_challenges_target_value_non_negative",
+            name="ck_goals_target_value_non_negative",
         ),
     )
 
@@ -35,19 +35,19 @@ class Challenge(Base):
     icon: Mapped[str | None] = mapped_column(String(10), nullable=True)
     unit: Mapped[str] = mapped_column(String(30), nullable=False)
 
-    period: Mapped[ChallengePeriod] = mapped_column(
+    period: Mapped[GoalPeriod] = mapped_column(
         Enum(
-            ChallengePeriod,
-            name="challenge_period",
+            GoalPeriod,
+            name="goal_period",
             values_callable=lambda enum: [item.value for item in enum],
         ),
         nullable=False,
     )
 
-    target_type: Mapped[ChallengeTargetType] = mapped_column(
+    target_type: Mapped[GoalTargetType] = mapped_column(
         Enum(
-            ChallengeTargetType,
-            name="challenge_target_type",
+            GoalTargetType,
+            name="goal_target_type",
             values_callable=lambda enum: [item.value for item in enum],
         ),
         nullable=False,

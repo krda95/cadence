@@ -17,18 +17,18 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
 
 
-class ChallengeEntry(Base):
-    __tablename__ = "challenge_entries"
+class GoalEntry(Base):
+    __tablename__ = "goal_entries"
 
     __table_args__ = (
         UniqueConstraint(
-            "challenge_id",
+            "goal_id",
             "entry_date",
-            name="uq_challenge_entries_challenge_id_entry_date",
+            name="uq_goal_entries_goal_id_entry_date",
         ),
         CheckConstraint(
             "value >= 0",
-            name="ck_challenge_entries_value_non_negative",
+            name="ck_goal_entries_value_non_negative",
         ),
     )
 
@@ -38,9 +38,9 @@ class ChallengeEntry(Base):
         default=uuid.uuid4,
     )
 
-    challenge_id: Mapped[uuid.UUID] = mapped_column(
+    goal_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("challenges.id", ondelete="CASCADE"),
+        ForeignKey("goals.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

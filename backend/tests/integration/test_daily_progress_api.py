@@ -19,10 +19,10 @@ API_BASE_URL = os.getenv(
 )
 
 # Ustaw zgodnie z rzeczywistym prefixem z /docs.
-# Jeśli endpointy widzisz jako /api/v1/challenges, ustaw tę wartość w terminalu.
-CHALLENGES_PATH = os.getenv(
-    "CADENCE_CHALLENGES_PATH",
-    "/challenges",
+# Jeśli endpointy widzisz jako /api/v1/goals, ustaw tę wartość w terminalu.
+GOALS_PATH = os.getenv(
+    "CADENCE_GOALS_PATH",
+    "/goals",
 )
 
 TEST_TOKEN = os.getenv("CADENCE_TEST_TOKEN")
@@ -35,7 +35,7 @@ if not TEST_TOKEN:
     )
 
 
-def create_challenge(
+def create_goal(
     client: httpx.Client,
     headers: dict[str, str],
     *,
@@ -46,7 +46,7 @@ def create_challenge(
     target_value: float,
 ) -> dict:
     response = client.post(
-        f"{CHALLENGES_PATH}",
+        f"{GOALS_PATH}",
         headers=headers,
         json={
             "name": name,
@@ -68,13 +68,13 @@ def upsert_entry(
     client: httpx.Client,
     headers: dict[str, str],
     *,
-    challenge_id: str,
+    goal_id: str,
     entry_date: str,
     value: float,
     note: Optional[str] = None,
 ) -> None:
     response = client.put(
-        f"{CHALLENGES_PATH}/{challenge_id}/entries/{entry_date}",
+        f"{GOALS_PATH}/{goal_id}/entries/{entry_date}",
         headers=headers,
         json={
             "value": value,
@@ -85,13 +85,13 @@ def upsert_entry(
     assert response.status_code == 200, response.text
 
 
-def archive_challenge(
+def archive_goal(
     client: httpx.Client,
     headers: dict[str, str],
-    challenge_id: str,
+    goal_id: str,
 ) -> None:
     response = client.delete(
-        f"{CHALLENGES_PATH}/{challenge_id}",
+        f"{GOALS_PATH}/{goal_id}",
         headers=headers,
     )
 
@@ -127,14 +127,14 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
         "Authorization": f"Bearer {TEST_TOKEN}",
     }
 
-    created_challenge_ids: list[str] = []
+    created_goal_ids: list[str] = []
 
     with httpx.Client(
         base_url=API_BASE_URL,
         timeout=15.0,
     ) as client:
         try:
-            steps = create_challenge(
+            steps = create_goal(
                 client,
                 headers,
                 name=f"[TEST {unique_suffix}] Kroki",
@@ -143,9 +143,9 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
                 target_type="min",
                 target_value=10_000,
             )
-            created_challenge_ids.append(steps["id"])
+            created_goal_ids.append(steps["id"])
 
-            calories = create_challenge(
+            calories = create_goal(
                 client,
                 headers,
                 name=f"[TEST {unique_suffix}] Kalorie",
@@ -154,9 +154,9 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
                 target_type="max",
                 target_value=2_200,
             )
-            created_challenge_ids.append(calories["id"])
+            created_goal_ids.append(calories["id"])
 
-            reading = create_challenge(
+            reading = create_goal(
                 client,
                 headers,
                 name=f"[TEST {unique_suffix}] Czytanie",
@@ -165,9 +165,9 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
                 target_type="min",
                 target_value=20,
             )
-            created_challenge_ids.append(reading["id"])
+            created_goal_ids.append(reading["id"])
 
-            workouts = create_challenge(
+            workouts = create_goal(
                 client,
                 headers,
                 name=f"[TEST {unique_suffix}] Treningi",
@@ -176,9 +176,9 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
                 target_type="min",
                 target_value=4,
             )
-            created_challenge_ids.append(workouts["id"])
+            created_goal_ids.append(workouts["id"])
 
-            alcohol = create_challenge(
+            alcohol = create_goal(
                 client,
                 headers,
                 name=f"[TEST {unique_suffix}] Alkohol",
@@ -187,12 +187,12 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
                 target_type="max",
                 target_value=2,
             )
-            created_challenge_ids.append(alcohol["id"])
+            created_goal_ids.append(alcohol["id"])
 
             upsert_entry(
                 client,
                 headers,
-                challenge_id=steps["id"],
+                goal_id=steps["id"],
                 entry_date=today_string,
                 value=12_000,
             )
@@ -200,7 +200,7 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
             upsert_entry(
                 client,
                 headers,
-                challenge_id=calories["id"],
+                goal_id=calories["id"],
                 entry_date=today_string,
                 value=2_300,
             )
@@ -208,7 +208,7 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
             upsert_entry(
                 client,
                 headers,
-                challenge_id=reading["id"],
+                goal_id=reading["id"],
                 entry_date=today_string,
                 value=20,
             )
@@ -216,7 +216,7 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
             upsert_entry(
                 client,
                 headers,
-                challenge_id=workouts["id"],
+                goal_id=workouts["id"],
                 entry_date=today_string,
                 value=2,
             )
@@ -224,13 +224,13 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
             upsert_entry(
                 client,
                 headers,
-                challenge_id=alcohol["id"],
+                goal_id=alcohol["id"],
                 entry_date=today_string,
                 value=3,
             )
 
             response = client.get(
-                f"{CHALLENGES_PATH}/progress/daily",
+                f"{GOALS_PATH}/progress/daily",
                 headers=headers,
                 params={
                     "date": today_string,
@@ -293,9 +293,9 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
             assert alcohol_progress["caused_daily_penalty"] is True
 
         finally:
-            for challenge_id in created_challenge_ids:
-                archive_challenge(
+            for goal_id in created_goal_ids:
+                archive_goal(
                     client,
                     headers,
-                    challenge_id,
+                    goal_id,
                 )

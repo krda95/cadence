@@ -7,17 +7,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.dependencies.auth import CurrentUser, get_current_user
-from app.models.challenge import Challenge
-from app.models.challenge_entry import ChallengeEntry
-from app.schemas.challenge_entry import (
-    ChallengeEntryNoteUpdate,
-    ChallengeEntryResponse,
-    ChallengeEntryUpsert,
+from app.models.goal import Goal, GoalPeriod
+from app.models.goal_entry import GoalEntry
+from app.schemas.goal_entry import (
+    GoalEntryResponse,
+    GoalEntryNoteUpdate,
+    GoalEntryResponse,
+    GoalEntryUpsert,
 )
-from app.schemas.challenge import (
-    ChallengeCreate,
-    ChallengeResponse,
-    ChallengeUpdate,
+from app.schemas.goal import (
+    GoalCreate,
+    GoalResponse,
+    GoalUpdate,
 )
 from app.schemas.progress import DailyProgressResponse, WeeklyProgressResponse
 from app.services.progress_service import (
@@ -29,45 +30,45 @@ from app.services.progress_service import (
 
 
 router = APIRouter(
-    prefix="/challenges",
-    tags=["Challenges"],
+    prefix="/goals",
+    tags=["Goals"],
 )
 
 
-async def get_owned_challenge_or_404(
-    challenge_id: uuid.UUID,
+async def get_owned_goal_or_404(
+    goal_id: uuid.UUID,
     owner_id: uuid.UUID,
     session: AsyncSession,
-) -> Challenge:
+) -> Goal:
     result = await session.execute(
-        select(Challenge).where(
-            Challenge.id == challenge_id,
-            Challenge.owner_id == owner_id,
+        select(Goal).where(
+            Goal.id == goal_id,
+            Goal.owner_id == owner_id,
         )
     )
 
-    challenge = result.scalar_one_or_none()
+    goal = result.scalar_one_or_none()
 
-    if challenge is None:
+    if goal is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Challenge not found",
+            detail="Goal not found",
         )
 
-    return challenge
+    return goal
 
 
 @router.post(
     "",
-    response_model=ChallengeResponse,
+    response_model=GoalResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_challenge(
-    payload: ChallengeCreate,
+async def create_goal(
+    payload: GoalCreate,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> Challenge:
-    challenge = Challenge(
+) -> Goal:
+    goal = Goal(
         owner_id=current_user.id,
         name=payload.name,
         icon=payload.icon,
@@ -78,25 +79,25 @@ async def create_challenge(
         is_active=payload.is_active,
     )
 
-    session.add(challenge)
+    session.add(goal)
     await session.commit()
-    await session.refresh(challenge)
+    await session.refresh(goal)
 
-    return challenge
+    return goal
 
 
 @router.get(
     "",
-    response_model=list[ChallengeResponse],
+    response_model=list[GoalResponse],
 )
-async def list_my_challenges(
+async def list_my_goals(
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> list[Challenge]:
+) -> list[Goal]:
     result = await session.execute(
-        select(Challenge)
-        .where(Challenge.owner_id == current_user.id)
-        .order_by(Challenge.created_at.desc())
+        select(Goal)
+        .where(Goal.owner_id == current_user.id)
+        .order_by(Goal.created_at.desc())
     )
 
     return list(result.scalars().all())
@@ -154,33 +155,33 @@ async def get_weekly_progress(
     return WeeklyProgressResponse(**progress)
 
 @router.get(
-    "/{challenge_id}",
-    response_model=ChallengeResponse,
+    "/{goal_id}",
+    response_model=GoalResponse,
 )
-async def get_my_challenge(
-    challenge_id: uuid.UUID,
+async def get_my_goal(
+    goal_id: uuid.UUID,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> Challenge:
-    return await get_owned_challenge_or_404(
-        challenge_id=challenge_id,
+) -> Goal:
+    return await get_owned_goal_or_404(
+        goal_id=goal_id,
         owner_id=current_user.id,
         session=session,
     )
 
 
 @router.patch(
-    "/{challenge_id}",
-    response_model=ChallengeResponse,
+    "/{goal_id}",
+    response_model=GoalResponse,
 )
-async def update_my_challenge(
-    challenge_id: uuid.UUID,
-    payload: ChallengeUpdate,
+async def update_my_goal(
+    goal_id: uuid.UUID,
+    payload: GoalUpdate,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> Challenge:
-    challenge = await get_owned_challenge_or_404(
-        challenge_id=challenge_id,
+) -> Goal:
+    goal = await get_owned_goal_or_404(
+        goal_id=goal_id,
         owner_id=current_user.id,
         session=session,
     )
@@ -188,65 +189,65 @@ async def update_my_challenge(
     update_data = payload.model_dump(exclude_unset=True)
 
     for field_name, value in update_data.items():
-        setattr(challenge, field_name, value)
+        setattr(goal, field_name, value)
 
     await session.commit()
-    await session.refresh(challenge)
+    await session.refresh(goal)
 
-    return challenge
+    return goal
 
 
 @router.delete(
-    "/{challenge_id}",
-    response_model=ChallengeResponse,
+    "/{goal_id}",
+    response_model=GoalResponse,
 )
-async def archive_my_challenge(
-    challenge_id: uuid.UUID,
+async def archive_my_goal(
+    goal_id: uuid.UUID,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> Challenge:
-    challenge = await get_owned_challenge_or_404(
-        challenge_id=challenge_id,
+) -> Goal:
+    goal = await get_owned_goal_or_404(
+        goal_id=goal_id,
         owner_id=current_user.id,
         session=session,
     )
 
-    challenge.is_active = False
+    goal.is_active = False
 
     await session.commit()
-    await session.refresh(challenge)
+    await session.refresh(goal)
 
-    return challenge
+    return goal
 
 
 @router.put(
-    "/{challenge_id}/entries/{entry_date}",
-    response_model=ChallengeEntryResponse,
+    "/{goal_id}/entries/{entry_date}",
+    response_model=GoalEntryResponse,
 )
-async def upsert_challenge_entry(
-    challenge_id: uuid.UUID,
+async def upsert_goal_entry(
+    goal_id: uuid.UUID,
     entry_date: date,
-    payload: ChallengeEntryUpsert,
+    payload: GoalEntryUpsert,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> ChallengeEntry:
-    await get_owned_challenge_or_404(
-        challenge_id=challenge_id,
+) -> GoalEntry:
+    await get_owned_goal_or_404(
+        goal_id=goal_id,
         owner_id=current_user.id,
         session=session,
     )
 
     result = await session.execute(
-        select(ChallengeEntry).where(
-            ChallengeEntry.challenge_id == challenge_id,
-            ChallengeEntry.entry_date == entry_date,
+        select(GoalEntry).where(
+            GoalEntry.goal_id == goal_id,
+            GoalEntry.entry_date == entry_date,
         )
     )
     entry = result.scalar_one_or_none()
 
     if entry is None:
-        entry = ChallengeEntry(
-            challenge_id=challenge_id,
+        entry = GoalEntry(
+            goal_id=goal_id,
             entry_date=entry_date,
             value=payload.value,
             note=payload.note,
@@ -263,26 +264,26 @@ async def upsert_challenge_entry(
 
 
 @router.patch(
-    "/{challenge_id}/entries/{entry_date}/note",
-    response_model=ChallengeEntryResponse,
+    "/{goal_id}/entries/{entry_date}/note",
+    response_model=GoalEntryResponse,
 )
-async def update_challenge_entry_note(
-    challenge_id: uuid.UUID,
+async def update_goal_entry_note(
+    goal_id: uuid.UUID,
     entry_date: date,
-    payload: ChallengeEntryNoteUpdate,
+    payload: GoalEntryNoteUpdate,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> ChallengeEntry:
-    await get_owned_challenge_or_404(
-        challenge_id=challenge_id,
+) -> GoalEntry:
+    await get_owned_goal_or_404(
+        goal_id=goal_id,
         owner_id=current_user.id,
         session=session,
     )
 
     result = await session.execute(
-        select(ChallengeEntry).where(
-            ChallengeEntry.challenge_id == challenge_id,
-            ChallengeEntry.entry_date == entry_date,
+        select(GoalEntry).where(
+            GoalEntry.goal_id == goal_id,
+            GoalEntry.entry_date == entry_date,
         )
     )
     entry = result.scalar_one_or_none()
@@ -290,7 +291,7 @@ async def update_challenge_entry_note(
     if entry is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Challenge entry not found",
+            detail="Goal entry not found",
         )
 
     entry.note = payload.note
@@ -302,61 +303,61 @@ async def update_challenge_entry_note(
 
 
 @router.get(
-    "/{challenge_id}/entries",
-    response_model=list[ChallengeEntryResponse],
+    "/{goal_id}/entries",
+    response_model=list[GoalEntryResponse],
 )
-async def list_challenge_entries(
-    challenge_id: uuid.UUID,
+async def list_goal_entries(
+    goal_id: uuid.UUID,
     date_from: date,
     date_to: date,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> list[ChallengeEntry]:
+) -> list[GoalEntry]:
     if date_from > date_to:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="date_from cannot be later than date_to",
         )
 
-    await get_owned_challenge_or_404(
-        challenge_id=challenge_id,
+    await get_owned_goal_or_404(
+        goal_id=goal_id,
         owner_id=current_user.id,
         session=session,
     )
 
     result = await session.execute(
-        select(ChallengeEntry)
+        select(GoalEntry)
         .where(
-            ChallengeEntry.challenge_id == challenge_id,
-            ChallengeEntry.entry_date >= date_from,
-            ChallengeEntry.entry_date <= date_to,
+            GoalEntry.goal_id == goal_id,
+            GoalEntry.entry_date >= date_from,
+            GoalEntry.entry_date <= date_to,
         )
-        .order_by(ChallengeEntry.entry_date.asc())
+        .order_by(GoalEntry.entry_date.asc())
     )
 
     return list(result.scalars().all())
 
 
 @router.delete(
-    "/{challenge_id}/entries/{entry_date}",
+    "/{goal_id}/entries/{entry_date}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_challenge_entry(
-    challenge_id: uuid.UUID,
+async def delete_goal_entry(
+    goal_id: uuid.UUID,
     entry_date: date,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    await get_owned_challenge_or_404(
-        challenge_id=challenge_id,
+    await get_owned_goal_or_404(
+        goal_id=goal_id,
         owner_id=current_user.id,
         session=session,
     )
 
     result = await session.execute(
-        select(ChallengeEntry).where(
-            ChallengeEntry.challenge_id == challenge_id,
-            ChallengeEntry.entry_date == entry_date,
+        select(GoalEntry).where(
+            GoalEntry.goal_id == goal_id,
+            GoalEntry.entry_date == entry_date,
         )
     )
     entry = result.scalar_one_or_none()
@@ -364,7 +365,7 @@ async def delete_challenge_entry(
     if entry is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Challenge entry not found",
+            detail="Goal entry not found",
         )
 
     await session.delete(entry)
