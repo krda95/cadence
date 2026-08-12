@@ -8,6 +8,7 @@ import { Dashboard } from '@features/dashboard/dashboard';
 import { AppLayout } from '@layout/app-layout/app-layout';
 import { ResetPassword } from '@features/auth/reset-password/reset-password';
 import { Goals } from '@features/goals/goals';
+import { GoalForm } from '@features/goals/goal-form/goal-form';
 import { Settings } from '@features/settings/settings';
 import { Today } from '@features/today/today';
 import { History } from '@features/history/history';
@@ -64,6 +65,16 @@ export const routes: Routes = [
       {
         path: 'goals',
         component: Goals,
+        children: [
+          {
+            path: 'new',
+            component: GoalForm,
+          },
+          {
+            path: ':id/edit',
+            component: GoalForm,
+          },
+        ],
       },
       {
         path: 'settings',

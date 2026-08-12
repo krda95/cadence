@@ -1,1 +1,79 @@
-<p>goals works!</p>
+<button
+    type="button"
+    class="goal__add"
+    (click)="addGoal()"
+    aria-label="Add goal">
+    Add goal
+</button>
+<select
+  [value]="statusFilter"
+  (change)="onStatusFilterChange($event)"
+>
+  <option value="active">Active goals</option>
+  <option value="inactive">Inactive goals</option>
+  <option value="all">All goals</option>
+</select>
+<h2>Daily Goals</h2>
+@for (goal of dailyGoals; track goal.id) {
+    <div class="goal__item">
+        <h3>{{ goal.name }}</h3>
+        <p>
+            {{ goal.target_type }}
+            {{ goal.target_value }}
+            {{ goal.unit }}
+            per {{ goal.period }}
+        </p>
+        <button
+            type="button"
+            class="goal__edit"
+            (click)="editGoal(goal.id)"
+            aria-label="Edit goal">
+            Edit goal
+        </button>
+        <br>
+        <span>---</span>
+    </div>
+}
+<h2>Weekly Goals</h2>
+@for (goal of weeklyGoals; track goal.id) {
+    <div class="goal__item">
+        <h3>{{ goal.name }}</h3>
+        <p>
+            {{ goal.target_type }}
+            {{ goal.target_value }}
+            {{ goal.unit }}
+            per {{ goal.period }}
+        </p>
+        <button
+            type="button"
+            class="goal__edit"
+            (click)="editGoal(goal.id)"
+            aria-label="Edit goal">
+            Edit goal
+        </button>
+        <br>
+        <span>---</span>
+    </div>
+}
+<h2>Monthly Goals</h2>
+@for (goal of monthlyGoals; track goal.id) {
+    <div class="goal__item">
+        <h3>{{ goal.name }}</h3>
+        <p>
+            {{ goal.target_type }}
+            {{ goal.target_value }}
+            {{ goal.unit }}
+            per {{ goal.period }}
+        </p>
+        <button
+            type="button"
+            class="goal__edit"
+            (click)="editGoal(goal.id)"
+            aria-label="Edit goal">
+            Edit goal
+        </button>
+        <br>
+        <span>---</span>
+    </div>
+}
+<router-outlet (deactivate)="getGoals()"></router-outlet>

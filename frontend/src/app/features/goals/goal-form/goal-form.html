@@ -1,0 +1,94 @@
+<div class="goal-modal">
+  <div class="goal-modal__backdrop" (click)="close()"></div>
+  <div class="goal-modal__dialog">
+    <div class="goal-modal__header">
+        <h2 class="goal-modal__title">
+            {{ isEditMode ? 'Edit goal' : 'Add goal' }}
+        </h2>
+
+        <button
+            type="button"
+            class="goal-modal__close"
+            (click)="close()"
+            aria-label="Close"
+        >
+            ×
+        </button>
+        </div>
+
+        <form
+            class="goal-form"
+            [formGroup]="form"
+            (ngSubmit)="submit()">
+            <div class="goal-form__field">
+                <label for="goal-name">Goal name</label>
+
+                <input
+                    id="goal-name"
+                    type="text"
+                    formControlName="name"
+                    placeholder="Learn a new language"
+                />
+            </div>
+
+            <div class="goal-form__field">
+                <label>Goal</label>
+
+                <div class="goal-form__target">
+                <select formControlName="target_type">
+                    <option value="min">At least</option>
+                    <option value="max">At most</option>
+                </select>
+
+                <input
+                    type="number"
+                    formControlName="target_value"
+                    min="0"
+                />
+
+                <input
+                    type="text"
+                    formControlName="unit"
+                    placeholder="times"
+                />
+                </div>
+            </div>
+            <div class="goal-form__field">
+                <label>Logging period</label>
+                <div class="goal-form__period">
+                    <label>
+                        <input
+                            type="radio"
+                            formControlName="period"
+                            value="daily"
+                        />
+                        <span>Daily</span>
+                    </label>
+
+                    <label>
+                        <input
+                            type="radio"
+                            formControlName="period"
+                            value="weekly"
+                        />
+                        <span>Weekly</span>
+                    </label>
+
+                    <label>
+                        <input
+                            type="radio"
+                            formControlName="period"
+                            value="monthly"
+                        />
+                    <span>Monthly</span>
+                    </label>
+                </div>
+            </div>
+            <div class="goal-form__actions">
+                <button type="submit">
+                    {{ isEditMode ? 'Save changes' : 'Add goal' }}
+                </button>
+            </div>
+        </form>
+  </div>
+</div>
