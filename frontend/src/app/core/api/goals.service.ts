@@ -17,7 +17,7 @@ export class GoalsService {
 
     getGoal(id: string): Observable<GoalResponse> {
         return this.http.get<GoalResponse>(
-            `${this.apiGoalsUrl}/${id}`,
+            `${this.apiGoalsUrl}/${id}`
         );
     }
 
@@ -30,6 +30,12 @@ export class GoalsService {
 
     getGoals(): Observable<GoalResponse[]> {
         return this.http.get<GoalResponse[]>(this.apiGoalsUrl);
+    }
+
+    deleteGoal(id: string): Observable<GoalResponse> {
+        return this.http.delete<GoalResponse>(
+            `${this.apiGoalsUrl}/${id}`
+        )
     }
   
 }

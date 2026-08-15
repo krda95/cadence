@@ -27,13 +27,32 @@
                     id="goal-name"
                     type="text"
                     formControlName="name"
-                    placeholder="Learn a new language"
+                    placeholder="e.g. Learn a new language"
                 />
             </div>
-
             <div class="goal-form__field">
-                <label>Goal</label>
-
+                <label>Color</label>
+                <div class="goal-form__color">
+                    <input
+                        id="goal-color"
+                        type="color"
+                        formControlName="color"
+                    >
+                </div>
+            </div>
+            <div class="goal-form__field">
+                <label>Icon</label>
+                <div class="goal-form__icon">
+                    <input 
+                        id="goal-icon"
+                        type="text"
+                        formControlName="icon"
+                        placeholder="Icon"
+                    >
+                </div>
+            </div>
+            <div class="goal-form__field">
+                <label>Type</label>
                 <div class="goal-form__target">
                 <select formControlName="target_type">
                     <option value="min">At least</option>
@@ -74,17 +93,46 @@
                         <span>Weekly</span>
                     </label>
 
-                    <label>
+                    <!-- <label>
                         <input
                             type="radio"
                             formControlName="period"
                             value="monthly"
                         />
                     <span>Monthly</span>
+                    </label> -->
+                </div>
+            </div>
+            @if (canBeDeactivated) {
+                <div class="goal-form__field">
+                <label>Active</label>
+                <div class="goal-form__active">
+                    <label>
+                        <input
+                            type="radio"
+                            formControlName="is_active"
+                            [value]="true"
+                        />
+                        <span>Active</span>
+                    </label>
+
+                    <label>
+                        <input
+                            type="radio"
+                            formControlName="is_active"
+                            [value]="false"
+                        />
+                        <span>Inactive</span>
                     </label>
                 </div>
             </div>
+            }
             <div class="goal-form__actions">
+                @if (isEditMode && !canBeDeactivated) {
+                    <button (click)="delete(goalId!)">
+                        Delete goal
+                    </button>
+                }
                 <button type="submit">
                     {{ isEditMode ? 'Save changes' : 'Add goal' }}
                 </button>

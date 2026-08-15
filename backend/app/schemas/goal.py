@@ -12,7 +12,8 @@ class GoalCreate(BaseModel):
         max_length=100,
         examples=["Reduction summer 2026"],
     )
-    icon: str | None = Field(default=None, max_length=10)
+    icon: str | None = Field(default=None, max_length=50)
+    color: str | None = Field(default=None, max_length=7)
     unit: str = Field(min_length=1, max_length=30)
     period: GoalPeriod
     target_type: GoalTargetType
@@ -22,7 +23,8 @@ class GoalCreate(BaseModel):
 
 class GoalUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
-    icon: str | None = Field(default=None, max_length=10)
+    icon: str | None = Field(default=None, max_length=50)
+    color: str | None = Field(default=None, max_length=7)
     unit: str | None = Field(default=None, min_length=1, max_length=30)
     period: GoalPeriod | None = None
     target_type: GoalTargetType | None = None
@@ -37,6 +39,7 @@ class GoalResponse(BaseModel):
     owner_id: UUID
     name: str
     icon: str | None
+    color: str | None
     unit: str
     period: GoalPeriod
     target_type: GoalTargetType

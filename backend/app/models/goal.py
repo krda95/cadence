@@ -32,7 +32,8 @@ class Goal(Base):
     )
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    icon: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    color: Mapped[str | None] = mapped_column(String(10), nullable=True)
     unit: Mapped[str] = mapped_column(String(30), nullable=False)
 
     period: Mapped[GoalPeriod] = mapped_column(

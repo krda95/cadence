@@ -27,19 +27,25 @@
   </div>
 
   <section class="goals-section">
-    <ng-container
-        *ngTemplateOutlet="goalSection; context: {
-            title: 'DAILY',
-            goals: dailyGoals
-        }"
-    ></ng-container>
-
-    <ng-container
-        *ngTemplateOutlet="goalSection; context: {
-            title: 'WEEKLY',
-            goals: weeklyGoals
-        }"
-    ></ng-container>
+    @if(dailyGoals.length > 0) {
+        <ng-container
+            *ngTemplateOutlet="goalSection; context: {
+                title: 'DAILY',
+                goals: dailyGoals
+            }"
+        ></ng-container>
+    }
+    @if(weeklyGoals.length > 0) {
+        <ng-container
+            *ngTemplateOutlet="goalSection; context: {
+                title: 'WEEKLY',
+                goals: weeklyGoals
+            }"
+        ></ng-container>
+    }
+    @if(weeklyGoals.length == 0 && dailyGoals.length == 0) {
+        <div>You don't have any goals yet. Create one!</div>
+    }
   </section>
 </div>
 

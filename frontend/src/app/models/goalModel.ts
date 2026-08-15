@@ -4,6 +4,7 @@ export type GoalTargetType = 'min' | 'max';
 export interface GoalCreate {
   name: string;
   icon: string | null;
+  color: string | null;
   unit: string;
   period: GoalPeriod;
   target_type: GoalTargetType;
@@ -14,6 +15,7 @@ export interface GoalCreate {
 export interface GoalUpdate {
   name?: string;
   icon?: string | null;
+  color?: string | null;
   unit?: string;
   period?: GoalPeriod;
   target_type?: GoalTargetType;
@@ -26,6 +28,7 @@ export interface GoalResponse {
   owner_id: string;
   name: string;
   icon: string | null;
+  color: string | null;
   unit: string;
   period: GoalPeriod;
   target_type: GoalTargetType;
