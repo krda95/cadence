@@ -2,12 +2,14 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { Router, RouterOutlet } from "@angular/router";
 import { GoalsService } from '@core/api/goals.service';
 import { GoalResponse } from '@models/goalModel';
+import { LucidePencil, LucidePlus } from '@lucide/angular';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 
 type GoalStatusFilter = 'active' | 'inactive' | 'all';
 
 @Component({
   selector: 'app-goals',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, LucidePencil, LucidePlus, NgTemplateOutlet, DecimalPipe],
   standalone: true,
   templateUrl: './goals.html',
   styleUrl: './goals.scss',
@@ -67,7 +69,6 @@ export class Goals implements OnInit {
         this.goals = goals;
         this.filterGoals();
         this.cdr.detectChanges();
-        console.log('Daily Goals:', this.dailyGoals, 'Weekly Goals:', this.weeklyGoals, 'Monthly Goals:', this.monthlyGoals);
       },
       error: (error) => {
         console.error('Failed to load goals:', error);

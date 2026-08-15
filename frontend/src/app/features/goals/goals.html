@@ -1,79 +1,84 @@
-<button
-    type="button"
-    class="goal__add"
-    (click)="addGoal()"
-    aria-label="Add goal">
-    Add goal
-</button>
-<select
-  [value]="statusFilter"
-  (change)="onStatusFilterChange($event)"
->
-  <option value="active">Active goals</option>
-  <option value="inactive">Inactive goals</option>
-  <option value="all">All goals</option>
-</select>
-<h2>Daily Goals</h2>
-@for (goal of dailyGoals; track goal.id) {
-    <div class="goal__item">
-        <h3>{{ goal.name }}</h3>
-        <p>
-            {{ goal.target_type }}
-            {{ goal.target_value }}
-            {{ goal.unit }}
-            per {{ goal.period }}
-        </p>
-        <button
-            type="button"
-            class="goal__edit"
-            (click)="editGoal(goal.id)"
-            aria-label="Edit goal">
-            Edit goal
-        </button>
-        <br>
-        <span>---</span>
+<div class="goals">
+  <div class="goals__header">
+    <div>
+      <h1>Goals</h1>
     </div>
-}
-<h2>Weekly Goals</h2>
-@for (goal of weeklyGoals; track goal.id) {
-    <div class="goal__item">
-        <h3>{{ goal.name }}</h3>
-        <p>
-            {{ goal.target_type }}
-            {{ goal.target_value }}
-            {{ goal.unit }}
-            per {{ goal.period }}
-        </p>
-        <button
-            type="button"
-            class="goal__edit"
-            (click)="editGoal(goal.id)"
-            aria-label="Edit goal">
-            Edit goal
-        </button>
-        <br>
-        <span>---</span>
+
+    <div class="goals__actions">
+      <select
+        class="goals__filter"
+        [value]="statusFilter"
+        (change)="onStatusFilterChange($event)"
+      >
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="all">All</option>
+      </select>
+
+      <button
+        type="button"
+        class="goals__add"
+        (click)="addGoal()"
+      >
+        <svg lucidePlus></svg>
+        Add goal
+      </button>
     </div>
-}
-<h2>Monthly Goals</h2>
-@for (goal of monthlyGoals; track goal.id) {
-    <div class="goal__item">
-        <h3>{{ goal.name }}</h3>
-        <p>
-            {{ goal.target_type }}
-            {{ goal.target_value }}
-            {{ goal.unit }}
-            per {{ goal.period }}
-        </p>
-        <button
-            type="button"
-            class="goal__edit"
-            (click)="editGoal(goal.id)"
-            aria-label="Edit goal">
-            Edit goal
-        </button>
-        <br>
-        <span>---</span>
-    </div>
-}
+  </div>
+
+  <section class="goals-section">
+    <ng-container
+        *ngTemplateOutlet="goalSection; context: {
+            title: 'DAILY',
+            goals: dailyGoals
+        }"
+    ></ng-container>
+
+    <ng-container
+        *ngTemplateOutlet="goalSection; context: {
+            title: 'WEEKLY',
+            goals: weeklyGoals
+        }"
+    ></ng-container>
+  </section>
+</div>
+
+<ng-template #goalSection let-title="title" let-goals="goals">
+    <h2 class="goals-section__title">{{title}}</h2>
+    <div class="goals-section__list">
+        @for (goal of goals; track goal.id) {
+            <article class="goal-card">
+            <div class="goal-card__content">
+                <div class="goal-card__icon">
+                {{ goal.icon }}
+                </div>
+
+                <div class="goal-card__info">
+                <h3 class="goal-card__name">
+                    {{ goal.name }}
+                </h3>
+
+                <span class="goal-card__type">
+                    {{ goal.target_type === 'min' ? 'At least' : 'At most' }}
+                </span>
+                </div>
+            </div>
+
+            <div class="goal-card__target">
+                {{ goal.target_value | number:'1.0-2'}} {{ goal.unit }}
+            </div>
+
+            <button
+                type="button"
+                class="goal-card__edit"
+                (click)="editGoal(goal.id)"
+                aria-label="Edit goal"
+            >
+                <svg lucidePencil></svg>
+            </button>
+            </article>
+        }
+        </div>
+</ng-template>
+
 <router-outlet (deactivate)="getGoals()"></router-outlet>
