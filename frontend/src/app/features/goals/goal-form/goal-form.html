@@ -19,6 +19,7 @@
         <form
             class="goal-form"
             [formGroup]="form"
+            [style.--injected-color]="form.controls.color.value"
             (ngSubmit)="submit()">
             <div class="goal-form__field">
                 <label for="goal-name">Goal name</label>
@@ -30,112 +31,107 @@
                     placeholder="e.g. Learn a new language"
                 />
             </div>
-            <div class="goal-form__field">
-                <label>Color</label>
-                <div class="goal-form__color">
-                    <input
-                        id="goal-color"
-                        type="color"
-                        formControlName="color"
-                    >
+            <div class="goal-form__row">
+                <div class="goal-form__field">
+                    <label>Color</label>
+                    <div class="goal-form__color">
+                        <input
+                            id="goal-color"
+                            type="color"
+                            formControlName="color"
+                        >
+                    </div>
                 </div>
-            </div>
-            <div class="goal-form__field">
-                <label>Icon</label>
-                <div class="goal-form__icon">
-                    <input 
-                        id="goal-icon"
-                        type="text"
-                        formControlName="icon"
-                        placeholder="Icon"
-                    >
+                <div class="goal-form__field">
+                    <label>Icon</label>
+                    <app-icon-picker
+                        [value]="form.controls.icon.value"
+                        [color]="form.controls.color.value"
+                        (valueChange)="form.controls.icon.setValue($event)"
+                    />
                 </div>
             </div>
             <div class="goal-form__field">
                 <label>Type</label>
                 <div class="goal-form__target">
-                <select formControlName="target_type">
-                    <option value="min">At least</option>
-                    <option value="max">At most</option>
-                </select>
-
-                <input
-                    type="number"
-                    formControlName="target_value"
-                    min="0"
-                />
-
-                <input
-                    type="text"
-                    formControlName="unit"
-                    placeholder="times"
-                />
+                    <select formControlName="target_type">
+                        <option value="min">At least</option>
+                        <option value="max">At most</option>
+                    </select>
+                    <input
+                        type="number"
+                        formControlName="target_value"
+                        placeholder="e.g. 2,000"
+                        min="0"
+                    />
+                    <input
+                        type="text"
+                        formControlName="unit"
+                        placeholder="e.g. calories"
+                    />
                 </div>
             </div>
             <div class="goal-form__field">
                 <label>Logging period</label>
-                <div class="goal-form__period">
-                    <label>
+                <div class="goal-form__chips">
+                    <label class="goal-form__chip">
                         <input
-                            type="radio"
-                            formControlName="period"
-                            value="daily"
+                        type="radio"
+                        formControlName="period"
+                        value="daily"
                         />
                         <span>Daily</span>
                     </label>
-
-                    <label>
+                    <label class="goal-form__chip">
                         <input
-                            type="radio"
-                            formControlName="period"
-                            value="weekly"
+                        type="radio"
+                        formControlName="period"
+                        value="weekly"
                         />
                         <span>Weekly</span>
                     </label>
-
-                    <!-- <label>
-                        <input
-                            type="radio"
-                            formControlName="period"
-                            value="monthly"
-                        />
-                    <span>Monthly</span>
-                    </label> -->
                 </div>
             </div>
             @if (canBeDeactivated) {
                 <div class="goal-form__field">
-                <label>Active</label>
-                <div class="goal-form__active">
-                    <label>
-                        <input
+                    <label>State</label>
+                    <div class="goal-form__chips">
+                        <label class="goal-form__chip">
+                            <input
                             type="radio"
                             formControlName="is_active"
                             [value]="true"
-                        />
-                        <span>Active</span>
-                    </label>
+                            />
+                            <span>Active</span>
+                        </label>
 
-                    <label>
-                        <input
+                        <label class="goal-form__chip">
+                            <input
                             type="radio"
                             formControlName="is_active"
                             [value]="false"
-                        />
-                        <span>Inactive</span>
-                    </label>
+                            />
+                            <span>Inactive</span>
+                        </label>
+                    </div>
                 </div>
-            </div>
             }
-            <div class="goal-form__actions">
+            <div class="goal-form__actions" [style.justify-content]="isEditMode && !canBeDeactivated ? 'space-between': 'flex-end'">
                 @if (isEditMode && !canBeDeactivated) {
-                    <button (click)="delete(goalId!)">
-                        Delete goal
-                    </button>
+                    <app-button
+                    type="button"
+                    variant="danger"
+                    (click)="delete(goalId!)"
+                    >
+                    Delete goal
+                    </app-button>
                 }
-                <button type="submit">
-                    {{ isEditMode ? 'Save changes' : 'Add goal' }}
-                </button>
+                <app-button 
+                type="submit"
+                variant="primary"
+                >
+                {{ isEditMode ? 'Save changes' : 'Add goal' }}
+                </app-button>
             </div>
         </form>
   </div>
