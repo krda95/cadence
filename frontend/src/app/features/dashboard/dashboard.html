@@ -1,1 +1,13 @@
-<p>dashboard works!</p>
+
+<fasten-stitch-element
+class="hide-fasten-button"
+[attr.public-id]="fastenPublicId"
+tefca-mode="true"
+#fastenStitch>
+</fasten-stitch-element>
+
+<div class="connect-row">
+    <app-status [value]="connectionStatus()" />
+    <app-button type="button" (click)="openFastenStitch()">Custom button</app-button>
+</div>
+

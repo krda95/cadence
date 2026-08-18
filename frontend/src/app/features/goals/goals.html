@@ -55,8 +55,15 @@
         @for (goal of goals; track goal.id) {
             <article class="goal-card">
             <div class="goal-card__content">
-                <div class="goal-card__icon">
-                {{ goal.icon }}
+                <div
+                class="goal-card__icon"
+                [style.--goal-color]="goal.color"
+                >
+                    <app-icon
+                        [name]="goal.icon"
+                        [color]="goal.color"
+                        [size]="22"
+                    />
                 </div>
 
                 <div class="goal-card__info">

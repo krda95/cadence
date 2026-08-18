@@ -30,14 +30,17 @@
         (backdropClick)="close()"
         (detach)="close()"
         >
-            <div class="icon-picker__popover">
-          <input
-            type="search"
-            class="icon-picker__search"
-            placeholder="Search icons..."
-            [value]="search()"
-            (input)="onSearch($event)"
-          />
+          <div
+            class="icon-picker__popover"
+            [style.--injected-color]="color()"
+          >
+            <input
+              type="search"
+              class="icon-picker__search"
+              placeholder="Search icons..."
+              [value]="search()"
+              (input)="onSearch($event)"
+            />
     
           @if (isLoading()) {
             <p class="icon-picker__status">

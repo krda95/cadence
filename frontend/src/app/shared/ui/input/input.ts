@@ -18,15 +18,20 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl} from '@angular/form
 export class InputComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnDestroy {
   readonly label = input('');
   readonly placeholder = input('');
-  readonly type = input<'text' | 'email' | 'password'>('text');
+  readonly type = input<'text' | 'email' | 'password' | 'number'>('text');
   readonly autoFocus = input(false);
   readonly tabIndex = input<number>(0);
+  readonly variant = input<'default' | 'filled'>('default');
 
-  readonly value = signal('');
+  readonly value = signal<string | number>('');
   readonly disabled = signal(false);
   readonly passwordVisible = signal(false);
   private readonly validationMessage = signal<string | null>(null);
   private readonly suppressUntilBlur = signal(false);
+
+  readonly min = input<number | null>(null);
+  readonly max = input<number | null>(null);
+  readonly step = input<number | null>(null);
 
   private readonly injector = inject(Injector);
   private ngControl: NgControl | null = null;
@@ -56,14 +61,14 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
     return this.type() === 'password' ? (this.passwordVisible() ? 'text' : 'password') : this.type();
   });
   
-  private onChange: (value: string) => void = () => {};
+  private onChange: (value: string | number | null) => void = () => {};
   private onTouched: () => void = () => {};
 
-  writeValue(value: string | null): void {
+  writeValue(value: string | number | null): void {
     this.value.set(value ?? '');
   }
 
-  registerOnChange(fn: (value: string) => void): void {
+  registerOnChange(fn: (value: string | number | null) => void): void {
     this.onChange = fn;
   }
 
@@ -76,11 +81,20 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
   }
 
   handleInput(event: Event): void {
-    const inputElement = event.target as HTMLInputElement;
-    const value = inputElement.value;
+  const inputElement = event.target as HTMLInputElement;
 
-    this.value.set(value);
-    this.onChange(value);
+    const value =
+      this.type() === 'number'
+        ? inputElement.valueAsNumber
+        : inputElement.value;
+
+    const normalizedValue =
+      typeof value === 'number' && Number.isNaN(value)
+        ? null
+        : value;
+
+    this.value.set(normalizedValue ?? '');
+    this.onChange(normalizedValue);
     this.suppressUntilBlur.set(true);
   }
 

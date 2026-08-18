@@ -5,12 +5,13 @@ import { GoalResponse } from '@models/goalModel';
 import { LucidePencil, LucidePlus } from '@lucide/angular';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { Button } from "@shared/ui/button/button";
+import { Icon } from '@shared/ui/icon/icon';
 
 type GoalStatusFilter = 'active' | 'inactive' | 'all';
 
 @Component({
   selector: 'app-goals',
-  imports: [RouterOutlet, LucidePencil, LucidePlus, NgTemplateOutlet, DecimalPipe, Button],
+  imports: [RouterOutlet, LucidePencil, LucidePlus, NgTemplateOutlet, DecimalPipe, Button, Icon],
   standalone: true,
   templateUrl: './goals.html',
   styleUrl: './goals.scss',

@@ -175,7 +175,7 @@ export class IconPicker {
       buildLucideDataUri(icon, {
         size: 22,
         strokeWidth: 1.8,
-        color: color
+        color: color,
       }),
     );
   }

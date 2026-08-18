@@ -21,16 +21,13 @@
             [formGroup]="form"
             [style.--injected-color]="form.controls.color.value"
             (ngSubmit)="submit()">
-            <div class="goal-form__field">
-                <label for="goal-name">Goal name</label>
-
-                <input
-                    id="goal-name"
-                    type="text"
-                    formControlName="name"
-                    placeholder="e.g. Learn a new language"
+                <app-input
+                id="goal-name"
+                label="Goal name"
+                [variant]="'filled'"
+                placeholder="e.g. Learn a new language"
+                formControlName="name"
                 />
-            </div>
             <div class="goal-form__row">
                 <div class="goal-form__field">
                     <label>Color</label>
@@ -47,27 +44,32 @@
                     <app-icon-picker
                         [value]="form.controls.icon.value"
                         [color]="form.controls.color.value"
+                        [style.--injected-color]="form.controls.color.value"
                         (valueChange)="form.controls.icon.setValue($event)"
                     />
                 </div>
             </div>
             <div class="goal-form__field">
-                <label>Type</label>
                 <div class="goal-form__target">
                     <select formControlName="target_type">
                         <option value="min">At least</option>
                         <option value="max">At most</option>
                     </select>
-                    <input
-                        type="number"
-                        formControlName="target_value"
-                        placeholder="e.g. 2,000"
-                        min="0"
+                    <app-input
+                    id="goal-value"
+                    label="Value"
+                    [min]="0"
+                    [variant]="'filled'"
+                    [step]="1"
+                    placeholder="e.g. 2,000"
+                    formControlName="target_value"
                     />
-                    <input
-                        type="text"
-                        formControlName="unit"
-                        placeholder="e.g. calories"
+                    <app-input
+                    id="goal-unit"
+                    label="Unit"
+                    [variant]="'filled'"
+                    placeholder="e.g. calories"
+                    formControlName="unit"
                     />
                 </div>
             </div>

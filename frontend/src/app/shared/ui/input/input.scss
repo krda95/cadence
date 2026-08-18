@@ -10,7 +10,7 @@
     label {
         font-size: var(--font-size-sm);
         font-weight: var(--font-weight-semibold);
-        color: var(--color-text-primary);
+        color: var(--color-text-secondary);
     }
 
     .control {
@@ -21,6 +21,15 @@
                 border-color: var(--color-danger, #ef6b73);
                 box-shadow: 0 0 0 3px rgb(239 107 115 / 10%);
             }
+        }
+
+        .input__control {
+            background: var(--color-surface);
+
+            &--filled {
+                background: var(--color-surface-hover);
+            }
+
         }
     }
 
@@ -33,7 +42,7 @@
     input {
         width: 100%;
         padding: 13px 15px;
-        padding-right: 48px;
+        // padding-right: 48px;
         border-radius: var(--radius-md);
         border: 1px solid var(--color-border);
         background: var(--color-surface);
@@ -49,9 +58,18 @@
             color: var(--color-text-secondary);
         }
 
+        &:hover {
+            border-color: var(--injected-color, var(--color-primary));
+        }
+
         &:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgb(155 214 189 / 12%);
+            border-color: var(--injected-color, var(--color-primary));
+
+            box-shadow: 0 0 0 3px color-mix(
+                in srgb,
+                var(--injected-color, var(--color-primary)) 20%,
+                transparent
+            );
         }
     }
 
