@@ -14,6 +14,7 @@ from app.models.goal_entry import GoalEntry
 from app.models.enums import (
     ProgressStatus,
 )
+from app.schemas.goal_entry import GoalEntryDayResponse
 from app.services.progress_rules import (
     calculate_daily_max_result,
     calculate_daily_min_result,
@@ -24,11 +25,18 @@ from app.services.progress_rules import (
     calculate_average_score,
     calculate_period_score,
 )
-
+from dataclasses import dataclass
 
 WARSAW_TIMEZONE = ZoneInfo("Europe/Warsaw")
 TIMEZONE_NAME = "Europe/Warsaw"
 
+@dataclass
+class GoalDayState:
+    goal: Goal
+    entry_exists: bool
+    entry_value: float
+    entry_note: str | None
+    period_current_value: float
 
 def get_warsaw_today() -> date:
     test_today = os.getenv("CADENCE_TEST_TODAY")
@@ -106,12 +114,17 @@ async def load_active_goals(
     return list(result.scalars().all())
 
 
+@dataclass
+class GoalEntryDay:
+    value: float
+    note: str | None
+
 async def load_entries_by_goal(
     session: AsyncSession,
     goal_ids: list[UUID],
     date_from: date,
-    date_to: date,
-) -> dict[UUID, dict[date, float]]:
+    date_to: date
+    ) -> dict[UUID, dict[date, GoalEntryDay]]:
     if not goal_ids:
         return {}
 
@@ -120,6 +133,7 @@ async def load_entries_by_goal(
             GoalEntry.goal_id,
             GoalEntry.entry_date,
             GoalEntry.value,
+            GoalEntry.note,
         ).where(
             GoalEntry.goal_id.in_(goal_ids),
             GoalEntry.entry_date >= date_from,
@@ -127,10 +141,13 @@ async def load_entries_by_goal(
         )
     )
 
-    entries_by_goal: dict[UUID, dict[date, float]] = defaultdict(dict)
+    entries_by_goal: dict[UUID, dict[date, GoalEntryDay]] = defaultdict(dict)
 
-    for goal_id, entry_date, value in result.all():
-        entries_by_goal[goal_id][entry_date] = float(value)
+    for goal_id, entry_date, value, note in result.all():
+        entries_by_goal[goal_id][entry_date] = GoalEntryDay(
+            value=float(value),
+            note=note,
+        )
 
     return entries_by_goal
 
@@ -143,6 +160,100 @@ def get_goal_created_date(goal: Goal) -> date:
 
     return created_at.astimezone(WARSAW_TIMEZONE).date()
 
+def calculate_period_current_value(
+    goal_entries: dict[date, GoalEntryDay],
+    period: GoalPeriod,
+    reference_date: date
+    ) -> float:
+    period_start, _ = get_period_bounds(
+        period,
+        reference_date,
+    )
+
+    return sum(
+        entry.value
+        for entry_day, entry in goal_entries.items()
+        if period_start <= entry_day <= reference_date
+    )
+
+async def load_goal_day_states(
+    session: AsyncSession,
+    owner_id: UUID,
+    reference_date: date,
+    ) -> list[GoalDayState]:
+    goals = await load_active_goals(
+    session=session,
+    owner_id=owner_id,
+    )
+
+    applicable_goals = [
+        goal
+        for goal in goals
+        if get_goal_created_date(goal) <= reference_date
+    ]
+
+    if not applicable_goals:
+        return []
+
+    earliest_date = reference_date
+
+    for goal in applicable_goals:
+        period_start, _ = get_period_bounds(
+            goal.period,
+            reference_date,
+        )
+
+        earliest_date = min(
+            earliest_date,
+            period_start,
+        )
+    goal_ids = [
+        goal.id
+        for goal in applicable_goals
+    ]
+
+    entries_by_goal = await load_entries_by_goal(
+        session=session,
+        goal_ids=goal_ids,
+        date_from=earliest_date,
+        date_to=reference_date,
+    )
+
+    states: list[GoalDayState] = []
+
+    for goal in applicable_goals:
+        goal_entries = entries_by_goal.get(
+            goal.id,
+            {},
+        )
+
+        day_entry = goal_entries.get(reference_date)
+
+        period_current_value = calculate_period_current_value(
+            goal_entries=goal_entries,
+            period=goal.period,
+            reference_date=reference_date,
+        )
+
+        states.append(
+            GoalDayState(
+                goal=goal,
+                entry_exists=day_entry is not None,
+                entry_value=(
+                    day_entry.value
+                    if day_entry is not None
+                    else 0.0
+                ),
+                entry_note=(
+                    day_entry.note
+                    if day_entry is not None
+                    else None
+                ),
+                period_current_value=period_current_value,
+            )
+        )
+
+    return states
 
 async def calculate_daily_progress(
     session: AsyncSession,
@@ -156,19 +267,13 @@ async def calculate_daily_progress(
 
     is_day_final = reference_date < today
 
-    goals = await load_active_goals(
+    goal_states = await load_goal_day_states(
         session=session,
         owner_id=owner_id,
+        reference_date=reference_date,
     )
 
-    # Goal utworzony później nie powinien wpływać na starszy dzień.
-    applicable_goals = [
-        goal
-        for goal in goals
-        if get_goal_created_date(goal) <= reference_date
-    ]
-
-    if not applicable_goals:
+    if not goal_states:
         return {
             "date": reference_date,
             "timezone": TIMEZONE_NAME,
@@ -180,48 +285,20 @@ async def calculate_daily_progress(
             "periodic_progress": [],
         }
 
-    earliest_date = reference_date
-
-    for goal in applicable_goals:
-        period_start, _ = get_period_bounds(
-            goal.period,
-            reference_date,
-        )
-        earliest_date = min(earliest_date, period_start)
-
-    entries_by_goal = await load_entries_by_goal(
-        session=session,
-        goal_ids=[
-            goal.id
-            for goal in applicable_goals
-        ],
-        date_from=earliest_date,
-        date_to=reference_date,
-    )
-
     components: list[dict[str, Any]] = []
     periodic_progress: list[dict[str, Any]] = []
     component_scores: list[float] = []
     pending_components_count = 0
 
-    for goal in applicable_goals:
-        goal_entries = entries_by_goal.get(
-            goal.id,
-            {},
-        )
-
-        entry_exists = reference_date in goal_entries
-        entry_value = goal_entries.get(reference_date, 0.0)
+    for state in goal_states:
+        goal = state.goal
+        entry_exists = state.entry_exists
+        entry_value = state.entry_value
+        period_current_value = state.period_current_value
 
         period_start, period_end = get_period_bounds(
             goal.period,
             reference_date,
-        )
-
-        period_current_value = sum(
-            value
-            for entry_day, value in goal_entries.items()
-            if period_start <= entry_day <= reference_date
         )
 
         is_period_final = period_end < today
@@ -321,11 +398,7 @@ async def calculate_daily_progress(
                 2,
             )
 
-            total_before_day = sum(
-                value
-                for entry_day, value in goal_entries.items()
-                if period_start <= entry_day < reference_date
-            )
+            total_before_day = period_current_value - entry_value
             caused_daily_penalty = causes_period_max_daily_penalty(
                 entry_value_for_day=entry_value,
                 total_before_day=total_before_day,
@@ -377,6 +450,41 @@ async def calculate_daily_progress(
         "components": components,
         "periodic_progress": periodic_progress,
     }
+
+async def get_goal_entries_for_date(
+    session: AsyncSession,
+    owner_id: UUID,
+    reference_date: date,
+) -> list[GoalEntryDayResponse]:
+    goal_states = await load_goal_day_states(
+        session=session,
+        owner_id=owner_id,
+        reference_date=reference_date,
+    )
+
+    return [
+        GoalEntryDayResponse(
+            goal_id=state.goal.id,
+            name=state.goal.name,
+            icon=state.goal.icon,
+            color=state.goal.color,
+            period=state.goal.period,
+            target_type=state.goal.target_type,
+            target_value=float(state.goal.target_value),
+            unit=state.goal.unit,
+            entry_value=(
+                state.entry_value
+                if state.entry_exists
+                else None
+            ),
+            period_value=round(
+                state.period_current_value,
+                2,
+            ),
+            note=state.entry_note,
+        )
+        for state in goal_states
+    ]
 
 def get_weekly_item_status(
     score: float | None,
@@ -532,9 +640,10 @@ async def calculate_weekly_progress(
                 calculation_end,
             ):
                 entry_exists = current_day in goal_entries
-                entry_value = goal_entries.get(
-                    current_day,
-                    0.0,
+                entry_value = (
+                    goal_entries[current_day].value
+                    if entry_exists
+                    else 0.0
                 )
 
                 is_day_final = current_day < today
@@ -596,8 +705,8 @@ async def calculate_weekly_progress(
         # WEEKLY GOALS
         # ----------------------------------------------------------
         weekly_current_value = sum(
-            value
-            for entry_day, value in goal_entries.items()
+            entry.value
+            for entry_day, entry in goal_entries.items()
             if goal_start_date <= entry_day <= calculation_end
         )
 

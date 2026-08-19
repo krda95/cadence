@@ -10,9 +10,9 @@ from app.dependencies.auth import CurrentUser, get_current_user
 from app.models.goal import Goal, GoalPeriod
 from app.models.goal_entry import GoalEntry
 from app.schemas.goal_entry import (
+    GoalEntryDayResponse,
     GoalEntryResponse,
     GoalEntryNoteUpdate,
-    GoalEntryResponse,
     GoalEntryUpsert,
 )
 from app.schemas.goal import (
@@ -24,6 +24,7 @@ from app.schemas.progress import DailyProgressResponse, WeeklyProgressResponse
 from app.services.progress_service import (
     calculate_daily_progress,
     calculate_weekly_progress,
+    get_goal_entries_for_date,
     get_warsaw_today,
 )
 
@@ -153,6 +154,21 @@ async def get_weekly_progress(
         ) from error
 
     return WeeklyProgressResponse(**progress)
+
+@router.get(
+    "/entries",
+    response_model=list[GoalEntryDayResponse],
+)
+async def get_entries_for_date(
+    date: date,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    return await get_goal_entries_for_date(
+        session=session,
+        owner_id=current_user.id,
+        reference_date=date
+    )
 
 @router.get(
     "/{goal_id}",
