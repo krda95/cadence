@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { GoalCreate, GoalResponse, GoalUpdate} from '../../models/goalModel';
+import { GoalCreate, GoalEntryDayResponse, GoalResponse, GoalUpdate} from '../../models/goalModel';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
 
@@ -36,6 +36,15 @@ export class GoalsService {
         return this.http.delete<GoalResponse>(
             `${this.apiGoalsUrl}/${id}`
         )
+    }
+
+    getEntriesForDate(date: string): Observable<GoalEntryDayResponse[]> {
+        return this.http.get<GoalEntryDayResponse[]>(
+            `${this.apiGoalsUrl}/entries`,
+            {
+                params: { date },
+            },
+        );
     }
   
 }

@@ -54,41 +54,41 @@
     <div class="goals-section__list">
         @for (goal of goals; track goal.id) {
             <article class="goal-card">
-            <div class="goal-card__content">
-                <div
-                class="goal-card__icon"
-                [style.--goal-color]="goal.color"
+                <div class="goal-card__content">
+                    <div
+                    class="goal-card__icon"
+                    [style.--goal-color]="goal.color"
+                    >
+                        <app-icon
+                            [name]="goal.icon"
+                            [color]="goal.color"
+                            [size]="22"
+                        />
+                    </div>
+
+                    <div class="goal-card__info">
+                    <h3 class="goal-card__name">
+                        {{ goal.name }}
+                    </h3>
+
+                    <span class="goal-card__type">
+                        {{ goal.target_type === 'min' ? 'At least' : 'At most' }}
+                    </span>
+                    </div>
+                </div>
+
+                <div class="goal-card__target">
+                    {{ goal.target_value | number:'1.0-2'}} {{ goal.unit }}
+                </div>
+
+                <button
+                    type="button"
+                    class="goal-card__edit"
+                    (click)="editGoal(goal.id)"
+                    aria-label="Edit goal"
                 >
-                    <app-icon
-                        [name]="goal.icon"
-                        [color]="goal.color"
-                        [size]="22"
-                    />
-                </div>
-
-                <div class="goal-card__info">
-                <h3 class="goal-card__name">
-                    {{ goal.name }}
-                </h3>
-
-                <span class="goal-card__type">
-                    {{ goal.target_type === 'min' ? 'At least' : 'At most' }}
-                </span>
-                </div>
-            </div>
-
-            <div class="goal-card__target">
-                {{ goal.target_value | number:'1.0-2'}} {{ goal.unit }}
-            </div>
-
-            <button
-                type="button"
-                class="goal-card__edit"
-                (click)="editGoal(goal.id)"
-                aria-label="Edit goal"
-            >
-                <svg lucidePencil></svg>
-            </button>
+                    <svg lucidePencil></svg>
+                </button>
             </article>
         }
         </div>

@@ -37,3 +37,17 @@ export interface GoalResponse {
   created_at: string;
   updated_at: string;
 }
+
+export interface GoalEntryDayResponse {
+  goal_id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  unit: string;
+  period: GoalPeriod;
+  target_type: GoalTargetType;
+  target_value: number;
+  entry_value: number | null;
+  period_value: number;
+  note: string | null;
+}

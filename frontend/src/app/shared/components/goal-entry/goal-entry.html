@@ -1,0 +1,62 @@
+<article
+  class="goal-entry"
+  [style.--goal-color]="goal().color ?? '#8b8b8b'"
+>
+  <div class="goal-entry__header">
+    <div class="goal-entry__identity">
+      <div class="goal-entry__icon">
+        <app-icon
+          [name]="goal().icon"
+          [color]="goal().color"
+          [size]="22"
+        />
+      </div>
+
+      <div class="goal-entry__info">
+        <h3 class="goal-entry__name">
+          {{ goal().name }}
+        </h3>
+      </div>
+    </div>
+
+    <div
+      class="goal-entry__progress-ring"
+      [style.--progress]="progressPercent()"
+    >
+      <div class="goal-entry__progress-ring-inner">
+        {{ progressPercent() | number:'1.0-0' }}%
+      </div>
+    </div>
+  </div>
+
+  <div class="goal-entry__value">
+    <div class="goal-entry__current-value">
+        {{ goal().period_value | number:'1.0-2' }}
+    </div>
+    <p class="goal-entry__target">
+          &nbsp; / {{ goal().target_value | number:'1.0-2' }} {{ goal().unit }}
+    </p>
+  </div>
+
+  <button
+    class="goal-entry__action"
+    type="button"
+  >
+    <svg lucidePencil></svg>
+
+    <span>Enter value</span>
+  </button>
+
+  @if (goal().note) {
+    <p class="goal-entry__note">
+      <!-- <app-icon
+        name="pencil-line"
+        [size]="16"
+        [color]="'white'"
+      /> -->
+      <svg lucidePencilLine></svg>
+
+      <span>{{ goal().note }}</span>
+    </p>
+  }
+</article>

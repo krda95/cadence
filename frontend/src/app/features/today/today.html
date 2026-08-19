@@ -1,1 +1,54 @@
-<p>today works!</p>
+<section class="today">
+  <header class="today__header">
+    <div class="today__heading">
+      <p class="today__date">
+        {{ selectedDate() }}
+      </p>
+
+      <h1 class="today__title">
+        Today
+      </h1>
+    </div>
+  </header>
+
+  @if (dailyGoals().length) {
+    <section class="today__section">
+        <h2 class="today__section__title">DAILY</h2>
+      
+
+      <div class="today__grid">
+        @for (goal of dailyGoals(); track goal.goal_id) {
+          <app-goal-entry
+            [goal]="goal"
+          />
+        }
+      </div>
+    </section>
+  }
+
+  @if (weeklyGoals().length) {
+    <section class="today__section">
+      <h2 class="today__section__title">WEEKLY</h2>
+
+      <div class="today__grid">
+        @for (goal of weeklyGoals(); track goal.goal_id) {
+          <app-goal-entry
+            [goal]="goal"
+          />
+        }
+      </div>
+    </section>
+  }
+
+  @if (!dailyGoals().length && !weeklyGoals().length) {
+    <div class="today__empty">
+      <h2 class="today__empty-title">
+        No active goals
+      </h2>
+
+      <p class="today__empty-text">
+        Add a goal to start tracking your day.
+      </p>
+    </div>
+  }
+</section>
