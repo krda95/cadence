@@ -2,7 +2,7 @@
   <header class="today__header">
     <div class="today__heading">
       <p class="today__date">
-        {{ selectedDate() }}
+        {{ (selectedDate()| date:'EEEE, MMMM d')?.toLocaleUpperCase() }}
       </p>
 
       <h1 class="today__title">

@@ -47,6 +47,42 @@
         height: var(--font-size-lg);
     }
   }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.5rem;
+
+    min-height: 18rem;
+    padding: 2rem;
+
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+
+    background: var(--color-surface);
+
+    text-align: center;
+  }
+
+  &__empty-title {
+    margin: 0;
+
+    color: var(--color-text-primary);
+
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  &__empty-text {
+    margin: 0;
+
+    color: var(--color-text-secondary);
+
+    font-size: 0.875rem;
+  }
 }
 
 .goals-section {

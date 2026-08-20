@@ -18,12 +18,12 @@
   }
 
   &__date {
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.3rem;
 
     color: var(--color-text-secondary);
 
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 
   &__section {
@@ -60,13 +60,6 @@
     line-height: 1.1;
     letter-spacing: -0.03em;
   }
-
-//   &__section {
-//     display: flex;
-//     flex-direction: column;
-
-//     gap: 1.25rem;
-//   }
 
   &__section-header {
     display: flex;

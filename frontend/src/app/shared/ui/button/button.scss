@@ -43,6 +43,28 @@ button {
         }
     }
 
+    &.secondary {
+        background: var(--button-background, var(--color-surface));
+
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+        box-shadow: none;
+
+        &:hover:not(:disabled) {
+            background: var(--color-surface-hover);
+            border-color: var(--color-text-secondary);
+        }
+
+        &:active:not(:disabled) {
+            transform: scale(.98);
+        }
+
+        &:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+    }
+
     &.danger {
         background: transparent;
         color: var(--color-danger);

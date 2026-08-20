@@ -29,6 +29,7 @@
     </div>
   </div>
 
+  @if (!isEditing()) {
   <div class="goal-entry__value">
     <div class="goal-entry__current-value">
         {{ goal().period_value | number:'1.0-2' }}
@@ -38,22 +39,69 @@
     </p>
   </div>
 
-  <button
-    class="goal-entry__action"
-    type="button"
-  >
-    <svg lucidePencil></svg>
+    <button
+        class="goal-entry__action"
+        type="button"
+        (click)="startEditing()"
+    >
+        <svg lucidePencil></svg>
 
-    <span>Enter value</span>
-  </button>
+        <span>Enter value</span>
+    </button>
+    } @else {
+    <div class="goal-entry__editor">
+        <div class="goal-entry__value">
+            <div class="goal-entry__input-wrapper">
+                <input
+                id="entry-value"
+                type="number"
+                min="0"
+                [style.--value-length]="(entryValue() ?? '').toLocaleString().length || 1"
+                [value]="entryValue() ?? ''"
+                (input)="entryValue.set($any($event.target).valueAsNumber)"
+                />
+            </div>
+        <p class="goal-entry__target">
+            &nbsp; / {{ goal().target_value | number:'1.0-2' }} {{ goal().unit }}
+        </p>
+    </div>
+        <div class="goal-entry__field">
+            <label for="entry-note">
+                Note
+            </label>
+
+            <textarea
+                id="entry-note"
+                maxlength="200"
+                [rows]="1"
+                placeholder="Optional note..."
+                [value]="entryNote()"
+                (input)="entryNote.set($any($event.target).value)"
+            ></textarea>
+        </div>
+
+        <div class="goal-entry__editor-actions">
+            <app-button
+                type="button"
+                variant="secondary"
+                (click)="cancelEditing()"
+            >
+                Cancel
+            </app-button>
+
+            <app-button
+                type="submit"
+                variant="primary"
+                (click)="save()"
+            >
+                Save
+            </app-button>
+        </div>
+    </div>
+    }
 
   @if (goal().note) {
     <p class="goal-entry__note">
-      <!-- <app-icon
-        name="pencil-line"
-        [size]="16"
-        [color]="'white'"
-      /> -->
       <svg lucidePencilLine></svg>
 
       <span>{{ goal().note }}</span>

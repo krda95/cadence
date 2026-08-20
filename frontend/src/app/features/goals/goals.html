@@ -43,9 +43,17 @@
             }"
         ></ng-container>
     }
-    @if(weeklyGoals.length == 0 && dailyGoals.length == 0) {
-        <div>You don't have any goals yet. Create one!</div>
-    }
+    @if (!dailyGoals.length && !weeklyGoals.length) {
+    <div class="goals__empty">
+      <h2 class="goals__empty-title">
+        No goals
+      </h2>
+
+      <p class="goals__empty-text">
+        Add a goal to start tracking your day.
+      </p>
+    </div>
+  }
   </section>
 </div>
 

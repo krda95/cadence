@@ -2,10 +2,11 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { GoalEntryDayResponse } from '../../models/goalModel';
 import { GoalsService } from '../../core/api/goals.service';
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-today',
-  imports: [GoalEntry],
+  imports: [GoalEntry, DatePipe],
   templateUrl: './today.html',
   styleUrl: './today.scss',
 })
