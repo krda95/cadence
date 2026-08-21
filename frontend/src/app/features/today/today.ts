@@ -14,6 +14,7 @@ export class Today implements OnInit {
   private goalsService = inject(GoalsService);
   selectedDate = signal('');
   goals = signal<GoalEntryDayResponse[]>([]);
+  editingGoalId = signal<string | null>(null);
 
   dailyGoals = computed(() => this.goals().filter((goal) => goal.period === 'daily'));
 
@@ -43,5 +44,22 @@ export class Today implements OnInit {
     const day = String(today.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
+  }
+
+  saveEntry(event: { goalId: string; value: number; note: string | null }): void {
+    this.goalsService
+      .upsertEntry(event.goalId, this.selectedDate(), {
+        value: event.value,
+        note: event.note,
+      })
+      .subscribe({
+        next: () => {
+          this.editingGoalId.set(null);
+          this.loadGoals();
+        },
+        error: (error) => {
+          console.error('Failed to save entry', error);
+        },
+      });
   }
 }

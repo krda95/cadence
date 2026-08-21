@@ -20,7 +20,7 @@
   @if (!isEditing()) {
     <div class="goal-entry__value">
       <div class="goal-entry__current-value">
-        {{ goal().period_value | number: '1.0-2' }}
+        {{ getTodayValue(goal()) | number: '1.0-2' }}
       </div>
       <p class="goal-entry__target">
         &nbsp; / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
@@ -40,9 +40,9 @@
             id="entry-value"
             type="number"
             min="0"
-            [style.--value-length]="(entryValue() ?? '').toLocaleString().length || 1"
-            [value]="entryValue() ?? ''"
-            (input)="entryValue.set($any($event.target).valueAsNumber)"
+            [style.--value-length]="(entryValue() ?? '').toString().length || 1"
+            [value]="getTodayValue(goal()) ?? ''"
+            (input)="onValueInput($event)"
           />
         </div>
         <p class="goal-entry__target">
@@ -67,12 +67,22 @@
           Cancel
         </app-button>
 
-        <app-button type="submit" variant="primary" (click)="save()"> Save </app-button>
+        <app-button
+          type="submit"
+          variant="primary"
+          (click)="save()"
+          [disabled]="
+            entryValue() === null ||
+            entryValue()! <= goal().period_value - (this.goal().entry_value ?? 0)
+          "
+        >
+          Save
+        </app-button>
       </div>
     </div>
   }
 
-  @if (goal().note) {
+  @if (!isEditing() && goal().note) {
     <p class="goal-entry__note">
       <svg lucidePencilLine></svg>
 

@@ -192,7 +192,7 @@
       outline: 0;
 
       background: transparent;
-      font-size: clamp(1rem, calc(3rem - max(0, var(--value-length, 1) - 2) * 0.4rem), 3rem);
+      font-size: clamp(1rem, calc(3rem - max(0, var(--value-length, 1) - 2) * 0.6rem), 3rem);
 
       color: var(--color-text-primary);
       font-weight: var(--font-weight-bold);

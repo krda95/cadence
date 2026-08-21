@@ -18,7 +18,7 @@ export class GoalsService {
   private readonly apiGoalsUrl = `${environment.apiUrl}/goals`;
 
   createGoal(goal: GoalCreate) {
-    return this.http.post<GoalResponse>(this.apiGoalsUrl, goal);
+    return this.http.post<GoalCreate>(this.apiGoalsUrl, goal);
   }
 
   getGoal(id: string): Observable<GoalResponse> {

@@ -15,7 +15,13 @@
 
       <div class="today__grid">
         @for (goal of dailyGoals(); track goal.goal_id) {
-          <app-goal-entry [goal]="goal" />
+          <app-goal-entry
+            [goal]="goal"
+            (entrySaved)="saveEntry($event)"
+            [isEditing]="editingGoalId() === goal.goal_id"
+            (editStarted)="editingGoalId.set(goal.goal_id)"
+            (editCancelled)="editingGoalId.set(null)"
+          />
         }
       </div>
     </section>
@@ -27,7 +33,13 @@
 
       <div class="today__grid">
         @for (goal of weeklyGoals(); track goal.goal_id) {
-          <app-goal-entry [goal]="goal" />
+          <app-goal-entry
+            [goal]="goal"
+            (entrySaved)="saveEntry($event)"
+            [isEditing]="editingGoalId() === goal.goal_id"
+            (editStarted)="editingGoalId.set(goal.goal_id)"
+            (editCancelled)="editingGoalId.set(null)"
+          />
         }
       </div>
     </section>

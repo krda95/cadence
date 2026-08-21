@@ -73,6 +73,7 @@ async def create_goal(
         owner_id=current_user.id,
         name=payload.name,
         icon=payload.icon,
+        color=payload.color,
         unit=payload.unit,
         period=payload.period,
         target_type=payload.target_type,

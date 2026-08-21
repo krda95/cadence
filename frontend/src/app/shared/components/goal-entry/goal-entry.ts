@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { GoalEntryDayResponse } from '../../../models/goalModel';
 import { Icon } from '@shared/ui/icon/icon';
 import { LucidePencilLine, LucidePencil } from '@lucide/angular';
@@ -13,9 +13,18 @@ import { Button } from '@shared/ui/button/button';
 })
 export class GoalEntry {
   goal = input.required<GoalEntryDayResponse>();
-  isEditing = signal(false);
+  isEditing = input(false);
+
   entryValue = signal<number | null>(null);
   entryNote = signal('');
+
+  entrySaved = output<{
+    goalId: string;
+    value: number;
+    note: string | null;
+  }>();
+  editStarted = output<void>();
+  editCancelled = output<void>();
 
   progressPercent = computed(() => {
     const goal = this.goal();
@@ -34,19 +43,51 @@ export class GoalEntry {
   startEditing(): void {
     this.entryValue.set(this.getTodayValue(this.goal()) ?? 0);
     this.entryNote.set(this.goal().note ?? '');
-    this.isEditing.set(true);
+    this.editStarted.emit();
   }
 
-  private getTodayValue(goal: GoalEntryDayResponse): number | null {
-    return goal.period === 'daily' ? goal.entry_value : goal.period_value;
+  getTodayValue(goal: GoalEntryDayResponse): number | null {
+    return goal.period === 'daily' ? (goal.entry_value ?? 0) : goal.period_value;
   }
 
   cancelEditing(): void {
-    this.isEditing.set(false);
+    this.editCancelled.emit();
+  }
+
+  onValueInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).valueAsNumber;
+    console.log(value);
+
+    this.entryValue.set(Number.isNaN(value) ? null : value);
   }
 
   save(): void {
-    console.log(this.entryNote(), this.entryValue());
+    const enteredValue = this.entryValue();
+
+    if (enteredValue === null || Number.isNaN(enteredValue) || enteredValue < 0) {
+      return;
+    }
+
+    let valueToSave = enteredValue;
+
+    if (this.goal().period !== 'daily') {
+      const currentDayValue = this.goal().entry_value ?? 0;
+
+      const periodValueBeforeToday = this.goal().period_value - currentDayValue;
+
+      valueToSave = enteredValue - periodValueBeforeToday;
+
+      if (valueToSave < 0) {
+        return;
+      }
+    }
+
+    this.entrySaved.emit({
+      goalId: this.goal().goal_id,
+      value: valueToSave,
+      note: this.entryNote().trim() || null,
+    });
+
     this.cancelEditing();
   }
 }
