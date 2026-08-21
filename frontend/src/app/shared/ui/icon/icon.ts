@@ -1,9 +1,4 @@
-import {
-  Component,
-  effect,
-  input,
-  signal,
-} from '@angular/core';
+import { Component, effect, input, signal } from '@angular/core';
 import { buildLucideDataUri } from '@lucide/icons/build';
 
 import { lucideDynamicIconImports } from '@lucide/icons/dynamic';
@@ -33,19 +28,13 @@ export class Icon {
     });
   }
 
-  private async loadIcon(
-    name: string | null,
-    color: string | null,
-    size: number,
-  ): Promise<void> {
+  private async loadIcon(name: string | null, color: string | null, size: number): Promise<void> {
     if (!name || !(name in lucideDynamicIconImports)) {
       this.src.set(null);
       return;
     }
 
-    const iconModule = await lucideDynamicIconImports[
-      name as IconName
-    ]?.();
+    const iconModule = await lucideDynamicIconImports[name as IconName]?.();
 
     if (!iconModule) {
       this.src.set(null);

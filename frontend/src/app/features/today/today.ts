@@ -15,13 +15,9 @@ export class Today implements OnInit {
   selectedDate = signal('');
   goals = signal<GoalEntryDayResponse[]>([]);
 
-  dailyGoals = computed(() =>
-    this.goals().filter(goal => goal.period === 'daily')
-  );
+  dailyGoals = computed(() => this.goals().filter((goal) => goal.period === 'daily'));
 
-  weeklyGoals = computed(() =>
-    this.goals().filter(goal => goal.period === 'weekly')
-  );
+  weeklyGoals = computed(() => this.goals().filter((goal) => goal.period === 'weekly'));
 
   ngOnInit(): void {
     this.selectedDate.set(this.getTodayDate());
@@ -29,31 +25,22 @@ export class Today implements OnInit {
   }
 
   private loadGoals(): void {
-    this.goalsService
-      .getEntriesForDate(this.selectedDate())
-      .subscribe({
-        next: (goals) => {
-          this.goals.set(goals);
-        },
-        error: (error) => {
-          console.error(
-            'Failed to load goal entries',
-            error,
-          );
-        },
-      });
+    this.goalsService.getEntriesForDate(this.selectedDate()).subscribe({
+      next: (goals) => {
+        this.goals.set(goals);
+      },
+      error: (error) => {
+        console.error('Failed to load goal entries', error);
+      },
+    });
   }
 
   private getTodayDate(): string {
     const today = new Date();
 
     const year = today.getFullYear();
-    const month = String(
-      today.getMonth() + 1,
-    ).padStart(2, '0');
-    const day = String(
-      today.getDate(),
-    ).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
   }

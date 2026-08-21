@@ -13,10 +13,9 @@ import { AuthService } from '@core/services/auth.service';
 import { LucideArrowLeft } from '@lucide/angular';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { InputComponent } from "@shared/ui/input/input";
-import { Button } from "@shared/ui/button/button";
+import { InputComponent } from '@shared/ui/input/input';
+import { Button } from '@shared/ui/button/button';
 import { passwordsMatchValidator } from '../register/register';
-
 
 @Component({
   selector: 'app-reset-password',
@@ -33,26 +32,16 @@ export class ResetPassword {
   isSubmitting = false;
   linkInvalid = this.accessToken ?? false;
 
-  readonly resetPasswordForm =
-    this.formBuilder.nonNullable.group(
-      {
-        password: [
-          '',
-          [
-            Validators.required,
-            Validators.minLength(8),
-          ],
-        ],
-        confirmPassword: [
-          '',
-          Validators.required,
-        ],
-      },
-      {
-        validators: passwordsMatchValidator,
-      },
-    );
-  
+  readonly resetPasswordForm = this.formBuilder.nonNullable.group(
+    {
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', Validators.required],
+    },
+    {
+      validators: passwordsMatchValidator,
+    },
+  );
+
   navigateToForgotPassword(): void {
     this.router.navigate(['/forgot-password'], {
       replaceUrl: true,
@@ -68,14 +57,15 @@ export class ResetPassword {
     this.isSubmitting = true;
     const { password } = this.resetPasswordForm.getRawValue();
 
-    this.authService.resetPassword({
+    this.authService
+      .resetPassword({
         access_token: this.accessToken,
-        password
+        password,
       })
       .pipe(
         finalize(() => {
           this.isSubmitting = false;
-        })
+        }),
       )
       .subscribe({
         next: () => {

@@ -1,50 +1,49 @@
 <div class="input">
-
-    <div class="header">
-        @if(label()) {
-          <label>{{ label() }}</label>
-        }
-        <ng-content select="[input-action]" />
-    </div>
-
-    <div class="control" [class.invalid]="hasError()">
-        <input
-            #input
-            [type]="inputType()"
-            [placeholder]="placeholder()"
-            [value]="value()"
-            [min]="min()"
-            [max]="max()"
-            class="input__control"
-            [class.input__control--filled]="variant() === 'filled'"
-            [step]="step()"
-            [disabled]="disabled()"
-            [attr.tabindex]="tabIndex()"
-            (input)="handleInput($event)"
-            (blur)="handleBlur()">
-
-        @if(type() === 'password') {
-            <button
-            type="button"
-            aria-label="Toggle password visibility"
-            [attr.tabindex]="tabIndex()+1"
-            [disabled]="disabled()"
-            (click)="togglePassword()">
-            @if (passwordVisible()) {
-                <svg lucideEye></svg>
-            } @else {
-                <svg lucideEyeClosed></svg>
-            }
-            </button>
-        }
-    </div>
-    @if (errorMessage(); as message) {
-        <span
-            class="error-message"
-            role="alert">
-            {{ message }}
-        </span>
-    } @else {
-        <span class="error-message-placeholder"></span>
+  <div class="header">
+    @if (label()) {
+      <label>{{ label() }}</label>
     }
+    <ng-content select="[input-action]" />
+  </div>
+
+  <div class="control" [class.invalid]="hasError()">
+    <input
+      #input
+      [type]="inputType()"
+      [placeholder]="placeholder()"
+      [value]="value()"
+      [min]="min()"
+      [max]="max()"
+      class="input__control"
+      [class.input__control--filled]="variant() === 'filled'"
+      [step]="step()"
+      [disabled]="disabled()"
+      [attr.tabindex]="tabIndex()"
+      (input)="handleInput($event)"
+      (blur)="handleBlur()"
+    />
+
+    @if (type() === 'password') {
+      <button
+        type="button"
+        aria-label="Toggle password visibility"
+        [attr.tabindex]="tabIndex() + 1"
+        [disabled]="disabled()"
+        (click)="togglePassword()"
+      >
+        @if (passwordVisible()) {
+          <svg lucideEye></svg>
+        } @else {
+          <svg lucideEyeClosed></svg>
+        }
+      </button>
+    }
+  </div>
+  @if (errorMessage(); as message) {
+    <span class="error-message" role="alert">
+      {{ message }}
+    </span>
+  } @else {
+    <span class="error-message-placeholder"></span>
+  }
 </div>

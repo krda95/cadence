@@ -1,6 +1,19 @@
-import { Component, computed, input, signal, forwardRef, Injector, OnInit, AfterViewInit, OnDestroy, inject, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  computed,
+  input,
+  signal,
+  forwardRef,
+  Injector,
+  OnInit,
+  AfterViewInit,
+  OnDestroy,
+  inject,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { LucideEye, LucideEyeClosed } from '@lucide/angular';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl} from '@angular/forms';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl } from '@angular/forms';
 
 @Component({
   selector: 'app-input',
@@ -12,8 +25,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl} from '@angular/form
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => InputComponent),
       multi: true,
-    }
-  ]
+    },
+  ],
 })
 export class InputComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnDestroy {
   readonly label = input('');
@@ -57,10 +70,14 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
     });
   }
 
-  readonly inputType = computed(() => {  
-    return this.type() === 'password' ? (this.passwordVisible() ? 'text' : 'password') : this.type();
+  readonly inputType = computed(() => {
+    return this.type() === 'password'
+      ? this.passwordVisible()
+        ? 'text'
+        : 'password'
+      : this.type();
   });
-  
+
   private onChange: (value: string | number | null) => void = () => {};
   private onTouched: () => void = () => {};
 
@@ -81,17 +98,11 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
   }
 
   handleInput(event: Event): void {
-  const inputElement = event.target as HTMLInputElement;
+    const inputElement = event.target as HTMLInputElement;
 
-    const value =
-      this.type() === 'number'
-        ? inputElement.valueAsNumber
-        : inputElement.value;
+    const value = this.type() === 'number' ? inputElement.valueAsNumber : inputElement.value;
 
-    const normalizedValue =
-      typeof value === 'number' && Number.isNaN(value)
-        ? null
-        : value;
+    const normalizedValue = typeof value === 'number' && Number.isNaN(value) ? null : value;
 
     this.value.set(normalizedValue ?? '');
     this.onChange(normalizedValue);
@@ -124,7 +135,7 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
     if (this.disabled()) {
       return;
     }
-    this.passwordVisible.update(value => !value);
+    this.passwordVisible.update((value) => !value);
   }
 
   hasError(): boolean {

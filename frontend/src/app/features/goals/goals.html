@@ -5,21 +5,13 @@
     </div>
 
     <div class="goals__actions">
-      <select
-        class="goals__filter"
-        [value]="statusFilter"
-        (change)="onStatusFilterChange($event)"
-      >
+      <select class="goals__filter" [value]="statusFilter" (change)="onStatusFilterChange($event)">
         <option value="active">Active</option>
         <option value="inactive">Inactive</option>
         <option value="all">All</option>
       </select>
 
-      <app-button
-        type="button"
-        variant="primary"
-        (click)="addGoal()"
-      >
+      <app-button type="button" variant="primary" (click)="addGoal()">
         <svg lucidePlus></svg>
         Add goal
       </app-button>
@@ -27,79 +19,74 @@
   </div>
 
   <section class="goals-section">
-    @if(dailyGoals.length > 0) {
-        <ng-container
-            *ngTemplateOutlet="goalSection; context: {
-                title: 'DAILY',
-                goals: dailyGoals
-            }"
-        ></ng-container>
+    @if (dailyGoals.length > 0) {
+      <ng-container
+        *ngTemplateOutlet="
+          goalSection;
+          context: {
+            title: 'DAILY',
+            goals: dailyGoals,
+          }
+        "
+      ></ng-container>
     }
-    @if(weeklyGoals.length > 0) {
-        <ng-container
-            *ngTemplateOutlet="goalSection; context: {
-                title: 'WEEKLY',
-                goals: weeklyGoals
-            }"
-        ></ng-container>
+    @if (weeklyGoals.length > 0) {
+      <ng-container
+        *ngTemplateOutlet="
+          goalSection;
+          context: {
+            title: 'WEEKLY',
+            goals: weeklyGoals,
+          }
+        "
+      ></ng-container>
     }
     @if (!dailyGoals.length && !weeklyGoals.length) {
-    <div class="goals__empty">
-      <h2 class="goals__empty-title">
-        No goals
-      </h2>
+      <div class="goals__empty">
+        <h2 class="goals__empty-title">No goals</h2>
 
-      <p class="goals__empty-text">
-        Add a goal to start tracking your day.
-      </p>
-    </div>
-  }
+        <p class="goals__empty-text">Add a goal to start tracking your day.</p>
+      </div>
+    }
   </section>
 </div>
 
 <ng-template #goalSection let-title="title" let-goals="goals">
-    <h2 class="goals-section__title">{{title}}</h2>
-    <div class="goals-section__list">
-        @for (goal of goals; track goal.id) {
-            <article class="goal-card">
-                <div class="goal-card__content">
-                    <div
-                    class="goal-card__icon"
-                    [style.--goal-color]="goal.color"
-                    >
-                        <app-icon
-                            [name]="goal.icon"
-                            [color]="goal.color"
-                            [size]="22"
-                        />
-                    </div>
+  <h2 class="goals-section__title">{{ title }}</h2>
+  <div class="goals-section__list">
+    @for (goal of goals; track goal.id) {
+      <article class="goal-card">
+        <div class="goal-card__content">
+          <div class="goal-card__icon" [style.--goal-color]="goal.color">
+            <app-icon [name]="goal.icon" [color]="goal.color" [size]="22" />
+          </div>
 
-                    <div class="goal-card__info">
-                    <h3 class="goal-card__name">
-                        {{ goal.name }}
-                    </h3>
+          <div class="goal-card__info">
+            <h3 class="goal-card__name">
+              {{ goal.name }}
+            </h3>
 
-                    <span class="goal-card__type">
-                        {{ goal.target_type === 'min' ? 'At least' : 'At most' }}
-                    </span>
-                    </div>
-                </div>
-
-                <div class="goal-card__target">
-                    {{ goal.target_value | number:'1.0-2'}} {{ goal.unit }}
-                </div>
-
-                <button
-                    type="button"
-                    class="goal-card__edit"
-                    (click)="editGoal(goal.id)"
-                    aria-label="Edit goal"
-                >
-                    <svg lucidePencil></svg>
-                </button>
-            </article>
-        }
+            <span class="goal-card__type">
+              {{ goal.target_type === 'min' ? 'At least' : 'At most' }}
+            </span>
+          </div>
         </div>
+
+        <div class="goal-card__target">
+          {{ goal.target_value | number: '1.0-2' }} {{ goal.unit }}
+        </div>
+
+        <button
+          type="button"
+          class="goal-card__edit"
+          (click)="editGoal(goal.id)"
+          aria-label="Edit goal"
+        >
+          <svg lucidePencil></svg>
+        </button>
+      </article>
+    }
+  </div>
 </ng-template>
 
 <router-outlet (deactivate)="getGoals()"></router-outlet>

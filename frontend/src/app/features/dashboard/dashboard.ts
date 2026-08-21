@@ -1,4 +1,11 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, signal, viewChild, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  CUSTOM_ELEMENTS_SCHEMA,
+  ElementRef,
+  signal,
+  viewChild,
+  AfterViewInit,
+} from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { Button } from '@shared/ui/button/button';
 import { Status, StatusValue } from '@shared/ui/status/status';

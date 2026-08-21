@@ -1,26 +1,19 @@
 <div class="register">
-  <a
-    class="back-link"
-    routerLink="/login"
-  >
-  <svg lucideArrowLeft></svg>
-  Back to sign in
+  <a class="back-link" routerLink="/login">
+    <svg lucideArrowLeft></svg>
+    Back to sign in
   </a>
 
   <h1>Create your account</h1>
-  <p class="subtitle">
-      Start tracking your goals in under a minute.
-  </p>
+  <p class="subtitle">Start tracking your goals in under a minute.</p>
 
-  <form
-      [formGroup]="registerForm"
-      (ngSubmit)="submit()">
+  <form [formGroup]="registerForm" (ngSubmit)="submit()">
     <app-input
       formControlName="username"
       label="Username"
       type="text"
       placeholder="Name"
-      [autoFocus]=true
+      [autoFocus]="true"
       [tabIndex]="1"
     />
     <app-input
@@ -47,16 +40,16 @@
 
     <app-button
       type="submit"
-      style="margin-top: 10px;"
+      style="margin-top: 10px"
       [disabled]="registerForm.invalid || isSubmitting()"
       [tabIndex]="6"
     >
-    @if (isSubmitting()) {
-      <span class="spinner" aria-hidden="true"></span>
-      <span>Creating account...</span>
-    } @else {
-      Create account
-    }
+      @if (isSubmitting()) {
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Creating account...</span>
+      } @else {
+        Create account
+      }
     </app-button>
   </form>
 

@@ -1,39 +1,33 @@
 <div class="login">
   <h1>Welcome back</h1>
-  <p>
-    Sign in to pick up where you left off.
-  </p>
+  <p>Sign in to pick up where you left off.</p>
 
   <form [formGroup]="loginForm" (ngSubmit)="login()">
     <app-input
       formControlName="email"
       label="Email"
       type="email"
-      [autoFocus]=true
+      [autoFocus]="true"
       [tabIndex]="1"
-      placeholder="you@email.com"/>
+      placeholder="you@email.com"
+    />
 
     <app-input
       formControlName="password"
       label="Password"
       type="password"
       [tabIndex]="2"
-      placeholder="••••••••">
-      <a
-        input-action
-        class="forgot-link"
-        routerLink="/forgot-password"
-        [tabIndex]="5"
-        >
-        Forgot?
-      </a>
+      placeholder="••••••••"
+    >
+      <a input-action class="forgot-link" routerLink="/forgot-password" [tabIndex]="5"> Forgot? </a>
     </app-input>
 
     <app-button
       [type]="'submit'"
       [disabled]="loginForm.invalid || isSubmitting()"
       [variant]="'primary'"
-      [tabIndex]="4">
+      [tabIndex]="4"
+    >
       @if (isSubmitting()) {
         <span class="spinner" aria-hidden="true"></span>
         <span>Signing in...</span>

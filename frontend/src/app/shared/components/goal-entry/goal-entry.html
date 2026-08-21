@@ -1,15 +1,8 @@
-<article
-  class="goal-entry"
-  [style.--goal-color]="goal().color ?? '#8b8b8b'"
->
+<article class="goal-entry" [style.--goal-color]="goal().color ?? '#8b8b8b'">
   <div class="goal-entry__header">
     <div class="goal-entry__identity">
       <div class="goal-entry__icon">
-        <app-icon
-          [name]="goal().icon"
-          [color]="goal().color"
-          [size]="22"
-        />
+        <app-icon [name]="goal().icon" [color]="goal().color" [size]="22" />
       </div>
 
       <div class="goal-entry__info">
@@ -19,86 +12,65 @@
       </div>
     </div>
 
-    <div
-      class="goal-entry__progress-ring"
-      [style.--progress]="progressPercent()"
-    >
-      <div class="goal-entry__progress-ring-inner">
-        {{ progressPercent() | number:'1.0-0' }}%
-      </div>
+    <div class="goal-entry__progress-ring" [style.--progress]="progressPercent()">
+      <div class="goal-entry__progress-ring-inner">{{ progressPercent() | number: '1.0-0' }}%</div>
     </div>
   </div>
 
   @if (!isEditing()) {
-  <div class="goal-entry__value">
-    <div class="goal-entry__current-value">
-        {{ goal().period_value | number:'1.0-2' }}
+    <div class="goal-entry__value">
+      <div class="goal-entry__current-value">
+        {{ goal().period_value | number: '1.0-2' }}
+      </div>
+      <p class="goal-entry__target">
+        &nbsp; / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
+      </p>
     </div>
-    <p class="goal-entry__target">
-          &nbsp; / {{ goal().target_value | number:'1.0-2' }} {{ goal().unit }}
-    </p>
-  </div>
 
-    <button
-        class="goal-entry__action"
-        type="button"
-        (click)="startEditing()"
-    >
-        <svg lucidePencil></svg>
+    <button class="goal-entry__action" type="button" (click)="startEditing()">
+      <svg lucidePencil></svg>
 
-        <span>Enter value</span>
+      <span>Enter value</span>
     </button>
-    } @else {
+  } @else {
     <div class="goal-entry__editor">
-        <div class="goal-entry__value">
-            <div class="goal-entry__input-wrapper">
-                <input
-                id="entry-value"
-                type="number"
-                min="0"
-                [style.--value-length]="(entryValue() ?? '').toLocaleString().length || 1"
-                [value]="entryValue() ?? ''"
-                (input)="entryValue.set($any($event.target).valueAsNumber)"
-                />
-            </div>
+      <div class="goal-entry__value">
+        <div class="goal-entry__input-wrapper">
+          <input
+            id="entry-value"
+            type="number"
+            min="0"
+            [style.--value-length]="(entryValue() ?? '').toLocaleString().length || 1"
+            [value]="entryValue() ?? ''"
+            (input)="entryValue.set($any($event.target).valueAsNumber)"
+          />
+        </div>
         <p class="goal-entry__target">
-            &nbsp; / {{ goal().target_value | number:'1.0-2' }} {{ goal().unit }}
+          &nbsp; / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
         </p>
+      </div>
+      <div class="goal-entry__field">
+        <label for="entry-note"> Note </label>
+
+        <textarea
+          id="entry-note"
+          maxlength="200"
+          [rows]="1"
+          placeholder="Optional note..."
+          [value]="entryNote()"
+          (input)="entryNote.set($any($event.target).value)"
+        ></textarea>
+      </div>
+
+      <div class="goal-entry__editor-actions">
+        <app-button type="button" variant="secondary" (click)="cancelEditing()">
+          Cancel
+        </app-button>
+
+        <app-button type="submit" variant="primary" (click)="save()"> Save </app-button>
+      </div>
     </div>
-        <div class="goal-entry__field">
-            <label for="entry-note">
-                Note
-            </label>
-
-            <textarea
-                id="entry-note"
-                maxlength="200"
-                [rows]="1"
-                placeholder="Optional note..."
-                [value]="entryNote()"
-                (input)="entryNote.set($any($event.target).value)"
-            ></textarea>
-        </div>
-
-        <div class="goal-entry__editor-actions">
-            <app-button
-                type="button"
-                variant="secondary"
-                (click)="cancelEditing()"
-            >
-                Cancel
-            </app-button>
-
-            <app-button
-                type="submit"
-                variant="primary"
-                (click)="save()"
-            >
-                Save
-            </app-button>
-        </div>
-    </div>
-    }
+  }
 
   @if (goal().note) {
     <p class="goal-entry__note">

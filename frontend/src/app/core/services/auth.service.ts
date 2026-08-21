@@ -7,80 +7,70 @@ import { RegisterRequest, RegisterResponse } from '@models/registerModel';
 import { ForgotPasswordRequest, MessageResponse } from '@models/forgotModel';
 import { ResetPasswordRequest } from '@models/resetModel';
 
-@Injectable({ providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-    private readonly http = inject(HttpClient);
-    private readonly apiAuthUrl = `${environment.apiUrl}/auth`;
-    private readonly apiMeUrl = `${environment.apiUrl}/me`;
-    private readonly accessTokenKey = 'access_token';
-    private readonly refreshTokenKey = 'refresh_token';
+  private readonly http = inject(HttpClient);
+  private readonly apiAuthUrl = `${environment.apiUrl}/auth`;
+  private readonly apiMeUrl = `${environment.apiUrl}/me`;
+  private readonly accessTokenKey = 'access_token';
+  private readonly refreshTokenKey = 'refresh_token';
 
-    login(credentials: LoginRequest): Observable<LoginResponse> {
-        return this.http
-            .post<LoginResponse>(`${this.apiAuthUrl}/login`, credentials)
-            .pipe(
-                tap((response) => this.saveSession(response)),
-            );
+  login(credentials: LoginRequest): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${this.apiAuthUrl}/login`, credentials)
+      .pipe(tap((response) => this.saveSession(response)));
+  }
+
+  register(credentials: RegisterRequest): Observable<RegisterResponse> {
+    return this.http
+      .post<RegisterResponse>(`${this.apiAuthUrl}/register`, credentials)
+      .pipe(tap((response) => console.log(response)));
+  }
+
+  getAccessToken(): string | null {
+    return localStorage.getItem(this.accessTokenKey);
+  }
+
+  isLoggedIn(): boolean {
+    return this.getAccessToken() !== null;
+  }
+
+  logout(): void {
+    localStorage.removeItem(this.accessTokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
+  }
+
+  private saveSession(response: LoginResponse): void {
+    localStorage.setItem(this.accessTokenKey, response.access_token);
+
+    localStorage.setItem(this.refreshTokenKey, response.refresh_token);
+  }
+
+  getCurrentUser(): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiMeUrl}`);
+  }
+
+  initializeSession() {
+    const token = this.getAccessToken();
+
+    if (!token) {
+      return of(false);
     }
 
-    register(credentials: RegisterRequest): Observable<RegisterResponse> {
-        return this.http
-            .post<RegisterResponse>(`${this.apiAuthUrl}/register`, credentials)
-            .pipe(
-                tap((response) => console.log(response)),
-            );
-    }
+    return this.getCurrentUser().pipe(
+      map(() => true),
+      catchError(() => {
+        this.logout();
+        return of(false);
+      }),
+    );
+  }
 
-    getAccessToken(): string | null {
-        return localStorage.getItem(this.accessTokenKey);
-    }
+  forgotPassword(request: ForgotPasswordRequest): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiAuthUrl}/forgot-password`, request);
+  }
 
-    isLoggedIn(): boolean {
-        return this.getAccessToken() !== null;
-    }
-
-    logout(): void {
-        localStorage.removeItem(this.accessTokenKey);
-        localStorage.removeItem(this.refreshTokenKey);
-    }
-
-    private saveSession(response: LoginResponse): void {
-        localStorage.setItem(
-            this.accessTokenKey,
-            response.access_token,
-        );
-
-        localStorage.setItem(
-            this.refreshTokenKey,
-            response.refresh_token,
-        );
-    }
-
-    getCurrentUser(): Observable<UserProfile> {
-        return this.http.get<UserProfile>(`${this.apiMeUrl}`);
-    }
-
-    initializeSession() {
-        const token = this.getAccessToken();
-
-        if (!token) {
-            return of(false);
-        }
-        
-        return this.getCurrentUser().pipe(
-            map(() => true),
-            catchError(() => {
-                this.logout();                
-                return of(false);
-            })
-        );
-    }
-
-    forgotPassword(request: ForgotPasswordRequest): Observable<MessageResponse> {
-        return this.http.post<MessageResponse>(`${this.apiAuthUrl}/forgot-password`,request);
-    }
-
-    resetPassword(request: ResetPasswordRequest): Observable<MessageResponse> {
-        return this.http.post<MessageResponse>(`${this.apiAuthUrl}/reset-password`,request);
-    }
+  resetPassword(request: ResetPasswordRequest): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiAuthUrl}/reset-password`, request);
+  }
 }

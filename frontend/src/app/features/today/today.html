@@ -2,25 +2,20 @@
   <header class="today__header">
     <div class="today__heading">
       <p class="today__date">
-        {{ (selectedDate()| date:'EEEE, MMMM d')?.toLocaleUpperCase() }}
+        {{ (selectedDate() | date: 'EEEE, MMMM d')?.toLocaleUpperCase() }}
       </p>
 
-      <h1 class="today__title">
-        Today
-      </h1>
+      <h1 class="today__title">Today</h1>
     </div>
   </header>
 
   @if (dailyGoals().length) {
     <section class="today__section">
-        <h2 class="today__section__title">DAILY</h2>
-      
+      <h2 class="today__section__title">DAILY</h2>
 
       <div class="today__grid">
         @for (goal of dailyGoals(); track goal.goal_id) {
-          <app-goal-entry
-            [goal]="goal"
-          />
+          <app-goal-entry [goal]="goal" />
         }
       </div>
     </section>
@@ -32,9 +27,7 @@
 
       <div class="today__grid">
         @for (goal of weeklyGoals(); track goal.goal_id) {
-          <app-goal-entry
-            [goal]="goal"
-          />
+          <app-goal-entry [goal]="goal" />
         }
       </div>
     </section>
@@ -42,13 +35,9 @@
 
   @if (!dailyGoals().length && !weeklyGoals().length) {
     <div class="today__empty">
-      <h2 class="today__empty-title">
-        No active goals
-      </h2>
+      <h2 class="today__empty-title">No active goals</h2>
 
-      <p class="today__empty-text">
-        Add a goal to start tracking your day.
-      </p>
+      <p class="today__empty-text">Add a goal to start tracking your day.</p>
     </div>
   }
 </section>

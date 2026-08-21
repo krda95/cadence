@@ -159,7 +159,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  color: #E8A9BC;
+  color: #e8a9bc;
   z-index: 10;
 }
 
@@ -172,13 +172,12 @@
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: #E8A9BC;
+  color: #e8a9bc;
   font: inherit;
   text-align: left;
   cursor: pointer;
 
-  transition:
-    background var(--transition-fast),
+  transition: background var(--transition-fast);
 }
 
 .user-menu__logout:hover {
@@ -235,10 +234,7 @@
   }
 
   .page-container {
-    padding:
-      calc(72px + var(--space-6))
-      var(--space-4)
-      calc(80px + var(--space-6));
+    padding: calc(72px + var(--space-6)) var(--space-4) calc(80px + var(--space-6));
   }
 
   .sidebar__link {

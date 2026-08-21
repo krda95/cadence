@@ -11,11 +11,7 @@
     padding: 0;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    background-color: color-mix(
-      in srgb,
-      var(--injected-color) 20%,
-      black
-    );
+    background-color: color-mix(in srgb, var(--injected-color) 20%, black);
     cursor: pointer;
   }
 
@@ -66,11 +62,7 @@
     padding: 0;
     border: 1px solid transparent;
     border-radius: var(--radius-md);
-    background-color: color-mix(
-      in srgb,
-      var(--injected-color) 20%,
-      black
-    );
+    background-color: color-mix(in srgb, var(--injected-color) 20%, black);
     cursor: pointer;
 
     &:hover {

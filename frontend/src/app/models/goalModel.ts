@@ -51,3 +51,13 @@ export interface GoalEntryDayResponse {
   period_value: number;
   note: string | null;
 }
+
+export interface GoalEntryResponse {
+  id: string;
+  goal_id: string;
+  entry_date: string;
+  value: number;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}

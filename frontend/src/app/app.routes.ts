@@ -26,24 +26,24 @@ export const routes: Routes = [
       {
         path: 'login',
         component: Login,
-        canActivate: [guestGuard]
+        canActivate: [guestGuard],
       },
       {
         path: 'forgot-password',
         component: ForgotPassword,
-        canActivate: [guestGuard]
+        canActivate: [guestGuard],
       },
       {
         path: 'register',
         component: Register,
-        canActivate: [guestGuard]
+        canActivate: [guestGuard],
       },
       {
         path: 'reset-password',
         component: ResetPassword,
-        canActivate: [guestGuard]
+        canActivate: [guestGuard],
       },
-    ]
+    ],
   },
   {
     path: '',
@@ -80,6 +80,6 @@ export const routes: Routes = [
         path: 'settings',
         component: Settings,
       },
-    ]
-  }
+    ],
+  },
 ];

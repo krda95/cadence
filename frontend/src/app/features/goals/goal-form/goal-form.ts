@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GoalsService } from '@core/api/goals.service';
 import { GoalCreate, GoalPeriod, GoalTargetType } from '@models/goalModel';
 import { IconPicker } from '@shared/components/icon-picker/icon-picker';
-import { Button } from "@shared/ui/button/button";
+import { Button } from '@shared/ui/button/button';
 import { InputComponent } from '@shared/ui/input/input';
 
 @Component({
@@ -27,7 +27,7 @@ export class GoalForm implements OnInit {
     period: ['daily' as GoalPeriod, Validators.required],
     target_type: ['min' as GoalTargetType, Validators.required],
     target_value: [0, [Validators.required, Validators.min(0)]],
-    is_active: [true, Validators.required]
+    is_active: [true, Validators.required],
   });
 
   goalId = this.route.snapshot.paramMap.get('id');
@@ -50,7 +50,7 @@ export class GoalForm implements OnInit {
           period: goal.period,
           target_type: goal.target_type,
           target_value: goal.target_value,
-          is_active: goal.is_active
+          is_active: goal.is_active,
         });
       },
       error: (error) => {
@@ -63,9 +63,9 @@ export class GoalForm implements OnInit {
     this.goalsService.deleteGoal(id).subscribe({
       next: (goal) => {
         console.log('Deleted', goal);
-        this.close()
-      }
-    })
+        this.close();
+      },
+    });
   }
 
   submit(): void {
@@ -85,9 +85,10 @@ export class GoalForm implements OnInit {
       is_active: value.is_active,
     };
 
-    const request$ = this.isEditMode && this.goalId
-      ? this.goalsService.updateGoal(this.goalId, payload)
-      : this.goalsService.createGoal(payload);
+    const request$ =
+      this.isEditMode && this.goalId
+        ? this.goalsService.updateGoal(this.goalId, payload)
+        : this.goalsService.createGoal(payload);
 
     request$.subscribe({
       next: (goal) => {

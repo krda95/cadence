@@ -20,8 +20,8 @@ export class Login {
   readonly isSubmitting = signal(false);
 
   readonly loginForm = this.fb.nonNullable.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', Validators.required],
   });
 
   login() {
@@ -31,34 +31,35 @@ export class Login {
     }
     this.isSubmitting.set(true);
 
-    this.authService.login(this.loginForm.getRawValue())
-    .pipe(
-      finalize(() => {
-        this.isSubmitting.set(false);
-      }),
-    )
-    .subscribe({
-      next: () => {
-        this.router.navigate(['/dashboard'])
-      },
-      error: (error: HttpErrorResponse) => {
-        console.error(error)
-        if (error.status === 401) {
-          this.loginForm.controls.password.setErrors({
-            invalidCredentials: true,
-          });
-          return;
-        }
-        if (error.status === 0) {
+    this.authService
+      .login(this.loginForm.getRawValue())
+      .pipe(
+        finalize(() => {
+          this.isSubmitting.set(false);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error(error);
+          if (error.status === 401) {
+            this.loginForm.controls.password.setErrors({
+              invalidCredentials: true,
+            });
+            return;
+          }
+          if (error.status === 0) {
+            this.loginForm.setErrors({
+              serverUnavailable: true,
+            });
+            return;
+          }
           this.loginForm.setErrors({
-            serverUnavailable: true,
+            unknownError: true,
           });
-          return;
-        }
-        this.loginForm.setErrors({
-          unknownError: true,
-        });
-      }
-    });
+        },
+      });
   }
 }

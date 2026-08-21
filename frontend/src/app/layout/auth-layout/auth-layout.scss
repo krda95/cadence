@@ -1,83 +1,85 @@
 .auth-layout {
-    display: grid;
-    grid-template-columns: minmax(420px, 1fr) minmax(420px, 560px);
-    min-height: 100vh;
-    background: var(--color-background);
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(420px, 560px);
+  min-height: 100vh;
+  background: var(--color-background);
 
-    .hero {
-        flex: 1.15;
-        position: relative;
-        overflow: hidden;
+  .hero {
+    flex: 1.15;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 48px;
+    background:
+      radial-gradient(120% 120% at 0% 0%, rgba(155, 214, 189, 0.2), transparent 52%),
+      radial-gradient(110% 110% at 100% 100%, rgba(198, 179, 234, 0.18), transparent 55%), #181b21;
+
+    .hero-content {
+      position: relative;
+      max-width: 420px;
+
+      h1 {
+        font-size: var(--font-size-4xl);
+        font-weight: 800;
+        line-height: 1.12;
+        letter-spacing: -0.02em;
+      }
+
+      p {
+        margin-top: 18px;
+        font-size: var(--font-size-md);
+        line-height: 1.6;
+        color: var(--color-text-secondary);
+      }
+
+      .chips {
         display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 48px;
-        background: radial-gradient(120% 120% at 0% 0%, rgba(155,214,189,0.20), transparent 52%), radial-gradient(110% 110% at 100% 100%, rgba(198,179,234,0.18), transparent 55%), #181b21;
-        
-        .hero-content {
-            position: relative;
-            max-width: 420px;
+        gap: 12px;
+        margin-top: 32px;
 
-            h1 {
-                font-size: var(--font-size-4xl);
-                font-weight: 800;
-                line-height: 1.12;
-                letter-spacing: -0.02em;
-            }
-
-             p {
-                margin-top: 18px;
-                font-size: var(--font-size-md);
-                line-height: 1.6;
-                color: var(--color-text-secondary);
-            }
-
-            .chips {
-                display: flex;
-                gap: 12px;
-                margin-top: 32px;
-
-                span {
-                    padding: 7px 13px;
-                    border-radius: 999px;
-                    font-size: var(--font-size-sm);
-                    font-weight: 600;
-                }
-                span:nth-child(1) {
-                background: color-mix(in srgb, var(--color-primary) 15%, transparent);
-                color: var(--color-primary);
-                }
-
-                span:nth-child(2) {
-                background: color-mix(in srgb, var(--color-secondary) 15%, transparent);
-                color: var(--color-secondary);
-                }
-
-                span:nth-child(3) {
-                background: color-mix(in srgb, var(--color-tertiary) 15%, transparent);
-                color: var(--color-tertiary);
-                }
-
-                span:nth-child(4) {
-                background: color-mix(in srgb, var(--color-fourth) 15%, transparent);
-                color: var(--color-fourth);
-                }
-            }
+        span {
+          padding: 7px 13px;
+          border-radius: 999px;
+          font-size: var(--font-size-sm);
+          font-weight: 600;
+        }
+        span:nth-child(1) {
+          background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+          color: var(--color-primary);
         }
 
-        p {
-            position: relative;
-            font-size: var(--font-size-sm);
-            color: #7c828c;
+        span:nth-child(2) {
+          background: color-mix(in srgb, var(--color-secondary) 15%, transparent);
+          color: var(--color-secondary);
         }
+
+        span:nth-child(3) {
+          background: color-mix(in srgb, var(--color-tertiary) 15%, transparent);
+          color: var(--color-tertiary);
+        }
+
+        span:nth-child(4) {
+          background: color-mix(in srgb, var(--color-fourth) 15%, transparent);
+          color: var(--color-fourth);
+        }
+      }
     }
 
-    .content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 48px;
+    p {
+      position: relative;
+      font-size: var(--font-size-sm);
+      color: #7c828c;
     }
+  }
+
+  .content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+  }
 }
 
 @media (max-width: 900px) {

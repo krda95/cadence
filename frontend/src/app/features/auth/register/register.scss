@@ -2,73 +2,73 @@
   width: 100%;
   max-width: 360px;
 
-    .back-link {
-        display: inline-flex;
-        margin-bottom: 32px;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        font-weight: var(--font-weight-semibold);
-        text-decoration: none;
-        transition: color 0.2s ease;
+  .back-link {
+    display: inline-flex;
+    margin-bottom: 32px;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+    transition: color 0.2s ease;
 
-        &:hover {
-            color: var(--color-primary);
-        }
+    &:hover {
+      color: var(--color-primary);
+    }
+  }
+
+  h1 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .subtitle {
+    margin: 7px 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 32px;
+    gap: 12px;
+
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      margin-right: 5px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
     }
 
-    h1 {
-        margin: 0;
-        color: var(--color-text-primary);
-        font-size: var(--font-size-3xl);
-        font-weight: var(--font-weight-bold);
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
+  }
 
-    .subtitle {
-        margin: 7px 0 0;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
+  .footer {
+    margin: 24px 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-align: center;
+
+    a {
+      color: var(--color-primary);
+      font-weight: var(--font-weight-semibold);
+      text-decoration: none;
     }
+  }
 
-    form {
-        display: flex;
-        flex-direction: column;
-        margin-top: 32px;
-        gap: 12px;
-
-        .spinner {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            margin-right: 5px;
-            border: 2px solid currentColor;
-            border-right-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            }
-
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-    }
-
-    .footer {
-        margin: 24px 0 0;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        text-align: center;
-
-        a {
-            color: var(--color-primary);
-            font-weight: var(--font-weight-semibold);
-            text-decoration: none;
-        }
-    }
-
-    svg {
-        margin-right: 4px;
-        width: 16px;
-        height: 16px;
-    }
+  svg {
+    margin-right: 4px;
+    width: 16px;
+    height: 16px;
+  }
 }

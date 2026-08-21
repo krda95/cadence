@@ -1,15 +1,5 @@
-import {
-  Component,
-  computed,
-  effect,
-  input,
-  output,
-  signal,
-} from '@angular/core';
-import {
-  ConnectedPosition,
-  OverlayModule,
-} from '@angular/cdk/overlay';
+import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 
 import { buildLucideDataUri } from '@lucide/icons/build';
 import { lucideDynamicIconImports } from '@lucide/icons/dynamic';
@@ -69,18 +59,14 @@ export class IconPicker {
     },
   ];
 
-  private readonly iconNames = Object.keys(
-    lucideDynamicIconImports,
-  ) as IconName[];
+  private readonly iconNames = Object.keys(lucideDynamicIconImports) as IconName[];
 
   private readonly visibleLimit = 48;
 
   readonly filteredIconNames = computed(() => {
     const query = this.search().trim().toLowerCase();
 
-    return this.iconNames
-      .filter((name) => name.includes(query))
-      .slice(0, this.visibleLimit);
+    return this.iconNames.filter((name) => name.includes(query)).slice(0, this.visibleLimit);
   });
 
   constructor() {
@@ -122,49 +108,37 @@ export class IconPicker {
 
     try {
       const icons = await Promise.all(
-        this.filteredIconNames().map(
-          async (name): Promise<IconOption | null> => {
-            const icon = (await lucideDynamicIconImports[name]?.())
-              ?.default;
+        this.filteredIconNames().map(async (name): Promise<IconOption | null> => {
+          const icon = (await lucideDynamicIconImports[name]?.())?.default;
 
-            if (!icon) {
-              return null;
-            }
+          if (!icon) {
+            return null;
+          }
 
-            return {
-              name,
-              src: buildLucideDataUri(icon, {
-                size: 20,
-                strokeWidth: 1.8,
-                color: this.color()
-              }),
-            };
-          },
-        ),
+          return {
+            name,
+            src: buildLucideDataUri(icon, {
+              size: 20,
+              strokeWidth: 1.8,
+              color: this.color(),
+            }),
+          };
+        }),
       );
 
-      this.icons.set(
-        icons.filter(
-          (icon): icon is IconOption => icon !== null,
-        ),
-      );
+      this.icons.set(icons.filter((icon): icon is IconOption => icon !== null));
     } finally {
       this.isLoading.set(false);
     }
   }
 
-  private async loadSelectedIcon(
-    name: string | null,
-    color: string
-  ): Promise<void> {
+  private async loadSelectedIcon(name: string | null, color: string): Promise<void> {
     if (!name || !(name in lucideDynamicIconImports)) {
       this.selectedIconSrc.set(null);
       return;
     }
 
-    const icon = (
-      await lucideDynamicIconImports[name as IconName]?.()
-    )?.default;
+    const icon = (await lucideDynamicIconImports[name as IconName]?.())?.default;
 
     if (!icon) {
       this.selectedIconSrc.set(null);

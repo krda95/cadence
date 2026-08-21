@@ -9,11 +9,7 @@
     aria-label="Choose icon"
   >
     @if (selectedIconSrc()) {
-      <img
-        class="icon-picker__selected-icon"
-        [src]="selectedIconSrc()!"
-        alt=""
-      />
+      <img class="icon-picker__selected-icon" [src]="selectedIconSrc()!" alt="" />
     } @else {
       <span class="icon-picker__placeholder">+</span>
     }
@@ -21,59 +17,47 @@
 
   @if (isOpen()) {
     <ng-template
-        cdk-connected-overlay
-        [cdkConnectedOverlayOrigin]="iconPickerOrigin"
-        [cdkConnectedOverlayOpen]="isOpen()"
-        [cdkConnectedOverlayPositions]="overlayPositions"
-        [cdkConnectedOverlayHasBackdrop]="true"
-        cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
-        (backdropClick)="close()"
-        (detach)="close()"
-        >
-          <div
-            class="icon-picker__popover"
-            [style.--injected-color]="color()"
-          >
-            <input
-              type="search"
-              class="icon-picker__search"
-              placeholder="Search icons..."
-              [value]="search()"
-              (input)="onSearch($event)"
-            />
-    
-          @if (isLoading()) {
-            <p class="icon-picker__status">
-              Loading icons...
-            </p>
-          } @else {
-            <div class="icon-picker__grid">
-              @for (icon of icons(); track icon.name) {
-                <button
-                  type="button"
-                  class="icon-picker__option"
-                  [class.icon-picker__option--selected]="
-                    value() === icon.name
-                  "
-                  [title]="icon.name"
-                  [attr.aria-label]="icon.name"
-                  (click)="selectIcon(icon.name)"
-                >
-                  <img
-                    [src]="icon.src"
-                    alt=""
-                  />
-                </button>
-              }
-            </div>
-    
-            @if (icons().length === 0) {
-              <p class="icon-picker__status">
-                No icons found
-              </p>
+      cdk-connected-overlay
+      [cdkConnectedOverlayOrigin]="iconPickerOrigin"
+      [cdkConnectedOverlayOpen]="isOpen()"
+      [cdkConnectedOverlayPositions]="overlayPositions"
+      [cdkConnectedOverlayHasBackdrop]="true"
+      cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+      (backdropClick)="close()"
+      (detach)="close()"
+    >
+      <div class="icon-picker__popover" [style.--injected-color]="color()">
+        <input
+          type="search"
+          class="icon-picker__search"
+          placeholder="Search icons..."
+          [value]="search()"
+          (input)="onSearch($event)"
+        />
+
+        @if (isLoading()) {
+          <p class="icon-picker__status">Loading icons...</p>
+        } @else {
+          <div class="icon-picker__grid">
+            @for (icon of icons(); track icon.name) {
+              <button
+                type="button"
+                class="icon-picker__option"
+                [class.icon-picker__option--selected]="value() === icon.name"
+                [title]="icon.name"
+                [attr.aria-label]="icon.name"
+                (click)="selectIcon(icon.name)"
+              >
+                <img [src]="icon.src" alt="" />
+              </button>
             }
+          </div>
+
+          @if (icons().length === 0) {
+            <p class="icon-picker__status">No icons found</p>
           }
-            </div>
+        }
+      </div>
     </ng-template>
   }
 </div>

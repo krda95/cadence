@@ -43,8 +43,8 @@
     cursor: pointer;
 
     svg {
-        width: var(--font-size-lg);
-        height: var(--font-size-lg);
+      width: var(--font-size-lg);
+      height: var(--font-size-lg);
     }
   }
 
@@ -143,11 +143,7 @@
     height: 2.5rem;
     flex-shrink: 0;
     border-radius: var(--radius-md);
-    background-color: color-mix(
-      in srgb,
-      var(--goal-color) 30%,
-      black
-    );
+    background-color: color-mix(in srgb, var(--goal-color) 30%, black);
   }
 
   &__info {
@@ -185,8 +181,8 @@
     color: var(--color-text-secondary);
 
     svg {
-        width: var(--font-size-lg);
-        height: var(--font-size-lg);
+      width: var(--font-size-lg);
+      height: var(--font-size-lg);
     }
   }
 }

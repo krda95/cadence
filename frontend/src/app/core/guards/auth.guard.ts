@@ -14,7 +14,7 @@ export const authGuard: CanActivateFn = () => {
         return true;
       }
       return router.createUrlTree(['/login']);
-    })
+    }),
   );
 };
 
@@ -26,8 +26,8 @@ export const guestGuard: CanActivateFn = () => {
     map((isAuthenticated) => {
       if (isAuthenticated) {
         return router.createUrlTree(['/dashboard']);
-      }      
+      }
       return true;
-    })
+    }),
   );
 };

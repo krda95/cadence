@@ -1,9 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { Button } from '@shared/ui/button/button';
@@ -15,14 +11,7 @@ import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-forgot-password',
-  imports: [
-    ReactiveFormsModule,
-    RouterLink,
-    Button,
-    InputComponent,
-    LucideArrowLeft,
-    NgClass,
-  ],
+  imports: [ReactiveFormsModule, RouterLink, Button, InputComponent, LucideArrowLeft, NgClass],
   templateUrl: './forgot-password.html',
   styleUrl: './forgot-password.scss',
 })
@@ -46,29 +35,30 @@ export class ForgotPassword {
     this.isSubmitting.set(true);
     const { email } = this.forgotPasswordForm.getRawValue();
 
-    this.authService.forgotPassword({ email })
-    .pipe(
-      finalize(() => {
-        this.isSubmitting.set(false);
-      })
-    )
-    .subscribe({
-      next: (message) => {
-        this.emailSentMessage.set(message?.message);
-        this.forgotPasswordForm.controls.email.disable();
-      },
-      error: (error: HttpErrorResponse) => {
-        if (error.status === 429) {
-          this.forgotPasswordForm.controls.email.setErrors({
-            tooManyRequests: true,
-          });
-          return;
-        }
+    this.authService
+      .forgotPassword({ email })
+      .pipe(
+        finalize(() => {
+          this.isSubmitting.set(false);
+        }),
+      )
+      .subscribe({
+        next: (message) => {
+          this.emailSentMessage.set(message?.message);
+          this.forgotPasswordForm.controls.email.disable();
+        },
+        error: (error: HttpErrorResponse) => {
+          if (error.status === 429) {
+            this.forgotPasswordForm.controls.email.setErrors({
+              tooManyRequests: true,
+            });
+            return;
+          }
 
-        this.forgotPasswordForm.controls.email.setErrors({
-          resetFailed: true,
-        });
-      }
-    });
+          this.forgotPasswordForm.controls.email.setErrors({
+            resetFailed: true,
+          });
+        },
+      });
   }
 }

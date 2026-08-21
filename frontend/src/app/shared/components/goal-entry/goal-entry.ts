@@ -1,9 +1,9 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { GoalEntryDayResponse } from '../../../models/goalModel';
-import { Icon } from "@shared/ui/icon/icon";
+import { Icon } from '@shared/ui/icon/icon';
 import { LucidePencilLine, LucidePencil } from '@lucide/angular';
 import { DecimalPipe } from '@angular/common';
-import { Button } from "@shared/ui/button/button";
+import { Button } from '@shared/ui/button/button';
 
 @Component({
   selector: 'app-goal-entry',
@@ -25,28 +25,20 @@ export class GoalEntry {
     }
 
     if (goal.target_type === 'min') {
-      return Math.min(
-        (goal.period_value / goal.target_value) * 100,
-        100,
-      );
+      return Math.min((goal.period_value / goal.target_value) * 100, 100);
     }
 
-    return Math.min(
-      (goal.period_value / goal.target_value) * 100,
-      100,
-    );
+    return Math.min((goal.period_value / goal.target_value) * 100, 100);
   });
 
-  startEditing(): void {    
+  startEditing(): void {
     this.entryValue.set(this.getTodayValue(this.goal()) ?? 0);
     this.entryNote.set(this.goal().note ?? '');
     this.isEditing.set(true);
   }
 
   private getTodayValue(goal: GoalEntryDayResponse): number | null {
-    return goal.period === 'daily'
-      ? goal.entry_value
-      : goal.period_value;
+    return goal.period === 'daily' ? goal.entry_value : goal.period_value;
   }
 
   cancelEditing(): void {

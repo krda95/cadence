@@ -1,6 +1,14 @@
-import { ChangeDetectorRef, Component, ElementRef, HostListener, inject, OnInit, ViewChild } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
-import { Logo } from "@shared/ui/logo/logo";
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  HostListener,
+  inject,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Logo } from '@shared/ui/logo/logo';
 import {
   LucideLayoutDashboard,
   LucideCalendarDays,
@@ -9,7 +17,7 @@ import {
   LucideSettings,
   LucideLogOut,
   LucideChevronUp,
-  LucideChevronDown
+  LucideChevronDown,
 } from '@lucide/angular';
 import { AuthService } from '@core/services/auth.service';
 import { UserProfile } from '@models/loginModel';
@@ -29,8 +37,8 @@ import { UserProfile } from '@models/loginModel';
     LucideSettings,
     LucideLogOut,
     LucideChevronUp,
-    LucideChevronDown
-],
+    LucideChevronDown,
+  ],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
 })
@@ -49,16 +57,17 @@ export class AppLayout implements OnInit {
     this.authService.getCurrentUser().subscribe({
       next: (user) => {
         this.currentUser = user;
-        this.initials = user.display_name ? user.display_name.charAt(0).toUpperCase() : this.initials;
+        this.initials = user.display_name
+          ? user.display_name.charAt(0).toUpperCase()
+          : this.initials;
         this.changeDetectorRef.markForCheck();
       },
       error: () => {
         this.authService.logout();
         this.router.navigate(['/login']);
-      }
+      },
     });
   }
-
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -71,7 +80,7 @@ export class AppLayout implements OnInit {
     const clickedInside = this.userMenu?.nativeElement.contains(target);
 
     if (!clickedInside) {
-        this.isUserMenuOpen = false;
+      this.isUserMenuOpen = false;
     }
   }
 
@@ -79,7 +88,7 @@ export class AppLayout implements OnInit {
     this.isUserMenuOpen = !this.isUserMenuOpen;
   }
 
-  logout(): void {    
+  logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
   }

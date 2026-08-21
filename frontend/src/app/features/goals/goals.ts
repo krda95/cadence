@@ -1,10 +1,10 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
-import { Router, RouterOutlet } from "@angular/router";
+import { Router, RouterOutlet } from '@angular/router';
 import { GoalsService } from '@core/api/goals.service';
 import { GoalResponse } from '@models/goalModel';
 import { LucidePencil, LucidePlus } from '@lucide/angular';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
-import { Button } from "@shared/ui/button/button";
+import { Button } from '@shared/ui/button/button';
 import { Icon } from '@shared/ui/icon/icon';
 
 type GoalStatusFilter = 'active' | 'inactive' | 'all';
@@ -40,7 +40,7 @@ export class Goals implements OnInit {
   }
 
   filterGoals(): void {
-    const filteredGoals = this.goals.filter(goal => {
+    const filteredGoals = this.goals.filter((goal) => {
       if (this.statusFilter === 'active') {
         return goal.is_active;
       }
@@ -52,9 +52,9 @@ export class Goals implements OnInit {
       return true;
     });
 
-    this.dailyGoals = filteredGoals.filter(goal => goal.period === 'daily');
-    this.weeklyGoals = filteredGoals.filter(goal => goal.period === 'weekly');
-    this.monthlyGoals = filteredGoals.filter(goal => goal.period === 'monthly');
+    this.dailyGoals = filteredGoals.filter((goal) => goal.period === 'daily');
+    this.weeklyGoals = filteredGoals.filter((goal) => goal.period === 'weekly');
+    this.monthlyGoals = filteredGoals.filter((goal) => goal.period === 'monthly');
   }
 
   onStatusFilterChange(event: Event): void {
