@@ -41,7 +41,6 @@
   input {
     width: 100%;
     padding: 13px 15px;
-    // padding-right: 48px;
     border-radius: var(--radius-md);
     border: 1px solid var(--color-border);
     background: var(--color-surface);
@@ -58,14 +57,14 @@
     }
 
     &:hover {
-      border-color: var(--injected-color, var(--color-primary));
+      border-color: var(--goal-color, var(--color-primary));
     }
 
     &:focus {
-      border-color: var(--injected-color, var(--color-primary));
+      border-color: var(--goal-color, var(--color-primary));
 
       box-shadow: 0 0 0 3px
-        color-mix(in srgb, var(--injected-color, var(--color-primary)) 20%, transparent);
+        color-mix(in srgb, var(--goal-color, var(--color-primary)) 20%, transparent);
     }
   }
 
@@ -96,5 +95,44 @@
 
   .error-message-placeholder {
     min-height: 14px;
+  }
+
+  &.entry {
+    // background: red;
+    input {
+      width: 6rem;
+      min-width: 6rem;
+
+      padding: 0.5rem;
+
+      border: 0;
+      outline: 0;
+
+      background: transparent;
+      font-size: clamp(1rem, calc(3rem - max(0, var(--value-length, 1) - 2) * 0.6rem), 3rem);
+
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-bold);
+
+      line-height: 1;
+
+      &::-webkit-inner-spin-button,
+      &::-webkit-outer-spin-button {
+        margin: 0;
+        appearance: none;
+      }
+
+      &[type='number'] {
+        appearance: textfield;
+      }
+    }
+
+    .header {
+      display: none;
+    }
+
+    span {
+      display: none;
+    }
   }
 }

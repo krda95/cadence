@@ -9,6 +9,9 @@
         <h3 class="goal-entry__name">
           {{ goal().name }}
         </h3>
+        <span class="goal-entry__target">
+          {{ goal().target_type === 'min' ? 'At least' : 'At most' }}
+        </span>
       </div>
     </div>
 
@@ -35,16 +38,17 @@
   } @else {
     <div class="goal-entry__editor">
       <div class="goal-entry__value">
-        <div class="goal-entry__input-wrapper">
-          <input
-            id="entry-value"
-            type="number"
-            min="0"
-            [style.--value-length]="(entryValue() ?? '').toString().length || 1"
-            [value]="getTodayValue(goal()) ?? ''"
-            (input)="onValueInput($event)"
-          />
-        </div>
+        <app-input
+          type="number"
+          [autoFocus]="true"
+          [min]="0"
+          [variant]="'entry'"
+          [ngModel]="entryValue()"
+          (ngModelChange)="entryValue.set($event)"
+          [style.--value-length]="entryValue()?.toString()?.length ?? 1"
+          /* [style.--goal-color]="goal().color ?? '#8b8b8b'" */
+        />
+        <!-- </div> -->
         <p class="goal-entry__target">
           &nbsp; / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
         </p>

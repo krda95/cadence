@@ -1,1 +1,79 @@
-<p>history works!</p>
+<section class="history">
+  <header class="history__header">
+    <div class="history__header__top">
+      <app-button type="button" variant="secondary" (click)="incrementBy(-1)"><</app-button>
+      <app-button
+        type="button"
+        variant="secondary"
+        [disabled]="isSelectedDayYesterday()"
+        (click)="incrementBy(1)"
+        >></app-button
+      >
+      <div class="history__heading">
+        <p class="history__date">
+          {{ (selectedDate() | date: 'EEEE, MMMM d')?.toLocaleUpperCase() }}
+        </p>
+
+        <h1 class="history__title">History</h1>
+        <p class="history__score">
+          {{
+            dailyScore()?.daily_score
+              ? 'Daily score ' + dailyScore()!.daily_score + '%'
+              : 'No results'
+          }}
+        </p>
+      </div>
+    </div>
+    <div class="history__header__bottom">
+      <div class="history__dates">
+        @for (date of dates(); track date.getTime()) {
+          <button type="button" (click)="selectDate(date)">
+            {{ date | date: 'EEE, MMM d' }}
+          </button>
+        }
+      </div>
+    </div>
+  </header>
+
+  @if (dailyGoals().length) {
+    <section class="history__section">
+      <h2 class="history__section__title">DAILY</h2>
+
+      <div class="history__grid">
+        @for (goal of dailyGoals(); track goal.goal_id) {
+          <app-goal-entry
+            [goal]="goal"
+            (entrySaved)="saveEntry($event)"
+            [isEditing]="editingGoalId() === goal.goal_id"
+            (editStarted)="editingGoalId.set(goal.goal_id)"
+            (editCancelled)="editingGoalId.set(null)"
+          />
+        }
+      </div>
+    </section>
+  }
+
+  @if (weeklyGoals().length) {
+    <section class="history__section">
+      <h2 class="history__section__title">WEEKLY</h2>
+
+      <div class="history__grid">
+        @for (goal of weeklyGoals(); track goal.goal_id) {
+          <app-goal-entry
+            [goal]="goal"
+            (entrySaved)="saveEntry($event)"
+            [isEditing]="editingGoalId() === goal.goal_id"
+            (editStarted)="editingGoalId.set(goal.goal_id)"
+            (editCancelled)="editingGoalId.set(null)"
+          />
+        }
+      </div>
+    </section>
+  }
+
+  @if (!dailyGoals().length && !weeklyGoals().length) {
+    <div class="history__empty">
+      <h2 class="history__empty-title">No historical entries</h2>
+    </div>
+  }
+</section>

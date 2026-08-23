@@ -143,12 +143,12 @@
       }
 
       &:hover {
-        border-color: var(--injected-color);
+        border-color: var(--goal-color);
       }
 
       &:focus {
-        border-color: var(--injected-color);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--injected-color) 20%, transparent);
+        border-color: var(--goal-color);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--goal-color) 20%, transparent);
       }
     }
   }
@@ -193,15 +193,15 @@
 
     input:checked + span {
       background: var(--color-surface-active);
-      border-color: var(--injected-color);
+      border-color: var(--goal-color);
       color: var(--color-text-primary);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--injected-color) 20%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--goal-color) 20%, transparent);
     }
 
     input:focus-visible + span {
       outline: 2px solid var(--color-primary);
       outline-offset: 2px;
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--injected-color) 20%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--goal-color) 20%, transparent);
     }
   }
 

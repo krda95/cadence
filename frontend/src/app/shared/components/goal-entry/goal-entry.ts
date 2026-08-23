@@ -4,12 +4,14 @@ import { Icon } from '@shared/ui/icon/icon';
 import { LucidePencilLine, LucidePencil } from '@lucide/angular';
 import { DecimalPipe } from '@angular/common';
 import { Button } from '@shared/ui/button/button';
+import { InputComponent } from '@shared/ui/input/input';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-goal-entry',
   templateUrl: './goal-entry.html',
   styleUrl: './goal-entry.scss',
-  imports: [Icon, DecimalPipe, LucidePencilLine, LucidePencil, Button],
+  imports: [Icon, DecimalPipe, LucidePencilLine, LucidePencil, Button, InputComponent, FormsModule],
 })
 export class GoalEntry {
   goal = input.required<GoalEntryDayResponse>();
@@ -37,7 +39,7 @@ export class GoalEntry {
       return Math.min((goal.period_value / goal.target_value) * 100, 100);
     }
 
-    return Math.min((goal.period_value / goal.target_value) * 100, 100);
+    return goal.period_value / goal.target_value <= 1 ? 100 : 0;
   });
 
   startEditing(): void {

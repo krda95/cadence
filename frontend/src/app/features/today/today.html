@@ -1,12 +1,11 @@
 <section class="today">
   <header class="today__header">
-    <div class="today__heading">
-      <p class="today__date">
-        {{ (selectedDate() | date: 'EEEE, MMMM d')?.toLocaleUpperCase() }}
-      </p>
+    <p class="today__date">
+      {{ (selectedDate() | date: 'EEEE, MMMM d')?.toLocaleUpperCase() }}
+    </p>
 
-      <h1 class="today__title">Today</h1>
-    </div>
+    <h1 class="today__title">Today</h1>
+    <p class="today__score">Day score {{ dailyScore()?.daily_score }}%</p>
   </header>
 
   @if (dailyGoals().length) {

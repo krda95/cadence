@@ -34,7 +34,7 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
   readonly type = input<'text' | 'email' | 'password' | 'number'>('text');
   readonly autoFocus = input(false);
   readonly tabIndex = input<number>(0);
-  readonly variant = input<'default' | 'filled'>('default');
+  readonly variant = input<'default' | 'filled' | 'entry'>('default');
 
   readonly value = signal<string | number>('');
   readonly disabled = signal(false);

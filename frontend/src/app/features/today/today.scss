@@ -7,14 +7,15 @@
 
   &__header {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
-  &__heading {
-    min-width: 0;
+  &__score {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0;
   }
 
   &__date {

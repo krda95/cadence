@@ -14,7 +14,7 @@
     <form
       class="goal-form"
       [formGroup]="form"
-      [style.--injected-color]="form.controls.color.value"
+      [style.--goal-color]="form.controls.color.value"
       (ngSubmit)="submit()"
     >
       <app-input
@@ -36,7 +36,7 @@
           <app-icon-picker
             [value]="form.controls.icon.value"
             [color]="form.controls.color.value"
-            [style.--injected-color]="form.controls.color.value"
+            [style.--goal-color]="form.controls.color.value"
             (valueChange)="form.controls.icon.setValue($event)"
           />
         </div>
