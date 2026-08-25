@@ -150,3 +150,24 @@ class WeeklyProgressResponse(BaseModel):
     )
 
     items: list[WeeklyProgressItem]
+
+
+class DayProgressResponse(BaseModel):
+    date: date
+    timezone: str
+
+    daily_score: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+    )
+
+    is_final: bool
+
+    scored_components_count: int
+    pending_components_count: int
+
+    components: list[DailyScoreComponent]
+    periodic_progress: list[PeriodProgressItem]
+
+    weekly_progress: WeeklyProgressResponse | None = None

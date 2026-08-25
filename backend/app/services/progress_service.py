@@ -219,6 +219,23 @@ async def load_goal_day_states(
         date_to=reference_date,
     )
 
+    return build_goal_day_states(
+        goals=applicable_goals,
+        entries_by_goal=entries_by_goal,
+        reference_date=reference_date,
+    )
+
+def build_goal_day_states(
+    goals: list[Goal],
+    entries_by_goal: dict[UUID, dict[date, GoalEntryDay]],
+    reference_date: date,
+) -> list[GoalDayState]:
+    applicable_goals = [
+        goal
+        for goal in goals
+        if get_goal_created_date(goal) <= reference_date
+    ]
+
     states: list[GoalDayState] = []
 
     for goal in applicable_goals:
@@ -255,6 +272,7 @@ async def load_goal_day_states(
 
     return states
 
+
 async def calculate_daily_progress(
     session: AsyncSession,
     owner_id: UUID,
@@ -265,13 +283,25 @@ async def calculate_daily_progress(
     if reference_date > today:
         raise ValueError("date cannot be in the future")
 
-    is_day_final = reference_date < today
-
     goal_states = await load_goal_day_states(
         session=session,
         owner_id=owner_id,
         reference_date=reference_date,
     )
+
+    return build_daily_progress(
+        goal_states=goal_states,
+        reference_date=reference_date,
+        today=today,
+    )
+
+
+def build_daily_progress(
+    goal_states: list[GoalDayState],
+    reference_date: date,
+    today: date,
+) -> dict[str, Any]:
+    is_day_final = reference_date < today
 
     if not goal_states:
         return {
@@ -490,12 +520,6 @@ def get_weekly_item_status(
     score: float | None,
     is_week_final: bool,
 ) -> ProgressStatus:
-    """
-    Status agregatu goal'u w widoku tygodniowym.
-
-    Dla tygodnia w toku nie ogłaszamy finalnego wyniku,
-    nawet jeśli cel jest już aktualnie osiągnięty.
-    """
     if not is_week_final:
         return ProgressStatus.IN_PROGRESS
 
@@ -513,9 +537,6 @@ def get_weekly_max_status(
     target_value: float,
     is_week_final: bool,
 ) -> ProgressStatus:
-    """
-    Weekly max może być przekroczony jeszcze przed końcem tygodnia.
-    """
     if current_value > target_value:
         return ProgressStatus.EXCEEDED
 
@@ -544,14 +565,6 @@ async def calculate_weekly_progress(
     owner_id: UUID,
     reference_date: date,
 ) -> dict[str, Any]:
-    """
-    Calculates progress for the ISO week containing reference_date.
-
-    - Monday is the first day of the week.
-    - Sunday is the last day of the week.
-    - Final weekly_score exists only after Sunday has ended.
-    - Monthly goals are intentionally excluded for MVP.
-    """
     today = get_warsaw_today()
 
     if reference_date > today:
@@ -581,6 +594,52 @@ async def calculate_weekly_progress(
         and get_goal_created_date(goal) <= calculation_end
     ]
 
+    entries_by_goal: dict[UUID, dict[date, GoalEntryDay]] = {}
+
+    if applicable_goals:
+        entries_by_goal = await load_entries_by_goal(
+            session=session,
+            goal_ids=[
+                goal.id
+                for goal in applicable_goals
+            ],
+            date_from=week_start,
+            date_to=calculation_end,
+        )
+
+    return build_weekly_progress(
+        goals=applicable_goals,
+        entries_by_goal=entries_by_goal,
+        reference_date=reference_date,
+        today=today,
+    )
+
+
+def build_weekly_progress(
+    goals: list[Goal],
+    entries_by_goal: dict[UUID, dict[date, GoalEntryDay]],
+    reference_date: date,
+    today: date,
+) -> dict[str, Any]:
+    week_start, week_end = get_period_bounds(
+        GoalPeriod.WEEKLY,
+        reference_date,
+    )
+
+    is_week_final = week_end < today
+    calculation_end = week_end if is_week_final else reference_date
+
+    # Monthly goals do not participate in weekly progress yet.
+    applicable_goals = [
+        goal
+        for goal in goals
+        if goal.period in {
+            GoalPeriod.DAILY,
+            GoalPeriod.WEEKLY,
+        }
+        and get_goal_created_date(goal) <= calculation_end
+    ]
+
     if not applicable_goals:
         return {
             "date": reference_date,
@@ -591,16 +650,6 @@ async def calculate_weekly_progress(
             "weekly_score": None,
             "items": [],
         }
-
-    entries_by_goal = await load_entries_by_goal(
-        session=session,
-        goal_ids=[
-            goal.id
-            for goal in applicable_goals
-        ],
-        date_from=week_start,
-        date_to=calculation_end,
-    )
 
     items: list[dict[str, Any]] = []
     final_goal_scores: list[float] = []
@@ -785,3 +834,96 @@ async def calculate_weekly_progress(
         "weekly_score": weekly_score,
         "items": items,
     }
+
+
+def is_end_of_week(reference_date: date) -> bool:
+    return reference_date.weekday() == 6  # Sunday
+
+
+async def calculate_progress_range(
+    session: AsyncSession,
+    owner_id: UUID,
+    date_from: date,
+    date_to: date,
+) -> list[dict[str, Any]]:
+    """
+    Liczy daily_progress dla każdego dnia z [date_from, date_to]
+    oraz weekly_progress dla dni będących końcem tygodnia (niedziela).
+
+    Robi to w dwóch zapytaniach do bazy (cele + wpisy dla całego
+    potrzebnego zakresu), zamiast N zapytań per dzień.
+    """
+    today = get_warsaw_today()
+
+    if date_from > date_to:
+        raise ValueError("date_from cannot be after date_to")
+
+    if date_to > today:
+        raise ValueError("date cannot be in the future")
+
+    goals = await load_active_goals(
+        session=session,
+        owner_id=owner_id,
+    )
+
+    if not goals:
+        return [
+            {
+                **build_daily_progress(
+                    goal_states=[],
+                    reference_date=day,
+                    today=today,
+                ),
+                "weekly_progress": None,
+            }
+            for day in iter_dates(date_from, date_to)
+        ]
+
+    # Najwcześniejsza data, jakiej mogą potrzebować okresy (weekly/monthly)
+    # obejmujące date_from, np. początek tygodnia/miesiąca zawierającego d1.
+    earliest_needed = date_from
+
+    for goal in goals:
+        period_start, _ = get_period_bounds(goal.period, date_from)
+        earliest_needed = min(earliest_needed, period_start)
+
+    entries_by_goal = await load_entries_by_goal(
+        session=session,
+        goal_ids=[goal.id for goal in goals],
+        date_from=earliest_needed,
+        date_to=date_to,
+    )
+
+    results: list[dict[str, Any]] = []
+
+    for day in iter_dates(date_from, date_to):
+        goal_states = build_goal_day_states(
+            goals=goals,
+            entries_by_goal=entries_by_goal,
+            reference_date=day,
+        )
+
+        day_progress = build_daily_progress(
+            goal_states=goal_states,
+            reference_date=day,
+            today=today,
+        )
+
+        weekly_progress = None
+
+        if is_end_of_week(day):
+            weekly_progress = build_weekly_progress(
+                goals=goals,
+                entries_by_goal=entries_by_goal,
+                reference_date=day,
+                today=today,
+            )
+
+        results.append(
+            {
+                **day_progress,
+                "weekly_progress": weekly_progress,
+            }
+        )
+
+    return results

@@ -20,9 +20,10 @@ from app.schemas.goal import (
     GoalResponse,
     GoalUpdate,
 )
-from app.schemas.progress import DailyProgressResponse, WeeklyProgressResponse
+from app.schemas.progress import DailyProgressResponse, DayProgressResponse, WeeklyProgressResponse
 from app.services.progress_service import (
     calculate_daily_progress,
+    calculate_progress_range,
     calculate_weekly_progress,
     get_goal_entries_for_date,
     get_warsaw_today,
@@ -155,6 +156,40 @@ async def get_weekly_progress(
         ) from error
 
     return WeeklyProgressResponse(**progress)
+
+@router.get(
+    "/progress/range",
+    response_model=list[DayProgressResponse],
+)
+async def get_progress_range(
+    date_from: date,
+    date_to: date,
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[DayProgressResponse]:
+    if date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="date_from cannot be after date_to",
+        )
+
+    try:
+        progress_days = await calculate_progress_range(
+            session=session,
+            owner_id=current_user.id,
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(error),
+        ) from error
+
+    return [
+        DayProgressResponse(**day_progress)
+        for day_progress in progress_days
+    ]
 
 @router.get(
     "/entries",
