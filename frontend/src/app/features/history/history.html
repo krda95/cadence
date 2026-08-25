@@ -1,7 +1,13 @@
 <section class="history">
   <header class="history__header">
     <div class="history__header__top">
-      <app-button type="button" variant="secondary" (click)="incrementBy(-1)"><</app-button>
+      <app-button
+        type="button"
+        variant="secondary"
+        [disabled]="isSelectedMinimalDate()"
+        (click)="incrementBy(-1)"
+        ><</app-button
+      >
       <app-button
         type="button"
         variant="secondary"
@@ -17,21 +23,30 @@
         <h1 class="history__title">History</h1>
         <p class="history__score">
           {{
-            dailyScore()?.daily_score
-              ? 'Daily score ' + dailyScore()!.daily_score + '%'
+            getScoreForDay(selectedDate())
+              ? 'Daily score ' + (getScoreForDay(selectedDate()) | number: '1.0-0') + '%'
               : 'No results'
           }}
         </p>
       </div>
     </div>
     <div class="history__header__bottom">
-      <div class="history__dates">
-        @for (date of dates(); track date.getTime()) {
-          <button type="button" (click)="selectDate(date)">
-            {{ date | date: 'EEE, MMM d' }}
+      @for (date of dates(); track date.getTime()) {
+        @if (getScoreForDay(date)) {
+          <button
+            type="button"
+            (click)="selectDate(date)"
+            [class.selectedDate]="isSelectedDate(date)"
+          >
+            {{ date | date: 'EEE,' }}
+            <br />
+            {{ date | date: 'MMM d' }}
+            <div class="progress-ring" [style.--progress]="getScoreForDay(date)">
+              <div class="progress-ring-inner">{{ getScoreForDay(date) | number: '1.0-0' }}%</div>
+            </div>
           </button>
         }
-      </div>
+      }
     </div>
   </header>
 

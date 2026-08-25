@@ -39,7 +39,7 @@ export class GoalEntry {
       return Math.min((goal.period_value / goal.target_value) * 100, 100);
     }
 
-    return goal.period_value / goal.target_value <= 1 ? 100 : 0;
+    return goal.period_value / goal.target_value > 1 ? 0 : 100;
   });
 
   startEditing(): void {
@@ -58,9 +58,18 @@ export class GoalEntry {
 
   onValueInput(event: Event): void {
     const value = (event.target as HTMLInputElement).valueAsNumber;
-    console.log(value);
 
     this.entryValue.set(Number.isNaN(value) ? null : value);
+  }
+
+  onEditorKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.save();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelEditing();
+    }
   }
 
   save(): void {

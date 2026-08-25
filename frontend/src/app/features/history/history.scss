@@ -18,6 +18,54 @@
 
     &__bottom {
       display: flex;
+
+      button {
+        background: transparent;
+        border: 0;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+
+        &.selectedDate {
+          background: var(--color-surface-hover);
+          border-radius: var(--radius-lg);
+          padding: var(--space-2);
+        }
+      }
+
+      .progress-ring {
+        --progress: 100;
+        margin-top: var(--space-2);
+
+        display: grid;
+        place-items: center;
+
+        width: 4.5rem;
+        height: 4.5rem;
+
+        border-radius: 50%;
+
+        background: conic-gradient(
+          var(--color-primary) calc(var(--progress) * 1%),
+          color-mix(in srgb, var(--color-primary) 25%, var(--color-surface)) 0
+        );
+      }
+
+      .progress-ring-inner {
+        display: grid;
+        place-items: center;
+
+        width: 3.65rem;
+        height: 3.65rem;
+
+        border-radius: 50%;
+
+        background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+
+        color: var(--color-text-primary);
+
+        font-size: 1rem;
+        font-weight: 600;
+      }
     }
   }
 

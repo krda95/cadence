@@ -36,7 +36,7 @@
       <span>Enter value</span>
     </button>
   } @else {
-    <div class="goal-entry__editor">
+    <div class="goal-entry__editor" (keydown)="onEditorKeydown($event)">
       <div class="goal-entry__value">
         <app-input
           type="number"
@@ -46,9 +46,7 @@
           [ngModel]="entryValue()"
           (ngModelChange)="entryValue.set($event)"
           [style.--value-length]="entryValue()?.toString()?.length ?? 1"
-          /* [style.--goal-color]="goal().color ?? '#8b8b8b'" */
         />
-        <!-- </div> -->
         <p class="goal-entry__target">
           &nbsp; / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
         </p>

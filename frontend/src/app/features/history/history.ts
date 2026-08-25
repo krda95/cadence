@@ -1,25 +1,24 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { GoalsService } from '@core/api/goals.service';
 import { GoalEntryDayResponse } from '@models/goalModel';
 import moment, { min } from 'moment';
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
 import { Button } from '@shared/ui/button/button';
-import { DailyProgressResponse } from '@models/progressModel';
+import { DayProgressResponse } from '@models/progressModel';
 
 @Component({
   selector: 'app-history',
-  imports: [DatePipe, GoalEntry, Button],
+  imports: [DatePipe, GoalEntry, Button, DecimalPipe],
   templateUrl: './history.html',
   styleUrl: './history.scss',
 })
 export class History implements OnInit {
-  [x: string]: any;
   selectedDate = signal(this.getYesterday());
   private goalsService = inject(GoalsService);
   goals = signal<GoalEntryDayResponse[]>([]);
   editingGoalId = signal<string | null>(null);
-  dailyScore = signal<DailyProgressResponse | null>(null);
+  rangeScore = signal<DayProgressResponse[] | null>(null);
 
   dailyGoals = computed(() => this.goals().filter((goal) => goal.period === 'daily'));
   weeklyGoals = computed(() => this.goals().filter((goal) => goal.period === 'weekly'));
@@ -35,6 +34,12 @@ export class History implements OnInit {
     }).sort((a, b) => a.getTime() - b.getTime());
   });
 
+  dateRange = computed(() => {
+    const dates = this.dates();
+
+    return { from: dates[0], to: dates[dates.length - 1] };
+  });
+
   private getYesterday(): Date {
     const date = new Date();
 
@@ -43,19 +48,46 @@ export class History implements OnInit {
     return date;
   }
 
-  public getDailyScore(): void {
-    this.goalsService.getDayScore(this.getSelectedDateString()).subscribe({
-      next: (score) => {
-        this.dailyScore.set(score);
-      },
-      error: (error) => {
-        console.error('Failed to load goal entries', error);
-      },
-    });
+  isSelectedDate(date: Date) {
+    return moment(date).isSame(this.selectedDate(), 'd');
   }
 
-  private getSelectedDateString(): string {
-    const selected = this.selectedDate();
+  isSelectedMinimalDate(): boolean {
+    const allowedDates = this.rangeScore()
+      ?.filter((d) => d.daily_score !== null)
+      .map((d) => moment(d.date));
+
+    if (!allowedDates || allowedDates.length === 0) {
+      return false;
+    }
+
+    const minDate = min(allowedDates);
+
+    return moment(this.selectedDate()).isSame(minDate, 'd');
+  }
+
+  public getRangeScore(): void {
+    const { from, to } = this.dateRange();
+
+    this.goalsService
+      .getProgressRange(this.getSelectedDateString(from), this.getSelectedDateString(to))
+      .subscribe({
+        next: (score) => {
+          this.rangeScore.set(score);
+        },
+        error: (error) => {
+          console.error('Failed to load goal entries', error);
+        },
+      });
+  }
+
+  public getScoreForDay(date: Date): number | null {
+    const score = this.rangeScore()?.find((day) => moment(day.date).isSame(date, 'd'));
+    return score?.daily_score ?? null;
+  }
+
+  private getSelectedDateString(date?: Date): string {
+    const selected = date ?? this.selectedDate();
 
     const year = selected.getFullYear();
     const month = String(selected.getMonth() + 1).padStart(2, '0');
@@ -71,18 +103,18 @@ export class History implements OnInit {
   selectDate(date: Date): void {
     this.selectedDate.set(date);
     this.loadGoals();
-    this.getDailyScore();
+    this.getRangeScore();
   }
 
   incrementBy(days: number) {
     this.selectedDate.set(moment(this.selectedDate()).add(days, 'd').toDate());
     this.loadGoals();
-    this.getDailyScore();
+    this.getRangeScore();
   }
 
   ngOnInit(): void {
     this.loadGoals();
-    this.getDailyScore();
+    this.getRangeScore();
   }
 
   private loadGoals(): void {
@@ -106,6 +138,7 @@ export class History implements OnInit {
         next: () => {
           this.editingGoalId.set(null);
           this.loadGoals();
+          this.getRangeScore();
         },
         error: (error) => {
           console.error('Failed to save entry', error);

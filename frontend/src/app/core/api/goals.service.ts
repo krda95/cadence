@@ -9,7 +9,7 @@ import {
 } from '../../models/goalModel';
 import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
-import { DailyProgressResponse } from '@models/progressModel';
+import { DailyProgressResponse, DayProgressResponse } from '@models/progressModel';
 
 @Injectable({
   providedIn: 'root',
@@ -61,6 +61,12 @@ export class GoalsService {
   getDayScore(date: string): Observable<DailyProgressResponse> {
     return this.http.get<DailyProgressResponse>(`${this.apiGoalsUrl}/progress/daily`, {
       params: { date },
+    });
+  }
+
+  getProgressRange(dateFrom: string, dateTo: string): Observable<DayProgressResponse[]> {
+    return this.http.get<DayProgressResponse[]>(`${this.apiGoalsUrl}/progress/range`, {
+      params: { date_from: dateFrom, date_to: dateTo },
     });
   }
 }
