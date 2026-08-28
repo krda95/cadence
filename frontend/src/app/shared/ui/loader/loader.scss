@@ -1,0 +1,17 @@
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 4rem 0;
+
+  &__logo {
+    animation: loader-spin 1.2s linear infinite;
+  }
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

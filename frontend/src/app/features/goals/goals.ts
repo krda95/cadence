@@ -67,7 +67,6 @@ export class Goals implements OnInit {
   getGoals(): void {
     this.goalService.getGoals().subscribe({
       next: (goals) => {
-        console.log('Goals:', goals);
         this.goals = goals;
         this.filterGoals();
         this.cdr.detectChanges();

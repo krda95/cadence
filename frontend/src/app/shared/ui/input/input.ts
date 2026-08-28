@@ -31,12 +31,16 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl } from '@angular/for
 export class InputComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnDestroy {
   readonly label = input('');
   readonly placeholder = input('');
-  readonly type = input<'text' | 'email' | 'password' | 'number'>('text');
+  readonly type = input<'text' | 'email' | 'password'>('text');
+  readonly inputMode = input<
+    'text' | 'numeric' | 'decimal' | 'email' | 'tel' | 'search' | 'url' | null
+  >(null);
   readonly autoFocus = input(false);
+  readonly autoSelect = input(false);
   readonly tabIndex = input<number>(0);
   readonly variant = input<'default' | 'filled' | 'entry'>('default');
 
-  readonly value = signal<string | number>('');
+  readonly value = signal<string>('');
   readonly disabled = signal(false);
   readonly passwordVisible = signal(false);
   private readonly validationMessage = signal<string | null>(null);
@@ -49,6 +53,7 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
   private readonly injector = inject(Injector);
   private ngControl: NgControl | null = null;
   private validationTimeout: ReturnType<typeof setTimeout> | null = null;
+  private autoSelectPending = false;
 
   @ViewChild('input')
   private input!: ElementRef<HTMLInputElement>;
@@ -78,14 +83,39 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
       : this.type();
   });
 
-  private onChange: (value: string | number | null) => void = () => {};
+  private onChange: (value: string | null) => void = () => {};
   private onTouched: () => void = () => {};
 
   writeValue(value: string | number | null): void {
-    this.value.set(value ?? '');
+    const normalizedValue = value === null ? '' : String(value);
+
+    this.value.set(normalizedValue);
+
+    if (this.autoSelect() && this.autoSelectPending && normalizedValue !== '') {
+      this.autoSelectPending = false;
+
+      queueMicrotask(() => {
+        this.input.nativeElement.select();
+      });
+    }
   }
 
-  registerOnChange(fn: (value: string | number | null) => void): void {
+  handleFocus(): void {
+    if (!this.autoSelect()) {
+      return;
+    }
+
+    if (this.value() === '') {
+      this.autoSelectPending = true;
+      return;
+    }
+
+    queueMicrotask(() => {
+      this.input.nativeElement.select();
+    });
+  }
+
+  registerOnChange(fn: (value: string | null) => void): void {
     this.onChange = fn;
   }
 
@@ -99,13 +129,10 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
 
   handleInput(event: Event): void {
     const inputElement = event.target as HTMLInputElement;
+    const value = inputElement.value;
 
-    const value = this.type() === 'number' ? inputElement.valueAsNumber : inputElement.value;
-
-    const normalizedValue = typeof value === 'number' && Number.isNaN(value) ? null : value;
-
-    this.value.set(normalizedValue ?? '');
-    this.onChange(normalizedValue);
+    this.value.set(value);
+    this.onChange(value);
     this.suppressUntilBlur.set(true);
   }
 

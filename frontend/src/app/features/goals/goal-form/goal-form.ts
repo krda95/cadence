@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GoalsService } from '@core/api/goals.service';
@@ -6,10 +6,11 @@ import { GoalCreate, GoalPeriod, GoalTargetType } from '@models/goalModel';
 import { IconPicker } from '@shared/components/icon-picker/icon-picker';
 import { Button } from '@shared/ui/button/button';
 import { InputComponent } from '@shared/ui/input/input';
+import { Loader } from '@shared/ui/loader/loader';
 
 @Component({
   selector: 'app-goal-form',
-  imports: [ReactiveFormsModule, IconPicker, Button, InputComponent],
+  imports: [ReactiveFormsModule, IconPicker, Button, InputComponent, Loader],
   templateUrl: './goal-form.html',
   styleUrl: './goal-form.scss',
 })
@@ -34,6 +35,8 @@ export class GoalForm implements OnInit {
   isEditMode = !!this.goalId;
   canBeDeactivated = false;
 
+  isLoading = signal(this.isEditMode);
+
   ngOnInit(): void {
     if (!this.goalId) {
       return;
@@ -52,9 +55,11 @@ export class GoalForm implements OnInit {
           target_value: goal.target_value,
           is_active: goal.is_active,
         });
+        this.isLoading.set(false);
       },
       error: (error) => {
         console.error('Failed to load goal:', error);
+        this.isLoading.set(false);
       },
     });
   }

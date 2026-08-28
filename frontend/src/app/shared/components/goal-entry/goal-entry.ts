@@ -56,10 +56,18 @@ export class GoalEntry {
     this.editCancelled.emit();
   }
 
-  onValueInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).valueAsNumber;
+  onEntryValueChange(value: string): void {
+    if (value === '') {
+      this.entryValue.set(null);
+      return;
+    }
+    console.log(value);
 
-    this.entryValue.set(Number.isNaN(value) ? null : value);
+    const parsedValue = Number(value.replace(',', '.'));
+
+    if (!Number.isNaN(parsedValue) && parsedValue >= 0) {
+      this.entryValue.set(parsedValue);
+    }
   }
 
   onEditorKeydown(event: KeyboardEvent): void {

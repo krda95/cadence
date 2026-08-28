@@ -12,6 +12,7 @@
       [type]="inputType()"
       [placeholder]="placeholder()"
       [value]="value()"
+      [attr.inputmode]="inputMode()"
       [min]="min()"
       [max]="max()"
       class="input__control"
@@ -21,6 +22,7 @@
       [attr.tabindex]="tabIndex()"
       (input)="handleInput($event)"
       (blur)="handleBlur()"
+      (focus)="handleFocus()"
     />
 
     @if (type() === 'password') {
