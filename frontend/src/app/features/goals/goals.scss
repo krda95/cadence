@@ -180,6 +180,9 @@
     cursor: pointer;
     color: var(--color-text-secondary);
 
+    :hover {
+      color: var(--color-text-primary);
+    }
     svg {
       width: var(--font-size-lg);
       height: var(--font-size-lg);

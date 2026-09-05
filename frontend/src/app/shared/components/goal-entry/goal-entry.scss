@@ -110,12 +110,19 @@
     }
   }
 
-  &__current-value {
-    color: var(--color-text-primary);
+  &__value__column {
+    &__row {
+      display: flex;
+      align-items: baseline;
 
-    font-size: 3rem;
-    font-weight: var(--font-weight-bold);
-    line-height: 1;
+      &__current-value {
+        color: var(--color-text-primary);
+
+        font-size: 3rem;
+        font-weight: var(--font-weight-bold);
+        line-height: 1;
+      }
+    }
   }
 
   &__action {

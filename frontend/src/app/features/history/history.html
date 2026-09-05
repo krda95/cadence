@@ -27,6 +27,12 @@
               ? 'Daily score ' + (getScoreForDay(selectedDate()) | number: '1.0-0') + '%'
               : 'No results'
           }}
+          @if (getScoreForDay(selectedDate())) {
+            <span
+              class="history__score__dot"
+              [style.--background]="getScoreColor(getScoreForDay(selectedDate()))"
+            ></span>
+          }
         </p>
       </div>
     </div>
@@ -41,7 +47,11 @@
             {{ date | date: 'EEE,' }}
             <br />
             {{ date | date: 'MMM d' }}
-            <div class="progress-ring" [style.--progress]="getScoreForDay(date)">
+            <div
+              class="progress-ring"
+              [style.--progress]="getScoreForDay(date)"
+              [style.--background]="getScoreColor(getScoreForDay(date))"
+            >
               <div class="progress-ring-inner">{{ getScoreForDay(date) | number: '1.0-0' }}%</div>
             </div>
           </button>

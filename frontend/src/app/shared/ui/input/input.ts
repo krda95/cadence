@@ -13,7 +13,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import { LucideEye, LucideEyeClosed } from '@lucide/angular';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl } from '@angular/forms';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl, ValidationErrors } from '@angular/forms';
 
 @Component({
   selector: 'app-input',
@@ -54,6 +54,14 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
   private ngControl: NgControl | null = null;
   private validationTimeout: ReturnType<typeof setTimeout> | null = null;
   private autoSelectPending = false;
+  private readonly immediateErrorKeys = new Set([
+    'invalidCredentials',
+    'serverUnavailable',
+    'accountExists',
+    'unknownError',
+    'tooManyRequests',
+    'resetFailed',
+  ]);
 
   @ViewChild('input')
   private input!: ElementRef<HTMLInputElement>;
@@ -69,7 +77,13 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
 
     this.ngControl?.control?.statusChanges.subscribe(() => {
       const control = this.ngControl?.control;
-      if (control?.touched) {
+      const hasImmediateError = this.hasImmediateError(control?.errors);
+
+      if (hasImmediateError) {
+        this.suppressUntilBlur.set(false);
+      }
+
+      if (control?.touched || hasImmediateError) {
         this.scheduleValidationUpdate();
       }
     });
@@ -156,6 +170,10 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
     this.validationTimeout = setTimeout(() => {
       this.validationMessage.set(this.getCurrentErrorMessage());
     }, 200);
+  }
+
+  private hasImmediateError(errors: ValidationErrors | null | undefined): boolean {
+    return Object.keys(errors ?? {}).some((key) => this.immediateErrorKeys.has(key));
   }
 
   togglePassword() {

@@ -59,6 +59,26 @@ export class Today implements OnInit {
     return `${year}-${month}-${day}`;
   }
 
+  getScoreColor(progress: number | null): string {
+    if (progress === null) {
+      return 'var(--color-score-great)';
+    }
+
+    if (progress >= 85) {
+      return 'var(--color-score-great)';
+    }
+
+    if (progress >= 70) {
+      return 'var(--color-score-good)';
+    }
+
+    if (progress >= 50) {
+      return 'var(--color-score-could-do-more)';
+    }
+
+    return 'var(--color-score-needs-work)';
+  }
+
   saveEntry(event: { goalId: string; value: number; note: string | null }): void {
     this.goalsService
       .upsertEntry(event.goalId, this.selectedDate(), {

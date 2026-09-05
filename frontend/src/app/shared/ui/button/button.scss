@@ -67,6 +67,8 @@ button {
   &.danger {
     background: transparent;
     color: var(--color-danger);
+    text-decoration: underline;
+    text-underline-offset: 2px;
 
     &:hover:not(:disabled) {
       color: var(--color-danger-surface);

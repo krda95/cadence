@@ -1,1 +1,67 @@
-<p>settings works!</p>
+<div class="settings">
+  <h1 class="settings__title">Settings</h1>
+
+  <section class="settings-section">
+    <h2 class="settings-section__title">Profile</h2>
+
+    <div class="profile">
+      <div class="profile__avatar">
+        {{ currentUser()?.profileInitial }}
+      </div>
+
+      <div class="profile__details">
+        <span class="profile__name">
+          {{ currentUser()?.display_name || 'User' }}
+        </span>
+
+        <span class="profile__email">
+          {{ currentUser()?.email || 'No email' }}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2 class="settings-section__title">Score thresholds</h2>
+
+    <div class="thresholds">
+      <div class="threshold">
+        <div class="threshold__label threshold__label--great">
+          <span class="threshold__dot"></span>
+          Great
+        </div>
+
+        <span class="threshold__value">91–100%</span>
+      </div>
+
+      <div class="threshold">
+        <div class="threshold__label threshold__label--good">
+          <span class="threshold__dot"></span>
+          Good
+        </div>
+
+        <span class="threshold__value">76–90%</span>
+      </div>
+
+      <div class="threshold">
+        <div class="threshold__label threshold__label--could-do-more">
+          <span class="threshold__dot"></span>
+          Could do more
+        </div>
+
+        <span class="threshold__value">61–75%</span>
+      </div>
+
+      <div class="threshold">
+        <div class="threshold__label threshold__label--needs-work">
+          <span class="threshold__dot"></span>
+          Needs work
+        </div>
+
+        <span class="threshold__value">0–60%</span>
+      </div>
+    </div>
+
+    <p class="settings-section__hint">Custom threshold editing coming soon.</p>
+  </section>
+</div>

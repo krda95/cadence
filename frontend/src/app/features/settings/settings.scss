@@ -1,0 +1,119 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+
+  .profile {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .profile__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 64px;
+    height: 64px;
+
+    border-radius: 50%;
+
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    background: var(--color-primary);
+    color: var(--color-button-text);
+    font-weight: 700;
+  }
+
+  .profile__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .profile__name {
+    font-weight: var(--font-weight-semibold);
+    text-transform: capitalize;
+  }
+
+  .profile__email {
+    color: var(--color-text-secondary);
+  }
+}
+
+.settings__title {
+  margin: 0;
+}
+
+.settings-section {
+  padding: var(--space-6);
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.settings-section__title {
+  margin: 0 0 var(--space-6);
+
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  color: var(--color-text-secondary);
+}
+
+.thresholds {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.threshold {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.threshold__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.threshold__dot {
+  width: var(--space-2);
+  height: var(--space-2);
+
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.threshold__value {
+  color: var(--color-text-secondary);
+}
+
+.settings-section__hint {
+  margin: var(--space-8) 0 0;
+
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+.threshold__label--great {
+  color: var(--color-score-great);
+}
+
+.threshold__label--good {
+  color: var(--color-score-good);
+}
+
+.threshold__label--could-do-more {
+  color: var(--color-score-could-do-more);
+}
+
+.threshold__label--needs-work {
+  color: var(--color-score-needs-work);
+}

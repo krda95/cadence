@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GoalsService } from '@core/api/goals.service';
@@ -62,6 +62,11 @@ export class GoalForm implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.close();
   }
 
   delete(id: string): void {

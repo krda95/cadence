@@ -5,7 +5,13 @@
     </p>
 
     <h1 class="today__title">Today</h1>
-    <p class="today__score">Day score {{ dailyScore()?.daily_score }}%</p>
+    <p class="today__score">
+      Day score {{ dailyScore()?.daily_score }}%
+      <span
+        class="today__score__dot"
+        [style.--background]="getScoreColor(dailyScore()?.daily_score || 100)"
+      ></span>
+    </p>
   </header>
 
   @if (dailyGoals().length) {

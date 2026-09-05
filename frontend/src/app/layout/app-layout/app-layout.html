@@ -39,15 +39,15 @@
         }
         <button type="button" class="user-card" (click)="toggleUserMenu()">
           <div class="user-avatar">
-            {{ initials }}
+            {{ currentUser()?.profileInitial }}
           </div>
 
           <div class="user-card__details">
             <div class="user-name">
-              {{ currentUser?.display_name }}
+              {{ currentUser()?.display_name }}
             </div>
             <div class="user-email">
-              {{ currentUser?.email }}
+              {{ currentUser()?.email }}
             </div>
           </div>
 

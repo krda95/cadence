@@ -52,6 +52,16 @@ export class GoalEntry {
     return goal.period === 'daily' ? (goal.entry_value ?? 0) : goal.period_value;
   }
 
+  getPreviousValue(goal: GoalEntryDayResponse): number | null {
+    if (goal.period === 'weekly') {
+      if (goal.entry_value === goal.period_value) {
+        return null;
+      }
+      return goal.period_value - (goal.entry_value ?? 0);
+    }
+    return goal.entry_value ?? 0;
+  }
+
   cancelEditing(): void {
     this.editCancelled.emit();
   }
@@ -61,7 +71,6 @@ export class GoalEntry {
       this.entryValue.set(null);
       return;
     }
-    console.log(value);
 
     const parsedValue = Number(value.replace(',', '.'));
 

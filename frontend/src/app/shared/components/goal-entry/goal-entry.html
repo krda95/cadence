@@ -22,12 +22,22 @@
 
   @if (!isEditing()) {
     <div class="goal-entry__value">
-      <div class="goal-entry__current-value">
-        {{ getTodayValue(goal()) | number: '1.0-2' }}
+      <div class="goal-entry__value__column">
+        <div class="goal-entry__value__column__row">
+          <div class="goal-entry__value__column__row__current-value">
+            {{ getTodayValue(goal()) | number: '1.0-2' }}
+          </div>
+          <p class="goal-entry__target">
+            &nbsp; / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
+          </p>
+        </div>
+        @if (goal().period === 'weekly' && getTodayValue(goal())! > 0) {
+          <p class="goal-entry__target">
+            Before: {{ getPreviousValue(goal()) ?? 0 | number: '1.0-2' }}
+            {{ goal().unit }}
+          </p>
+        }
       </div>
-      <p class="goal-entry__target">
-        &nbsp; / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
-      </p>
     </div>
 
     <button class="goal-entry__action" type="button" (click)="startEditing()">

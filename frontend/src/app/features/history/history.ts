@@ -52,6 +52,26 @@ export class History implements OnInit {
     return moment(date).isSame(this.selectedDate(), 'd');
   }
 
+  getScoreColor(progress: number | null): string {
+    if (progress === null) {
+      return 'var(--color-score-great)';
+    }
+
+    if (progress > 90) {
+      return 'var(--color-score-great)';
+    }
+
+    if (progress > 75) {
+      return 'var(--color-score-good)';
+    }
+
+    if (progress > 60) {
+      return 'var(--color-score-could-do-more)';
+    }
+
+    return 'var(--color-score-needs-work)';
+  }
+
   isSelectedMinimalDate(): boolean {
     const allowedDates = this.rangeScore()
       ?.filter((d) => d.daily_score !== null)

@@ -1,12 +1,4 @@
-import {
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  HostListener,
-  inject,
-  OnInit,
-  ViewChild,
-} from '@angular/core';
+import { Component, ElementRef, HostListener, inject, OnInit, ViewChild } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Logo } from '@shared/ui/logo/logo';
 import {
@@ -42,32 +34,14 @@ import { UserProfile } from '@models/loginModel';
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
 })
-export class AppLayout implements OnInit {
+export class AppLayout {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   isUserMenuOpen = false;
-  currentUser: UserProfile | null = null;
-  initials: string = '';
+  readonly currentUser = this.authService.currentUser;
 
   @ViewChild('userMenu')
   private userMenu?: ElementRef<HTMLElement>;
-
-  ngOnInit(): void {
-    this.authService.getCurrentUser().subscribe({
-      next: (user) => {
-        this.currentUser = user;
-        this.initials = user.display_name
-          ? user.display_name.charAt(0).toUpperCase()
-          : this.initials;
-        this.changeDetectorRef.markForCheck();
-      },
-      error: () => {
-        this.authService.logout();
-        this.router.navigate(['/login']);
-      },
-    });
-  }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {

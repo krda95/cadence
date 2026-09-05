@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, UserProfile } from '@models/loginModel';
@@ -14,6 +14,8 @@ export class AuthService {
   private readonly apiMeUrl = `${environment.apiUrl}/me`;
   private readonly accessTokenKey = 'access_token';
   private readonly refreshTokenKey = 'refresh_token';
+
+  readonly currentUser = signal<UserProfile | null>(null);
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http
@@ -38,6 +40,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.refreshTokenKey);
+    this.currentUser.set(null);
   }
 
   private saveSession(response: LoginResponse): void {
@@ -47,7 +50,12 @@ export class AuthService {
   }
 
   getCurrentUser(): Observable<UserProfile> {
-    return this.http.get<UserProfile>(`${this.apiMeUrl}`);
+    return this.http.get<UserProfile>(`${this.apiMeUrl}`).pipe(
+      tap((user) => {
+        this.currentUser.set(user);
+        this.currentUser()!.profileInitial = user.display_name?.charAt(0).toUpperCase() ?? '?';
+      }),
+    );
   }
 
   initializeSession() {
