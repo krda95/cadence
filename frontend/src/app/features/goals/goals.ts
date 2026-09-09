@@ -2,16 +2,27 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { GoalsService } from '@core/api/goals.service';
 import { GoalResponse } from '@models/goalModel';
-import { LucidePencil, LucidePlus } from '@lucide/angular';
+import { LucidePencil, LucidePlus, LucideGripVertical } from '@lucide/angular';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { Button } from '@shared/ui/button/button';
 import { Icon } from '@shared/ui/icon/icon';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 
 type GoalStatusFilter = 'active' | 'inactive' | 'all';
 
 @Component({
   selector: 'app-goals',
-  imports: [RouterOutlet, LucidePencil, LucidePlus, NgTemplateOutlet, DecimalPipe, Button, Icon],
+  imports: [
+    RouterOutlet,
+    LucidePencil,
+    LucidePlus,
+    NgTemplateOutlet,
+    DecimalPipe,
+    Button,
+    Icon,
+    LucideGripVertical,
+    DragDropModule,
+  ],
   standalone: true,
   templateUrl: './goals.html',
   styleUrl: './goals.scss',
@@ -37,6 +48,29 @@ export class Goals implements OnInit {
 
   editGoal(goalId: string): void {
     this.router.navigate([`goals/${goalId}/edit`]);
+  }
+
+  onGoalDrop(event: CdkDragDrop<GoalResponse[]>): void {
+    if (event.previousIndex === event.currentIndex) {
+      return;
+    }
+
+    const goals = event.container.data;
+
+    moveItemInArray(goals, event.previousIndex, event.currentIndex);
+
+    goals.forEach((goal, index) => {
+      goal.position = index;
+    });
+
+    const goalIds = goals.map((goal) => goal.id);
+
+    this.goalService.reorderGoals(goalIds).subscribe({
+      error: (error) => {
+        console.error('Failed to reorder goals:', error);
+        this.getGoals();
+      },
+    });
   }
 
   filterGoals(): void {

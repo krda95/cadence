@@ -31,6 +31,7 @@ export interface GoalResponse {
   color: string | null;
   unit: string;
   period: GoalPeriod;
+  position: number;
   target_type: GoalTargetType;
   target_value: number;
   is_active: boolean;

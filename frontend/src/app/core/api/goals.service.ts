@@ -30,6 +30,12 @@ export class GoalsService {
     return this.http.patch<GoalResponse>(`${this.apiGoalsUrl}/${id}`, goal);
   }
 
+  reorderGoals(goalIds: string[]): Observable<void> {
+    return this.http.put<void>(`${this.apiGoalsUrl}/order`, {
+      goal_ids: goalIds,
+    });
+  }
+
   getGoals(): Observable<GoalResponse[]> {
     return this.http.get<GoalResponse[]>(this.apiGoalsUrl);
   }

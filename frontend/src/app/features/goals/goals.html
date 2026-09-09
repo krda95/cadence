@@ -53,9 +53,22 @@
 
 <ng-template #goalSection let-title="title" let-goals="goals">
   <h2 class="goals-section__title">{{ title }}</h2>
-  <div class="goals-section__list">
+  <div
+    class="goals-section__list"
+    cdkDropList
+    [cdkDropListData]="goals"
+    (cdkDropListDropped)="onGoalDrop($event)"
+  >
     @for (goal of goals; track goal.id) {
-      <article class="goal-card">
+      <article class="goal-card" cdkDrag>
+        <button
+          type="button"
+          class="goal-card__drag-handle"
+          cdkDragHandle
+          aria-label="Reorder goal"
+        >
+          <svg lucideGripVertical></svg>
+        </button>
         <div class="goal-card__content">
           <div class="goal-card__icon" [style.--goal-color]="goal.color">
             <app-icon [name]="goal.icon" [color]="goal.color" [size]="22" />
