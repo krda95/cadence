@@ -14,3 +14,14 @@ dependencies = [
     "pydantic-settings>=2.14.2",
     "sqlalchemy>=2.0.51",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.6",
+]
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

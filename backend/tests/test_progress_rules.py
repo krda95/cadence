@@ -1,15 +1,15 @@
 import pytest
 
-from app.models.enums import ProgressStatus, GoalTargetType
+from app.models.enums import GoalTargetType, ProgressStatus
 from app.services.progress_rules import (
+    calculate_average_score,
     calculate_daily_max_result,
     calculate_daily_min_result,
     calculate_max_score,
     calculate_min_score,
-    causes_period_max_daily_penalty,
     calculate_period_score,
     calculate_weekly_score,
-    calculate_average_score,
+    causes_period_max_daily_penalty,
 )
 
 
@@ -29,10 +29,13 @@ def test_calculate_min_score(
     target_value: float,
     expected_score: float,
 ) -> None:
-    assert calculate_min_score(
-        current_value=current_value,
-        target_value=target_value,
-    ) == expected_score
+    assert (
+        calculate_min_score(
+            current_value=current_value,
+            target_value=target_value,
+        )
+        == expected_score
+    )
 
 
 @pytest.mark.parametrize(
@@ -52,10 +55,13 @@ def test_calculate_max_score(
     target_value: float,
     expected_score: float,
 ) -> None:
-    assert calculate_max_score(
-        current_value=current_value,
-        target_value=target_value,
-    ) == expected_score
+    assert (
+        calculate_max_score(
+            current_value=current_value,
+            target_value=target_value,
+        )
+        == expected_score
+    )
 
 
 def test_daily_min_without_entry_today_is_pending() -> None:
@@ -160,19 +166,14 @@ def test_daily_max_limit_exceeded_gives_zero_points() -> None:
         # W limicie: brak kary.
         (1, 0, 2, False),
         (1, 1, 2, False),
-
         # Środa: 1 wcześniej + 2 dziś = 3, limit 2 -> kara.
         (2, 1, 2, True),
-
         # Limit przekroczony wcześniej, ale dziś brak wpisu -> bez kary.
         (0, 3, 2, False),
-
         # Limit przekroczony wcześniej, ale dziś kolejny drink -> kolejna kara.
         (1, 3, 2, True),
-
         # Limit 0: każdy dodatni wpis daje karę.
         (1, 0, 0, True),
-
         # Limit 0: brak wpisu nie daje kary.
         (0, 0, 0, False),
     ],
@@ -183,11 +184,15 @@ def test_period_max_penalty_only_applies_on_the_day_of_positive_entry(
     target_value: float,
     expected_penalty: bool,
 ) -> None:
-    assert causes_period_max_daily_penalty(
-        entry_value_for_day=entry_value_for_day,
-        total_before_day=total_before_day,
-        target_value=target_value,
-    ) is expected_penalty
+    assert (
+        causes_period_max_daily_penalty(
+            entry_value_for_day=entry_value_for_day,
+            total_before_day=total_before_day,
+            target_value=target_value,
+        )
+        is expected_penalty
+    )
+
 
 @pytest.mark.parametrize(
     (
@@ -199,19 +204,14 @@ def test_period_max_penalty_only_applies_on_the_day_of_positive_entry(
     [
         # Weekly MIN: 2 workouts out of 4 = 50%.
         (GoalTargetType.MIN, 2, 4, 50.0),
-
         # Weekly MIN: target reached.
         (GoalTargetType.MIN, 4, 4, 100.0),
-
         # Weekly MIN: above the target remains 100%.
         (GoalTargetType.MIN, 5, 4, 100.0),
-
         # Weekly MAX: 50% of the limit
         (GoalTargetType.MAX, 1, 2, 100.0),
-
         # Weekly MAX: within the limit.
         (GoalTargetType.MAX, 2, 2, 100.0),
-
         # Weekly MAX: limit exceeded.
         (GoalTargetType.MAX, 3, 2, 0.0),
     ],
@@ -222,11 +222,14 @@ def test_calculate_final_period_score(
     target_value: float,
     expected_score: float,
 ) -> None:
-    assert calculate_period_score(
-        target_type=target_type,
-        current_value=current_value,
-        target_value=target_value,
-    ) == expected_score
+    assert (
+        calculate_period_score(
+            target_type=target_type,
+            current_value=current_value,
+            target_value=target_value,
+        )
+        == expected_score
+    )
 
 
 def test_daily_goal_contributes_one_weekly_average() -> None:
@@ -253,21 +256,30 @@ def test_weekly_score_weights_each_goal_equally() -> None:
     """
     goal_scores = [85.0, 100.0, 50.0, 0.0]
 
-    assert calculate_weekly_score(
-        goal_scores=goal_scores,
-        is_week_final=True,
-    ) == 58.75
+    assert (
+        calculate_weekly_score(
+            goal_scores=goal_scores,
+            is_week_final=True,
+        )
+        == 58.75
+    )
 
 
 def test_weekly_score_is_not_final_before_sunday_ends() -> None:
-    assert calculate_weekly_score(
-        goal_scores=[85.0, 100.0, 50.0, 0.0],
-        is_week_final=False,
-    ) is None
+    assert (
+        calculate_weekly_score(
+            goal_scores=[85.0, 100.0, 50.0, 0.0],
+            is_week_final=False,
+        )
+        is None
+    )
 
 
 def test_weekly_score_without_eligible_goals_is_none() -> None:
-    assert calculate_weekly_score(
-        goal_scores=[],
-        is_week_final=True,
-    ) is None
+    assert (
+        calculate_weekly_score(
+            goal_scores=[],
+            is_week_final=True,
+        )
+        is None
+    )

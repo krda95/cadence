@@ -1,7 +1,17 @@
 from datetime import datetime
 import uuid
 
-from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, String, func, CheckConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    func,
+    CheckConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -66,5 +76,10 @@ class Goal(Base):
         DateTime(timezone=True),
         default=func.now(),
         onupdate=func.now(),
+        nullable=False,
+    )
+
+    position: Mapped[int] = mapped_column(
+        Integer,
         nullable=False,
     )

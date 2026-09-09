@@ -32,6 +32,10 @@ class GoalUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class GoalReorderRequest(BaseModel):
+    goal_ids: list[UUID]
+
+
 class GoalResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,3 +51,4 @@ class GoalResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    position: int

@@ -1,26 +1,31 @@
-from datetime import date
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.dependencies.auth import CurrentUser, get_current_user
-from app.models.goal import Goal, GoalPeriod
+from app.models.goal import Goal
 from app.models.goal_entry import GoalEntry
-from app.schemas.goal_entry import (
-    GoalEntryDayResponse,
-    GoalEntryResponse,
-    GoalEntryNoteUpdate,
-    GoalEntryUpsert,
-)
 from app.schemas.goal import (
     GoalCreate,
+    GoalReorderRequest,
     GoalResponse,
     GoalUpdate,
 )
-from app.schemas.progress import DailyProgressResponse, DayProgressResponse, WeeklyProgressResponse
+from app.schemas.goal_entry import (
+    GoalEntryDayResponse,
+    GoalEntryNoteUpdate,
+    GoalEntryResponse,
+    GoalEntryUpsert,
+)
+from app.schemas.progress import (
+    DailyProgressResponse,
+    DayProgressResponse,
+    WeeklyProgressResponse,
+)
 from app.services.progress_service import (
     calculate_daily_progress,
     calculate_progress_range,
@@ -28,8 +33,6 @@ from app.services.progress_service import (
     get_goal_entries_for_date,
     get_warsaw_today,
 )
-
-
 
 router = APIRouter(
     prefix="/goals",
@@ -70,6 +73,14 @@ async def create_goal(
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> Goal:
+    max_position = await session.scalar(
+        select(func.max(Goal.position)).where(
+            Goal.owner_id == current_user.id,
+            Goal.period == payload.period,
+        )
+    )
+
+    next_position = (max_position if max_position is not None else -1) + 1
     goal = Goal(
         owner_id=current_user.id,
         name=payload.name,
@@ -80,6 +91,7 @@ async def create_goal(
         target_type=payload.target_type,
         target_value=payload.target_value,
         is_active=payload.is_active,
+        position=next_position,
     )
 
     session.add(goal)
@@ -100,10 +112,15 @@ async def list_my_goals(
     result = await session.execute(
         select(Goal)
         .where(Goal.owner_id == current_user.id)
-        .order_by(Goal.created_at.desc())
+        .order_by(
+            Goal.period.asc(),
+            Goal.position.asc(),
+            Goal.created_at.asc(),
+        )
     )
 
     return list(result.scalars().all())
+
 
 @router.get(
     "/progress/daily",
@@ -131,6 +148,7 @@ async def get_daily_progress(
 
     return DailyProgressResponse(**progress)
 
+
 @router.get(
     "/progress/weekly",
     response_model=WeeklyProgressResponse,
@@ -156,6 +174,7 @@ async def get_weekly_progress(
         ) from error
 
     return WeeklyProgressResponse(**progress)
+
 
 @router.get(
     "/progress/range",
@@ -186,10 +205,8 @@ async def get_progress_range(
             detail=str(error),
         ) from error
 
-    return [
-        DayProgressResponse(**day_progress)
-        for day_progress in progress_days
-    ]
+    return [DayProgressResponse(**day_progress) for day_progress in progress_days]
+
 
 @router.get(
     "/entries",
@@ -198,13 +215,63 @@ async def get_progress_range(
 async def get_entries_for_date(
     date: date,
     session: AsyncSession = Depends(get_db_session),
-    current_user: CurrentUser = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     return await get_goal_entries_for_date(
-        session=session,
-        owner_id=current_user.id,
-        reference_date=date
+        session=session, owner_id=current_user.id, reference_date=date
     )
+
+
+@router.put(
+    "/order",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def reorder_goals(
+    payload: GoalReorderRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    if not payload.goal_ids:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="goal_ids cannot be empty",
+        )
+    if len(payload.goal_ids) != len(set(payload.goal_ids)):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="goal_ids must be unique",
+        )
+
+    result = await session.execute(
+        select(Goal).where(
+            Goal.id.in_(payload.goal_ids),
+            Goal.owner_id == current_user.id,
+        )
+    )
+
+    goals = list(result.scalars().all())
+
+    if len(goals) != len(payload.goal_ids):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="One or more goals were not found",
+        )
+
+    periods = {goal.period for goal in goals}
+
+    if len(periods) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Goals must belong to the same period",
+        )
+
+    goals_by_id = {goal.id: goal for goal in goals}
+
+    for position, goal_id in enumerate(payload.goal_ids):
+        goals_by_id[goal_id].position = position
+
+    await session.commit()
+
 
 @router.get(
     "/{goal_id}",
