@@ -30,6 +30,7 @@ from dataclasses import dataclass
 WARSAW_TIMEZONE = ZoneInfo("Europe/Warsaw")
 TIMEZONE_NAME = "Europe/Warsaw"
 
+
 @dataclass
 class GoalDayState:
     goal: Goal
@@ -37,6 +38,7 @@ class GoalDayState:
     entry_value: float
     entry_note: str | None
     period_current_value: float
+
 
 def get_warsaw_today() -> date:
     test_today = os.getenv("CADENCE_TEST_TODAY")
@@ -58,9 +60,7 @@ def get_period_bounds(
         return reference_date, reference_date
 
     if period == GoalPeriod.WEEKLY:
-        period_start = reference_date - timedelta(
-            days=reference_date.weekday()
-        )
+        period_start = reference_date - timedelta(days=reference_date.weekday())
         period_end = period_start + timedelta(days=6)
         return period_start, period_end
 
@@ -108,7 +108,10 @@ async def load_active_goals(
             Goal.owner_id == owner_id,
             Goal.is_active.is_(True),
         )
-        .order_by(Goal.created_at.asc())
+        .order_by(
+            Goal.position.asc(),
+            Goal.created_at.asc(),
+        )
     )
 
     return list(result.scalars().all())
@@ -119,12 +122,10 @@ class GoalEntryDay:
     value: float
     note: str | None
 
+
 async def load_entries_by_goal(
-    session: AsyncSession,
-    goal_ids: list[UUID],
-    date_from: date,
-    date_to: date
-    ) -> dict[UUID, dict[date, GoalEntryDay]]:
+    session: AsyncSession, goal_ids: list[UUID], date_from: date, date_to: date
+) -> dict[UUID, dict[date, GoalEntryDay]]:
     if not goal_ids:
         return {}
 
@@ -160,11 +161,10 @@ def get_goal_created_date(goal: Goal) -> date:
 
     return created_at.astimezone(WARSAW_TIMEZONE).date()
 
+
 def calculate_period_current_value(
-    goal_entries: dict[date, GoalEntryDay],
-    period: GoalPeriod,
-    reference_date: date
-    ) -> float:
+    goal_entries: dict[date, GoalEntryDay], period: GoalPeriod, reference_date: date
+) -> float:
     period_start, _ = get_period_bounds(
         period,
         reference_date,
@@ -176,20 +176,19 @@ def calculate_period_current_value(
         if period_start <= entry_day <= reference_date
     )
 
+
 async def load_goal_day_states(
     session: AsyncSession,
     owner_id: UUID,
     reference_date: date,
-    ) -> list[GoalDayState]:
+) -> list[GoalDayState]:
     goals = await load_active_goals(
-    session=session,
-    owner_id=owner_id,
+        session=session,
+        owner_id=owner_id,
     )
 
     applicable_goals = [
-        goal
-        for goal in goals
-        if get_goal_created_date(goal) <= reference_date
+        goal for goal in goals if get_goal_created_date(goal) <= reference_date
     ]
 
     if not applicable_goals:
@@ -207,10 +206,7 @@ async def load_goal_day_states(
             earliest_date,
             period_start,
         )
-    goal_ids = [
-        goal.id
-        for goal in applicable_goals
-    ]
+    goal_ids = [goal.id for goal in applicable_goals]
 
     entries_by_goal = await load_entries_by_goal(
         session=session,
@@ -225,15 +221,14 @@ async def load_goal_day_states(
         reference_date=reference_date,
     )
 
+
 def build_goal_day_states(
     goals: list[Goal],
     entries_by_goal: dict[UUID, dict[date, GoalEntryDay]],
     reference_date: date,
 ) -> list[GoalDayState]:
     applicable_goals = [
-        goal
-        for goal in goals
-        if get_goal_created_date(goal) <= reference_date
+        goal for goal in goals if get_goal_created_date(goal) <= reference_date
     ]
 
     states: list[GoalDayState] = []
@@ -256,16 +251,8 @@ def build_goal_day_states(
             GoalDayState(
                 goal=goal,
                 entry_exists=day_entry is not None,
-                entry_value=(
-                    day_entry.value
-                    if day_entry is not None
-                    else 0.0
-                ),
-                entry_note=(
-                    day_entry.note
-                    if day_entry is not None
-                    else None
-                ),
+                entry_value=(day_entry.value if day_entry is not None else 0.0),
+                entry_note=(day_entry.note if day_entry is not None else None),
                 period_current_value=period_current_value,
             )
         )
@@ -367,9 +354,7 @@ def build_daily_progress(
                     **base_component,
                     "current_value": current_value,
                     "score": (
-                        round(result.score, 2)
-                        if result.score is not None
-                        else None
+                        round(result.score, 2) if result.score is not None else None
                     ),
                     "status": result.status,
                     "included_in_daily_score": result.included_in_daily_score,
@@ -481,6 +466,7 @@ def build_daily_progress(
         "periodic_progress": periodic_progress,
     }
 
+
 async def get_goal_entries_for_date(
     session: AsyncSession,
     owner_id: UUID,
@@ -502,11 +488,7 @@ async def get_goal_entries_for_date(
             target_type=state.goal.target_type,
             target_value=float(state.goal.target_value),
             unit=state.goal.unit,
-            entry_value=(
-                state.entry_value
-                if state.entry_exists
-                else None
-            ),
+            entry_value=(state.entry_value if state.entry_exists else None),
             period_value=round(
                 state.period_current_value,
                 2,
@@ -515,6 +497,7 @@ async def get_goal_entries_for_date(
         )
         for state in goal_states
     ]
+
 
 def get_weekly_item_status(
     score: float | None,
@@ -587,7 +570,8 @@ async def calculate_weekly_progress(
     applicable_goals = [
         goal
         for goal in goals
-        if goal.period in {
+        if goal.period
+        in {
             GoalPeriod.DAILY,
             GoalPeriod.WEEKLY,
         }
@@ -599,10 +583,7 @@ async def calculate_weekly_progress(
     if applicable_goals:
         entries_by_goal = await load_entries_by_goal(
             session=session,
-            goal_ids=[
-                goal.id
-                for goal in applicable_goals
-            ],
+            goal_ids=[goal.id for goal in applicable_goals],
             date_from=week_start,
             date_to=calculation_end,
         )
@@ -633,7 +614,8 @@ def build_weekly_progress(
     applicable_goals = [
         goal
         for goal in goals
-        if goal.period in {
+        if goal.period
+        in {
             GoalPeriod.DAILY,
             GoalPeriod.WEEKLY,
         }
@@ -689,11 +671,7 @@ def build_weekly_progress(
                 calculation_end,
             ):
                 entry_exists = current_day in goal_entries
-                entry_value = (
-                    goal_entries[current_day].value
-                    if entry_exists
-                    else 0.0
-                )
+                entry_value = goal_entries[current_day].value if entry_exists else 0.0
 
                 is_day_final = current_day < today
 
@@ -721,11 +699,7 @@ def build_weekly_progress(
 
             # Daily goal wpływa na finalny weekly_score dopiero,
             # gdy cały tydzień jest zamknięty.
-            final_score = (
-                daily_average_score
-                if is_week_final
-                else None
-            )
+            final_score = daily_average_score if is_week_final else None
 
             if final_score is not None:
                 final_goal_scores.append(final_score)
@@ -743,9 +717,7 @@ def build_weekly_progress(
                         score=final_score,
                         is_week_final=is_week_final,
                     ),
-                    "included_in_weekly_score": (
-                        final_score is not None
-                    ),
+                    "included_in_weekly_score": (final_score is not None),
                 }
             )
             continue
@@ -799,24 +771,16 @@ def build_weekly_progress(
                     2,
                 ),
                 "progress_percent": (
-                    round(progress_percent, 2)
-                    if progress_percent is not None
-                    else None
+                    round(progress_percent, 2) if progress_percent is not None else None
                 ),
                 "limit_usage_percent": (
                     round(limit_usage_percent, 2)
                     if limit_usage_percent is not None
                     else None
                 ),
-                "score": (
-                    round(final_score, 2)
-                    if final_score is not None
-                    else None
-                ),
+                "score": (round(final_score, 2) if final_score is not None else None),
                 "status": status,
-                "included_in_weekly_score": (
-                    final_score is not None
-                ),
+                "included_in_weekly_score": (final_score is not None),
             }
         )
 
