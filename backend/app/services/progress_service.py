@@ -1,6 +1,7 @@
-from collections import defaultdict
-from datetime import date, datetime, timedelta
 import os
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -8,24 +9,22 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import goal
-from app.models.goal import Goal, GoalPeriod, GoalTargetType
-from app.models.goal_entry import GoalEntry
 from app.models.enums import (
     ProgressStatus,
 )
+from app.models.goal import Goal, GoalPeriod, GoalTargetType
+from app.models.goal_entry import GoalEntry
 from app.schemas.goal_entry import GoalEntryDayResponse
 from app.services.progress_rules import (
+    calculate_average_score,
     calculate_daily_max_result,
     calculate_daily_min_result,
     calculate_max_score,
     calculate_min_score,
-    causes_period_max_daily_penalty,
-    calculate_weekly_score,
-    calculate_average_score,
     calculate_period_score,
+    calculate_weekly_score,
+    causes_period_max_daily_penalty,
 )
-from dataclasses import dataclass
 
 WARSAW_TIMEZONE = ZoneInfo("Europe/Warsaw")
 TIMEZONE_NAME = "Europe/Warsaw"
