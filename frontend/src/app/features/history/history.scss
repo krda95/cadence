@@ -60,7 +60,7 @@
 
         border-radius: 50%;
 
-        background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+        background: color-mix(in srgb, var(--background) 10%, var(--color-surface));
 
         color: var(--color-text-primary);
 

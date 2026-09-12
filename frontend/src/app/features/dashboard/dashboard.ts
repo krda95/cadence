@@ -1,55 +1,96 @@
-import {
-  Component,
-  CUSTOM_ELEMENTS_SCHEMA,
-  ElementRef,
-  signal,
-  viewChild,
-  AfterViewInit,
-} from '@angular/core';
-import { environment } from '../../../environments/environment';
-import { Button } from '@shared/ui/button/button';
-import { Status, StatusValue } from '@shared/ui/status/status';
+import { Component, inject, OnInit, signal } from '@angular/core';
+
+import { DashboardResponse } from '@models/dashboardModel';
+import { DashboardService } from '@core/api/dashboard.service';
+import { RouterLink } from '@angular/router';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Button, Status],
+  imports: [RouterLink, DatePipe, DecimalPipe],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-export class Dashboard implements AfterViewInit {
-  readonly fastenPublicId = environment.fastenPublicId;
+export class Dashboard implements OnInit {
+  private readonly dashboardService = inject(DashboardService);
+  private readonly authService = inject(AuthService);
+  readonly currentUser = this.authService.currentUser;
+  readonly today = new Date();
 
-  readonly connectionStatus = signal<StatusValue>('NotConnected');
+  dashboard = signal<DashboardResponse | null>(null);
+  isLoading = signal(true);
 
-  private readonly fastenStitch = viewChild.required<ElementRef<HTMLElement>>('fastenStitch');
-
-  ngAfterViewInit(): void {
-    this.fastenStitch().nativeElement.addEventListener('eventBus', (event) => {
-      const data = JSON.parse((event as CustomEvent).detail.data);
-      console.log(data);
-      this.updateStatusFromEvent(data);
+  ngOnInit(): void {
+    this.dashboardService.getDashboard().subscribe({
+      next: (dashboard) => {
+        this.dashboard.set(dashboard);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Failed to load dashboard', error);
+        this.isLoading.set(false);
+      },
     });
   }
 
-  openFastenStitch(): void {
-    this.connectionStatus.set('Processing');
-    (this.fastenStitch().nativeElement as HTMLElement & { show: () => void }).show();
+  getScoreColor(progress: number | null): string {
+    if (progress === null) {
+      return 'var(--color-score-great)';
+    }
+
+    if (progress > 90) {
+      return 'var(--color-score-great)';
+    }
+
+    if (progress > 75) {
+      return 'var(--color-score-good)';
+    }
+
+    if (progress > 60) {
+      return 'var(--color-score-could-do-more)';
+    }
+
+    return 'var(--color-score-needs-work)';
   }
 
-  private updateStatusFromEvent(data: { event_type?: string }): void {
-    switch (data.event_type) {
-      case 'widget.complete':
-        this.connectionStatus.set('Active');
-        break;
-      case 'widget.config_error':
-        this.connectionStatus.set('Failed');
-        break;
-      case 'widget.close':
-        if (this.connectionStatus() === 'Processing') {
-          this.connectionStatus.set('NotConnected');
-        }
-        break;
+  getScoreLabel(progress: number | null): string {
+    if (progress === null) {
+      return 'No score';
     }
+
+    if (progress > 90) {
+      return 'Great';
+    }
+
+    if (progress > 75) {
+      return 'Good';
+    }
+
+    if (progress > 60) {
+      return 'Could do more';
+    }
+
+    return 'Needs work';
+  }
+
+  getScoreDescription(progress: number | null): string {
+    if (progress === null) {
+      return 'No score available.';
+    }
+
+    if (progress > 90) {
+      return "You're looking really good!";
+    }
+
+    if (progress > 75) {
+      return 'Keep it up, you can still make it!';
+    }
+
+    if (progress > 60) {
+      return 'Try to get back on track.';
+    }
+
+    return 'Focus, you need to work a bit more on your progress.';
   }
 }

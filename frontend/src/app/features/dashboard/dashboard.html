@@ -1,12 +1,79 @@
-<fasten-stitch-element
-  class="hide-fasten-button"
-  [attr.public-id]="fastenPublicId"
-  tefca-mode="true"
-  #fastenStitch
->
-</fasten-stitch-element>
+@if (isLoading()) {
+  <div class="dashboard__empty">
+    <h2 class="dashboard__empty-title">Loading...</h2>
 
-<div class="connect-row">
-  <app-status [value]="connectionStatus()" />
-  <app-button type="button" (click)="openFastenStitch()">Custom button</app-button>
-</div>
+    <p class="dashboard__empty-text">Your stats are being calculated.</p>
+  </div>
+} @else if (dashboard(); as dashboard) {
+  <div class="dashboard">
+    <div class="dashboard__header">
+      <div class="dashboard__header-user">Hello, {{ currentUser()?.display_name }}.</div>
+      <div class="dashboard__header-month">
+        {{ today | date: 'EEEE, MMMM d' }} · {{ getScoreDescription(dashboard.week.score) }}
+      </div>
+    </div>
+    <div class="dashboard__grid">
+      <section class="week-card">
+        <div
+          class="week-card__progress-ring"
+          [style.--score]="dashboard.week.score"
+          [style.--background]="getScoreColor(dashboard.week.score)"
+        >
+          <div class="week-card__progress-ring-inner">
+            {{ dashboard.week.score | number: '1.0-0' }}%
+            <span class="week-card__progress-ring-label">this week</span>
+          </div>
+        </div>
+        <div class="week-card__status" [style.--background]="getScoreColor(dashboard.week.score)">
+          {{ getScoreLabel(dashboard.week.score) }}
+        </div>
+        <div class="week-card__stats">
+          <div class="week-card__stat">
+            <span class="week-card__stat-value">
+              {{ dashboard.week.days_count }}
+            </span>
+
+            <span class="week-card__stat-label"> days counted </span>
+          </div>
+        </div>
+      </section>
+      <section class="today-card">
+        <h2 class="today-card__title">Today so far</h2>
+
+        <span class="today-card__date">
+          {{ today | date: 'MMM d' }}
+        </span>
+
+        <div
+          class="today-card__progress-ring"
+          [style.--score]="dashboard.today.score"
+          [style.--background]="getScoreColor(dashboard.today.score)"
+        >
+          <div class="today-card__progress-ring-inner">
+            {{ dashboard.today.score | number: '1.0-0' }}%
+          </div>
+        </div>
+
+        <div class="today-card__stats">
+          <div class="today-card__stat">
+            <span class="today-card__stat-value today-card__stat-value--positive">
+              {{ dashboard.today.scored_components_count }}
+            </span>
+
+            <span class="today-card__stat-label"> scored </span>
+          </div>
+
+          <div class="today-card__stat">
+            <span class="today-card__stat-value today-card__stat-value--warning">
+              {{ dashboard.today.pending_components_count }}
+            </span>
+
+            <span class="today-card__stat-label"> pending </span>
+          </div>
+        </div>
+
+        <a class="today-card__action" routerLink="/today"> Open today → </a>
+      </section>
+    </div>
+  </div>
+}

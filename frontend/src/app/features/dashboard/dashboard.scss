@@ -1,17 +1,320 @@
-.connect-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  align-items: flex-start;
-  gap: var(--space-3);
-  margin-top: var(--space-8);
+.dashboard {
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.5rem;
+
+    min-height: 18rem;
+    padding: 2rem;
+
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+
+    background: var(--color-surface);
+
+    text-align: center;
+  }
+
+  &__empty-title {
+    margin: 0;
+
+    color: var(--color-text-primary);
+
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  &__empty-text {
+    margin: 0;
+
+    color: var(--color-text-secondary);
+
+    font-size: 0.875rem;
+  }
+
+  &__header-user {
+    margin-bottom: var(--space-2);
+
+    color: var(--color-text-primary);
+
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+  }
+
+  &__header-month {
+    margin-bottom: var(--space-6);
+
+    color: var(--color-text-secondary);
+
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-light);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: var(--space-6);
+
+    .week-card {
+      display: grid;
+      grid-template-columns: auto auto;
+      grid-template-areas:
+        'circle status'
+        'circle stats';
+      align-items: center;
+
+      column-gap: var(--space-8);
+
+      padding: var(--space-4);
+
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+
+      background: var(--color-surface);
+
+      justify-content: stretch;
+      align-content: stretch;
+      justify-items: center;
+
+      &__status {
+        --background: var(--color-score-great);
+        grid-area: status;
+
+        background: color-mix(in srgb, var(--background) 10%, var(--color-surface));
+        color: var(--background);
+
+        padding: var(--space-2);
+        border-radius: var(--radius-xl);
+
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-semibold);
+      }
+
+      &__stats {
+        grid-area: stats;
+
+        display: flex;
+        align-items: center;
+      }
+
+      &__stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        gap: var(--space-2);
+      }
+
+      &__stat-value {
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-bold);
+        line-height: 1;
+        color: var(--color-text-primary);
+      }
+
+      &__stat-label {
+        color: var(--color-text-secondary);
+
+        font-size: 1rem;
+      }
+
+      &__progress-ring {
+        --score: 100;
+        --background: var(--color-score-great);
+        grid-area: circle;
+
+        display: grid;
+        place-items: center;
+
+        width: 8.5rem;
+        height: 8.5rem;
+
+        border-radius: 50%;
+
+        background: conic-gradient(
+          var(--background) calc(var(--score) * 1%),
+          color-mix(in srgb, var(--background) 25%, var(--color-surface)) 0
+        );
+      }
+
+      &__progress-ring-inner {
+        display: flex;
+        flex-direction: column;
+
+        width: 7.2rem;
+        height: 7.2rem;
+
+        border-radius: 50%;
+
+        background: color-mix(in srgb, var(--background) 10%, var(--color-surface));
+
+        color: var(--color-text-primary);
+
+        font-size: var(--font-size-3xl);
+        font-weight: 600;
+        align-items: center;
+        justify-content: center;
+      }
+
+      &__progress-ring-label {
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-secondary);
+      }
+    }
+
+    .today-card {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-areas:
+        'title title date'
+        'score stats action';
+      align-items: center;
+
+      column-gap: var(--space-8);
+      row-gap: var(--space-6);
+
+      padding: var(--space-8);
+
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+
+      background: var(--color-surface);
+
+      &__title {
+        grid-area: title;
+
+        margin: 0;
+
+        color: var(--color-text-primary);
+
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+      }
+
+      &__date {
+        grid-area: date;
+        justify-self: end;
+
+        color: var(--color-text-secondary);
+
+        font-size: 1rem;
+      }
+
+      &__score {
+        grid-area: 1 / 1;
+        z-index: 1;
+
+        color: var(--color-text-primary);
+
+        font-size: 2rem;
+        font-weight: var(--font-weight-bold);
+        line-height: 1;
+      }
+
+      &__stats {
+        grid-area: stats;
+
+        display: flex;
+        align-items: center;
+
+        gap: var(--space-8);
+      }
+
+      &__stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        gap: var(--space-2);
+      }
+
+      &__stat-value {
+        font-size: 2.5rem;
+        font-weight: var(--font-weight-bold);
+        line-height: 1;
+
+        &--positive {
+          color: var(--color-score-great);
+        }
+
+        &--warning {
+          color: var(--color-score-good);
+        }
+      }
+
+      &__stat-label {
+        color: var(--color-text-secondary);
+
+        font-size: 1rem;
+      }
+
+      &__action {
+        grid-area: action;
+        justify-self: end;
+
+        padding: var(--space-4) var(--space-6);
+
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+
+        background: var(--color-surface-hover);
+
+        color: var(--color-text-secondary);
+
+        font-size: 1rem;
+        font-weight: var(--font-weight-medium);
+
+        text-decoration: none;
+
+        transition:
+          background 150ms ease,
+          border-color 150ms ease;
+
+        &:hover {
+          color: var(--color-text-primary);
+        }
+      }
+
+      &__progress-ring {
+        --score: 100;
+        --background: var(--color-score-great);
+        margin-top: var(--space-2);
+        grid-area: score;
+
+        display: grid;
+        place-items: center;
+
+        width: 4.5rem;
+        height: 4.5rem;
+
+        border-radius: 50%;
+
+        background: conic-gradient(
+          var(--background) calc(var(--score) * 1%),
+          color-mix(in srgb, var(--background) 25%, var(--color-surface)) 0
+        );
+      }
+
+      &__progress-ring-inner {
+        display: grid;
+        place-items: center;
+
+        width: 3.65rem;
+        height: 3.65rem;
+
+        border-radius: 50%;
+
+        background: color-mix(in srgb, var(--background) 10%, var(--color-surface));
+
+        color: var(--color-text-primary);
+
+        font-size: 1rem;
+        font-weight: 600;
+      }
+    }
+  }
 }
-// fasten-stitch-element.hide-fasten-button {
-//   position: absolute;
-//   width: 0;
-//   height: 0;
-//   overflow: hidden;
-//   clip: rect(0 0 0 0);
-//   clip-path: inset(50%);
-//   white-space: nowrap;
-// }
