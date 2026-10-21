@@ -20,10 +20,64 @@ Cadence helps you stay consistent with the things that matter to you. Whether yo
 
 Instead of focusing only on the finish line, Cadence emphasizes the rhythm of showing up and making progress.
 
-## A look inside
 
+## App Preview
 
-<!-- ![Cadence dashboard](docs/images/dashboard.png) -->
+### Dashboard
+
+![Cadence Dashboard](docs/images/dashboard.png)
+
+### Goal Management
+
+![Goal Editing](docs/images/goals-edit.png)
+
+### Today
+
+![Daily Progress Tracking](docs/images/today.png)
+
+### History
+
+![Progress History](docs/images/history.png)
+
+### Settings
+
+![Application Settings](docs/images/settings.png)
+
+### Authentication
+
+![Login Screen](docs/images/login.png)
+
+## Mobile Experience
+
+Cadence is designed to provide a seamless experience across desktop and mobile devices.
+
+<table>
+
+  <tr>
+
+    <td width="50%" align="center">
+
+      <img src="docs/images/mobile-dashboard.png" alt="Mobile Dashboard" width="300">
+
+    </td>
+
+    <td width="50%" align="center">
+
+      <img src="docs/images/mobile-goals.png" alt="Mobile Goals" width="300">
+
+    </td>
+
+  </tr>
+
+  <tr>
+
+    <td align="center"><b>Dashboard</b></td>
+
+    <td align="center"><b>Goals</b></td>
+
+  </tr>
+
+</table>
 
 
 ## What you can do
@@ -70,9 +124,6 @@ Sign in to your account and personalize your profile, including a profile avatar
 **🚧 In active development**
 
 Cadence is an evolving personal project. The current development work focuses on the core goal-management and daily-tracking experience, account/profile functionality, and a responsive interface.
-
-## Screenshots
-
 
 ---
 
