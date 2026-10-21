@@ -5,7 +5,7 @@
         type="button"
         variant="secondary"
         ariaLabel="Previous day"
-        [disabled]="isSelectedMinimalDate()"
+        [disabled]="!goalsResource.hasValue() || isSelectedMinimalDate()"
         (click)="incrementBy(-1)"
         ><</app-button
       >
@@ -98,6 +98,11 @@
   } @else if (isEmpty()) {
     <div class="history__empty">
       <h2 class="history__empty-title">No historical entries</h2>
+      <p class="history__empty-text">
+        Your journey starts with a goal.
+        <a class="history__empty-link" routerLink="/goals"> Add your first goal </a>
+        to get started.
+      </p>
     </div>
   } @else {
     @for (section of sections(); track section.title) {

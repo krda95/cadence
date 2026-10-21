@@ -271,6 +271,24 @@
     font-size: var(--font-size-sm);
   }
 
+  &__empty-link {
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-semibold);
+
+    transition: color 0.2s ease;
+
+    &:hover {
+      text-underline-offset: 2px;
+      color: var(--color-text-primary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 4px;
+      border-radius: 2px;
+    }
+  }
+
   &__retry {
     @include m.action-button;
 

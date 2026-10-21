@@ -18,6 +18,7 @@ import { DayProgressResponse } from '@models/progressModel';
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
 import { Button } from '@shared/ui/button/button';
 import { scoreBand } from '@shared/utils/score-band';
+import { RouterLink } from '@angular/router';
 
 /** A day button or its skeleton in the picker, as last laid out. */
 interface PickerSlot {
@@ -27,7 +28,7 @@ interface PickerSlot {
 
 @Component({
   selector: 'app-history',
-  imports: [DatePipe, GoalEntry, Button, DecimalPipe],
+  imports: [DatePipe, GoalEntry, Button, DecimalPipe, RouterLink],
   templateUrl: './history.html',
   styleUrl: './history.scss',
 })
@@ -127,6 +128,10 @@ export class History {
   }
 
   isSelectedMinimalDate(): boolean {
+    if (this.goalsResource.hasValue() && this.isEmpty()) {
+      return true;
+    }
+
     const allowedDates = this.rangeScore()
       ?.filter((d) => d.daily_score !== null)
       .map((d) => moment(d.date));
@@ -248,7 +253,8 @@ export class History {
     const selectedSlot = strip.querySelector<HTMLElement>('.selectedDate');
 
     if (selectedSlot) {
-      strip.scrollLeft = selectedSlot.offsetLeft - (strip.clientWidth - selectedSlot.offsetWidth) / 2;
+      strip.scrollLeft =
+        selectedSlot.offsetLeft - (strip.clientWidth - selectedSlot.offsetWidth) / 2;
     }
 
     const current = this.measurePicker();

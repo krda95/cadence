@@ -56,7 +56,9 @@
   } @else if (isEmpty()) {
     <div class="today__empty">
       <h2 class="today__empty-title">No active goals</h2>
-      <p class="today__empty-text">Add a goal to start tracking your day.</p>
+      <p class="today__empty-text">
+        <a class="today__empty-link" routerLink="/goals">Add a goal</a> to start tracking your day.
+      </p>
     </div>
   } @else {
     @for (section of sections(); track section.title) {

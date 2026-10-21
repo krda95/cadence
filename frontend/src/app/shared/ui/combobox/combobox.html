@@ -1,0 +1,62 @@
+<div class="combobox" [class.combobox--open]="isOpen()">
+  <label [for]="inputId" class="combobox__label">
+    {{ label() }}
+  </label>
+
+  <div class="combobox__control">
+    <input
+      [id]="inputId"
+      class="combobox__input"
+      type="text"
+      (click)="open()"
+      role="combobox"
+      autocomplete="off"
+      aria-autocomplete="list"
+      [placeholder]="placeholder()"
+      [value]="value()"
+      [disabled]="isDisabled()"
+      [attr.aria-expanded]="isOpen()"
+      [attr.aria-controls]="isOpen() ? listId : null"
+      [attr.aria-activedescendant]="
+        isOpen() && activeIndex() >= 0 ? listId + '-' + activeIndex() : null
+      "
+      (focus)="open()"
+      (input)="handleInput($event)"
+      (keydown)="handleKeydown($event)"
+      (blur)="handleBlur()"
+    />
+
+    <svg lucideChevronDown class="combobox__chevron" aria-hidden="true"></svg>
+  </div>
+
+  @if (isOpen() && filteredOptions().length > 0) {
+    <ul
+      class="combobox__list"
+      [id]="listId"
+      [style]="listPosition()"
+      role="listbox"
+      [attr.aria-label]="label()"
+      animate.enter="combobox__list--in"
+      animate.leave="combobox__list--out"
+    >
+      @for (option of filteredOptions(); track option.value; let i = $index) {
+        <li
+          class="combobox__option"
+          role="option"
+          [id]="listId + '-' + i"
+          [class.combobox__option--active]="activeIndex() === i"
+          [attr.aria-selected]="value() === option.value"
+          (mouseenter)="activeIndex.set(i)"
+          (mousedown)="$event.preventDefault()"
+          (click)="select(option)"
+        >
+          <span>{{ option.label }}</span>
+
+          @if (value() === option.value) {
+            <svg lucideCheck class="combobox__check" aria-hidden="true"></svg>
+          }
+        </li>
+      }
+    </ul>
+  }
+</div>

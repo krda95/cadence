@@ -51,11 +51,14 @@
 
       <div class="goal-form__field">
         <div class="goal-form__target">
-          <app-select
-            label="Target type"
-            [options]="targetTypeOptions"
-            formControlName="target_type"
-          />
+          <div class="goal-form__control">
+            <label id="goal-target-type-label">Target type</label>
+            <app-select
+              label="Target type"
+              [options]="targetTypeOptions"
+              formControlName="target_type"
+            />
+          </div>
 
           <app-input
             id="goal-value"
@@ -68,12 +71,10 @@
             formControlName="target_value"
           />
 
-          <app-input
-            id="goal-unit"
+          <app-combobox
             label="Unit"
-            [variant]="'filled'"
-            showErrorsOn="dirty"
-            placeholder="e.g. calories"
+            placeholder="Select or type"
+            [options]="unitOptions"
             formControlName="unit"
           />
         </div>
@@ -113,7 +114,6 @@
       @if (submitError(); as message) {
         <p class="goal-form__error" role="alert">{{ message }}</p>
       }
-
 
       <div class="goal-form__actions">
         @if (isEditMode && !isInactive()) {

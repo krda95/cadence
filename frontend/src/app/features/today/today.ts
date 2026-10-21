@@ -5,10 +5,11 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { GoalsService } from '@core/api/goals.service';
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
 import { scoreBand } from '@shared/utils/score-band';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-today',
-  imports: [GoalEntry, DatePipe, DecimalPipe],
+  imports: [GoalEntry, DatePipe, DecimalPipe, RouterLink],
   templateUrl: './today.html',
   styleUrl: './today.scss',
 })

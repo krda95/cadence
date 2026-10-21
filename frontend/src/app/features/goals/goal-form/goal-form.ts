@@ -17,6 +17,7 @@ import { Loader } from '@shared/ui/loader/loader';
 import { Modal } from '@shared/ui/modal/modal';
 import { Select, SelectOption } from '@shared/ui/select/select';
 import type { GoalDeactivatedState } from '../goals';
+import { Combobox, ComboboxOption } from '@shared/ui/combobox/combobox';
 
 /** Like `required`, but a field containing only spaces does not count as filled in. */
 function notBlank(control: AbstractControl): ValidationErrors | null {
@@ -25,7 +26,16 @@ function notBlank(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-goal-form',
-  imports: [ReactiveFormsModule, IconPicker, Button, InputComponent, Loader, Modal, Select],
+  imports: [
+    ReactiveFormsModule,
+    IconPicker,
+    Button,
+    InputComponent,
+    Loader,
+    Modal,
+    Select,
+    Combobox,
+  ],
   templateUrl: './goal-form.html',
   styleUrl: './goal-form.scss',
 })
@@ -49,6 +59,22 @@ export class GoalForm implements OnInit, OnDestroy {
   readonly targetTypeOptions: SelectOption<GoalTargetType>[] = [
     { value: 'min', label: 'At least' },
     { value: 'max', label: 'At most' },
+  ];
+
+  readonly unitOptions: ComboboxOption[] = [
+    { value: 'km', label: 'Kilometers (km)' },
+    { value: 'm', label: 'Meters (m)' },
+    { value: 'steps', label: 'Steps' },
+    { value: 'minutes', label: 'Minutes' },
+    { value: 'hours', label: 'Hours' },
+    { value: 'repetitions', label: 'Repetitions' },
+    { value: 'kg', label: 'Kilograms (kg)' },
+    { value: 'g', label: 'Grams (g)' },
+    { value: 'kcal', label: 'Calories (kcal)' },
+    { value: 'liters', label: 'Liters' },
+    { value: 'ml', label: 'Milliliters (ml)' },
+    { value: 'pages', label: 'Pages' },
+    { value: 'times', label: 'Times' },
   ];
 
   readonly goalId = this.route.snapshot.paramMap.get('id');
