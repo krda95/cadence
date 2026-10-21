@@ -23,6 +23,10 @@ Instead of focusing only on the finish line, Cadence emphasizes the rhythm of sh
 
 ## App Preview
 
+### Authentication
+
+![Login Screen](docs/images/login.png)
+
 ### Dashboard
 
 ![Cadence Dashboard](docs/images/dashboard.png)
@@ -43,40 +47,24 @@ Instead of focusing only on the finish line, Cadence emphasizes the rhythm of sh
 
 ![Application Settings](docs/images/settings.png)
 
-### Authentication
-
-![Login Screen](docs/images/login.png)
 
 ## Mobile Experience
 
 Cadence is designed to provide a seamless experience across desktop and mobile devices.
 
 <table>
-
   <tr>
-
-    <td width="50%" align="center">
-
+    <td align="center" width="50%">
       <img src="docs/images/mobile-dashboard.png" alt="Mobile Dashboard" width="300">
-
     </td>
-
-    <td width="50%" align="center">
-
+    <td align="center" width="50%">
       <img src="docs/images/mobile-goals.png" alt="Mobile Goals" width="300">
-
     </td>
-
   </tr>
-
   <tr>
-
     <td align="center"><b>Dashboard</b></td>
-
     <td align="center"><b>Goals</b></td>
-
   </tr>
-
 </table>
 
 
