@@ -134,6 +134,13 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
     }
   }
 
+  focusAndSelect(): void {
+    const element = this.input.nativeElement;
+
+    element.focus({ preventScroll: true });
+    element.select();
+  }
+
   handleFocus(): void {
     if (!this.autoSelect()) {
       return;

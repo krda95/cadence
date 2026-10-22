@@ -84,10 +84,19 @@
     }
   }
 
-  &__list {
+  &__overlay {
     position: fixed;
-
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
     z-index: 20;
+    pointer-events: none;
+  }
+
+  &__list {
+    position: absolute;
+    pointer-events: auto;
 
     box-sizing: border-box;
 
@@ -102,6 +111,9 @@
     scrollbar-width: thin;
 
     margin: 0;
+
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 
     padding: var(--space-1);
 

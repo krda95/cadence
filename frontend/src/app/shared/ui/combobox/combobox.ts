@@ -62,10 +62,31 @@ export class Combobox implements ControlValueAccessor {
 
   constructor() {
     // Scroll events don't bubble, so capture them to follow scrolling inside the modal body.
-    const reposition = () => this.isOpen() && this.updateListPosition();
+    const reposition = (event: Event) => {
+      if (!this.isOpen()) return;
+
+      const target = event.target;
+
+      if (target instanceof Element && target.closest('.combobox__list')) {
+        return;
+      }
+
+      this.updateListPosition();
+    };
+
+    // The on-screen keyboard resizes and pans the visual viewport without firing window events.
+    const onViewportChange = () => this.isOpen() && this.updateListPosition();
+    const viewport = window.visualViewport;
 
     window.addEventListener('scroll', reposition, true);
-    inject(DestroyRef).onDestroy(() => window.removeEventListener('scroll', reposition, true));
+    viewport?.addEventListener('resize', onViewportChange);
+    viewport?.addEventListener('scroll', onViewportChange);
+
+    inject(DestroyRef).onDestroy(() => {
+      window.removeEventListener('scroll', reposition, true);
+      viewport?.removeEventListener('resize', onViewportChange);
+      viewport?.removeEventListener('scroll', onViewportChange);
+    });
   }
 
   private onChange: (value: string) => void = () => {};
@@ -179,30 +200,51 @@ export class Combobox implements ControlValueAccessor {
     }
   }
 
-  // The list is position: fixed so it can escape clipping ancestors such as the modal body.
+  // The fixed overlay escapes clipping ancestors such as the modal body.
   @HostListener('window:resize')
   updateListPosition(): void {
     const control = this.host.nativeElement.querySelector('.combobox__control');
+    const overlay = this.host.nativeElement.querySelector('.combobox__overlay');
 
-    if (!control) return;
+    if (!control || !overlay) return;
 
     const rect = control.getBoundingClientRect();
+    const origin = overlay.getBoundingClientRect();
     const gap = 8;
     const maxHeight = 200;
-    const below = window.innerHeight - rect.bottom - gap;
-    const openUp = below < maxHeight && rect.top > below;
+    const estimatedOptionHeight = 44;
+    const estimatedListPadding = 10;
+    const desiredHeight = Math.min(
+      maxHeight,
+      this.filteredOptions().length * estimatedOptionHeight + estimatedListPadding,
+    );
 
+    // `fixed` and getBoundingClientRect() both use the layout viewport, while the part the user
+    // can actually see (above the keyboard) is the visual viewport inside it.
+    const viewport = window.visualViewport;
+    const visibleTop = viewport?.offsetTop ?? 0;
+    const visibleBottom = visibleTop + (viewport?.height ?? window.innerHeight);
+
+    const below = Math.max(0, visibleBottom - rect.bottom - gap);
+    const above = Math.max(0, rect.top - visibleTop - gap);
+
+    const openUp = below < desiredHeight && above > below;
+
+    // Measure the fixed origin rather than assuming it is (0, 0). Safari can move fixed
+    // elements when the keyboard pans the viewport. Both rects must use the same coordinates.
     this.listPosition.set({
-      right: `${window.innerWidth - rect.right}px`,
+      left: `${rect.right - origin.left}px`,
       minWidth: `${rect.width}px`,
       ...(openUp
         ? {
-            bottom: `${window.innerHeight - rect.top + gap}px`,
-            maxHeight: `${Math.min(maxHeight, rect.top - gap)}px`,
+            top: `${rect.top - gap - origin.top}px`,
+            translate: '-100% -100%',
+            maxHeight: `${Math.min(maxHeight, above)}px`,
           }
         : {
-            top: `${rect.bottom + gap}px`,
-            maxHeight: `${Math.min(maxHeight, Math.max(below, 120))}px`,
+            top: `${rect.bottom + gap - origin.top}px`,
+            translate: '-100% 0',
+            maxHeight: `${Math.min(maxHeight, below)}px`,
           }),
     });
   }

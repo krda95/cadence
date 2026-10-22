@@ -3,8 +3,6 @@
 $sidebar-width: 280px;
 $mobile-bar-height: 72px;
 
-// Floating chrome is translucent so content scrolls underneath it, and falls back to a
-// solid surface when the user asks for less transparency.
 @mixin material {
   background: color-mix(in srgb, var(--color-surface) 78%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
@@ -38,16 +36,10 @@ $mobile-bar-height: 72px;
   color: var(--color-text-primary);
 }
 
-// ---------------------------------------------------------------------------
-// Sidebar (desktop) / top bar + tab bar (small screens)
-// ---------------------------------------------------------------------------
-
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
-  // `fixed` makes this its own stacking context, so without an explicit level it paints
-  // in DOM order and later positioned or animated content (cards, skeletons) covers the
-  // tab bar. Everything inside is ordered locally; this puts the whole chrome on top.
+
   z-index: 20;
 
   display: flex;
@@ -70,7 +62,6 @@ $mobile-bar-height: 72px;
     padding: 0 var(--space-4);
   }
 
-  // The logo is the way home.
   &__home {
     display: inline-flex;
 
@@ -130,7 +121,6 @@ $mobile-bar-height: 72px;
       color: var(--color-text-primary);
     }
 
-    // Feedback lands on press, not on release.
     &:active {
       transform: scale(0.97);
     }
@@ -150,15 +140,10 @@ $mobile-bar-height: 72px;
     margin-top: auto;
   }
 
-  // Only the tab bar uses the sliding highlight; the desktop sidebar colours the link itself.
   &__pill {
     display: none;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Account card and its menu
-// ---------------------------------------------------------------------------
 
 .user-menu {
   position: relative;
@@ -178,7 +163,6 @@ $mobile-bar-height: 72px;
     background: var(--color-surface);
     box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
 
-    // Anchored to the card it came from: it rises out of it and sinks back the same way.
     transform-origin: bottom center;
 
     &--in {
@@ -289,7 +273,6 @@ $mobile-bar-height: 72px;
 
     color: var(--color-text-secondary);
 
-    // One glyph that turns over, not two glyphs that swap.
     transition: transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
 
     &--open {
@@ -349,10 +332,6 @@ $mobile-bar-height: 72px;
   font-size: var(--font-size-xs);
 }
 
-// ---------------------------------------------------------------------------
-// Content
-// ---------------------------------------------------------------------------
-
 .content {
   flex: 1;
 
@@ -370,10 +349,6 @@ $mobile-bar-height: 72px;
   margin: 0 auto;
   padding: var(--space-8);
 }
-
-// ---------------------------------------------------------------------------
-// Small screens: top bar with the account, floating tab bar with every destination
-// ---------------------------------------------------------------------------
 
 @media (max-width: bp.$desktop) {
   .sidebar {
@@ -399,19 +374,17 @@ $mobile-bar-height: 72px;
       @include material;
     }
 
-    // Five destinations in one row, like a tab bar: icon above a short label.
     &__nav {
       position: fixed;
       right: var(--space-2);
-      bottom: max(var(--space-5), env(safe-area-inset-bottom));
+      bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
       left: var(--space-2);
       z-index: 20;
 
       flex-direction: row;
       justify-content: space-around;
-      gap: var(--space-1);
-
-      padding: var(--space-2);
+      gap: 0;
+      padding: 6px;
 
       border: 1px solid var(--color-border);
       border-radius: var(--radius-card);
@@ -419,7 +392,6 @@ $mobile-bar-height: 72px;
       @include material;
     }
 
-    // Slides between tabs; positioned and sized from script to match the active one.
     &__pill {
       position: absolute;
       z-index: 0;
@@ -435,7 +407,6 @@ $mobile-bar-height: 72px;
     }
 
     &__link {
-      // Sits above the highlight.
       position: relative;
       z-index: 1;
 
@@ -457,7 +428,6 @@ $mobile-bar-height: 72px;
         white-space: nowrap;
       }
 
-      // The highlight is drawn by `.sidebar__pill`.
       &.active {
         background: transparent;
       }
@@ -482,7 +452,6 @@ $mobile-bar-height: 72px;
       calc(80px + var(--space-6) + env(safe-area-inset-bottom));
   }
 
-  // Only the avatar is shown, but the name stays available to assistive technology.
   .user-card {
     width: auto;
     padding: 0;

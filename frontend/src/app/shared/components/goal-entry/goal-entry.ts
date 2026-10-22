@@ -32,9 +32,7 @@ export class GoalEntry {
 
   readonly goal = input.required<GoalEntryDayResponse>();
   readonly isEditing = input(false);
-  /** The parent is persisting the entry; the editor stays open until it resolves. */
   readonly isSaving = input(false);
-  /** Shown inside the editor when the parent failed to persist the entry. */
   readonly saveError = input<string | null>(null);
 
   readonly entryValue = signal<number | null>(null);
@@ -49,10 +47,10 @@ export class GoalEntry {
   readonly editCancelled = output<void>();
 
   private readonly actionButton = viewChild<ElementRef<HTMLButtonElement>>('actionButton');
+  private readonly valueInput = viewChild<InputComponent>('valueInput');
 
   readonly isWeekly = computed(() => this.goal().period !== 'daily');
 
-  /** What the user has logged for this goal in its period, including today. */
   readonly todayValue = computed(() => {
     const goal = this.goal();
 
@@ -91,7 +89,6 @@ export class GoalEntry {
     return percent === 100 ? 'Within limit' : 'Over limit';
   });
 
-  /** Saving `0` is valid: it lets people correct an entry downwards. */
   readonly canSave = computed(() => {
     const value = this.entryValue();
 
@@ -99,7 +96,6 @@ export class GoalEntry {
   });
 
   constructor() {
-    // Return focus to the trigger once the editor closes, so keyboard users keep their place.
     let wasEditing = false;
 
     effect(() => {
@@ -120,6 +116,7 @@ export class GoalEntry {
   startEditing(): void {
     this.entryValue.set(this.todayValue());
     this.entryNote.set(this.goal().note ?? '');
+    this.valueInput()?.focusAndSelect();
     this.editStarted.emit();
   }
 

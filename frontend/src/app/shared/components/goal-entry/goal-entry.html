@@ -26,6 +26,27 @@
   </div>
 
   <div class="goal-entry__body" [class.goal-entry__body--editing]="isEditing()">
+    <div
+      class="goal-entry__persistent-input"
+      [class.goal-entry__persistent-input--editing]="isEditing()"
+    >
+      <app-input
+        #valueInput
+        type="text"
+        inputMode="decimal"
+        [autoSelect]="true"
+        [variant]="'entry'"
+        [ngModel]="entryValue()"
+        (ngModelChange)="onEntryValueChange($event)"
+        [style.--value-length]="entryValue()?.toString()?.length ?? 1"
+      />
+
+      @if (isEditing()) {
+        <span class="goal-entry__target">
+          / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
+        </span>
+      }
+    </div>
     @if (!isEditing()) {
       <div class="goal-entry__summary">
         <div class="goal-entry__value">
@@ -55,22 +76,6 @@
       </button>
     } @else {
       <div class="goal-entry__editor" (keydown)="onEditorKeydown($event)">
-        <div class="goal-entry__value">
-          <app-input
-            type="text"
-            inputMode="decimal"
-            [autoFocus]="true"
-            [autoSelect]="true"
-            [variant]="'entry'"
-            [ngModel]="entryValue()"
-            (ngModelChange)="onEntryValueChange($event)"
-            [style.--value-length]="entryValue()?.toString()?.length ?? 1"
-          />
-          <span class="goal-entry__target">
-            / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
-          </span>
-        </div>
-
         @if (isWeekly()) {
           <p class="goal-entry__hint">
             Week total · {{ valueBeforeToday() | number: '1.0-2' }} {{ goal().unit }} before today
