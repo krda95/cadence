@@ -26,6 +26,12 @@ from app.schemas.progress import (
     DayProgressResponse,
     WeeklyProgressResponse,
 )
+from app.services.goal_entry_service import (
+    get_owned_goal_or_404,
+)
+from app.services.goal_entry_service import (
+    upsert_goal_entry as upsert_goal_entry_service,
+)
 from app.services.progress_service import (
     calculate_daily_progress,
     calculate_progress_range,
@@ -38,29 +44,6 @@ router = APIRouter(
     prefix="/goals",
     tags=["Goals"],
 )
-
-
-async def get_owned_goal_or_404(
-    goal_id: uuid.UUID,
-    owner_id: uuid.UUID,
-    session: AsyncSession,
-) -> Goal:
-    result = await session.execute(
-        select(Goal).where(
-            Goal.id == goal_id,
-            Goal.owner_id == owner_id,
-        )
-    )
-
-    goal = result.scalar_one_or_none()
-
-    if goal is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Goal not found",
-        )
-
-    return goal
 
 
 @router.post(
@@ -350,36 +333,13 @@ async def upsert_goal_entry(
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> GoalEntry:
-    await get_owned_goal_or_404(
+    return await upsert_goal_entry_service(
+        session=session,
         goal_id=goal_id,
         owner_id=current_user.id,
-        session=session,
+        entry_date=entry_date,
+        payload=payload,
     )
-
-    result = await session.execute(
-        select(GoalEntry).where(
-            GoalEntry.goal_id == goal_id,
-            GoalEntry.entry_date == entry_date,
-        )
-    )
-    entry = result.scalar_one_or_none()
-
-    if entry is None:
-        entry = GoalEntry(
-            goal_id=goal_id,
-            entry_date=entry_date,
-            value=payload.value,
-            note=payload.note,
-        )
-        session.add(entry)
-    else:
-        entry.value = payload.value
-        entry.note = payload.note
-
-    await session.commit()
-    await session.refresh(entry)
-
-    return entry
 
 
 @router.patch(
