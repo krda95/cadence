@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,6 +10,11 @@ from app.models.enums import GoalPeriod, GoalTargetType
 class GoalEntryUpsert(BaseModel):
     value: float = Field(ge=0)
     note: str | None = Field(default=None, max_length=200)
+
+
+class GoalEntryOperation(BaseModel):
+    value: float = Field(ge=0)
+    operation: Literal["set", "increment"]
 
 
 class GoalEntryNoteUpdate(BaseModel):
@@ -25,6 +31,7 @@ class GoalEntryResponse(BaseModel):
     note: str | None
     created_at: datetime
     updated_at: datetime
+
 
 class GoalEntryDayResponse(BaseModel):
     goal_id: UUID

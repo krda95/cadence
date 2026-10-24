@@ -1,5 +1,5 @@
-from datetime import date, datetime
 import uuid
+from datetime import date, datetime
 
 from sqlalchemy import (
     CheckConstraint,
