@@ -25,7 +25,11 @@
     </div>
   </div>
 
-  <div class="goal-entry__body" [class.goal-entry__body--editing]="isEditing()">
+  <div
+    class="goal-entry__body"
+    [class.goal-entry__body--editing]="isEditing()"
+    (keydown)="onEditorKeydown($event)"
+  >
     <div
       class="goal-entry__persistent-input"
       [class.goal-entry__persistent-input--editing]="isEditing()"
@@ -75,7 +79,7 @@
         <span>Enter value</span>
       </button>
     } @else {
-      <div class="goal-entry__editor" (keydown)="onEditorKeydown($event)">
+      <div class="goal-entry__editor">
         @if (isWeekly()) {
           <p class="goal-entry__hint">
             Week total · {{ valueBeforeToday() | number: '1.0-2' }} {{ goal().unit }} before today

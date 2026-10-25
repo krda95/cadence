@@ -142,6 +142,10 @@ export class GoalEntry {
   }
 
   onEditorKeydown(event: KeyboardEvent): void {
+    if (!this.isEditing()) {
+      return;
+    }
+
     if (event.key === 'Enter') {
       event.preventDefault();
       this.save();
