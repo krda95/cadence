@@ -1,6 +1,6 @@
 import json
 from math import isfinite
-from typing import Literal
+from typing import Literal, TypedDict
 from uuid import UUID
 
 from openai import APIError, AsyncOpenAI
@@ -25,6 +25,12 @@ Rules:
 - You may save or update today's goal entries using available tools.
 - Never claim that an entry was saved unless the operation succeeded.
 - Never modify goals or entries without clear user intent.
+- If the user refers to a goal using ambiguous expressions
+  such as "it", "that", or "this goal", only resolve the
+  reference if the conversation history clearly identifies
+  the intended goal.
+- If the intended goal cannot be determined unambiguously,
+  ask for clarification before calling any tool.
 """
 
 SAVE_TODAY_ENTRY_TOOL = {
@@ -57,6 +63,11 @@ SAVE_TODAY_ENTRY_TOOL = {
         "additionalProperties": False,
     },
 }
+
+
+class ChatHistoryMessage(TypedDict):
+    role: Literal["user", "assistant"]
+    content: str
 
 
 class SaveTodayEntryArguments(BaseModel):
@@ -95,6 +106,7 @@ async def generate_ai_response(
     context: dict,
     session: AsyncSession,
     owner_id: UUID,
+    history: list[ChatHistoryMessage] | None = None,
 ) -> str:
     settings = get_settings()
 
@@ -108,6 +120,7 @@ async def generate_ai_response(
             "role": "developer",
             "content": ("Current user context:\n" + json.dumps(context, default=str)),
         },
+        *(history or []),
         {
             "role": "user",
             "content": message,

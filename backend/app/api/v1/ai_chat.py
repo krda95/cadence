@@ -31,6 +31,7 @@ async def chat(
             context=context,
             session=session,
             owner_id=current_user.id,
+            history=[item.model_dump() for item in payload.history],
         )
 
     except APITimeoutError as error:
