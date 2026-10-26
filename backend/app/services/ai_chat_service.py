@@ -3,7 +3,7 @@ from math import isfinite
 from typing import Literal
 from uuid import UUID
 
-from openai import AsyncOpenAI
+from openai import APIError, AsyncOpenAI
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,6 +72,24 @@ class SaveTodayEntryArguments(BaseModel):
         return value
 
 
+def build_entry_confirmation(
+    goal_name: str,
+    operation: str,
+    value: float,
+    current_value: float,
+) -> str:
+    formatted_value = f"{value:g}"
+    formatted_total = f"{current_value:g}"
+
+    if operation == "increment":
+        return (
+            f"Added {formatted_value} to {goal_name}. "
+            f"Your total for today is now {formatted_total}."
+        )
+
+    return f"Updated {goal_name} to {formatted_total} for today."
+
+
 async def generate_ai_response(
     message: str,
     context: dict,
@@ -85,27 +103,29 @@ async def generate_ai_response(
         timeout=30.0,
         max_retries=0,
     )
+    input_messages = [
+        {
+            "role": "developer",
+            "content": ("Current user context:\n" + json.dumps(context, default=str)),
+        },
+        {
+            "role": "user",
+            "content": message,
+        },
+    ]
 
     response = await client.responses.create(
         model=settings.openai_model,
         instructions=SYSTEM_PROMPT,
-        input=[
-            {
-                "role": "developer",
-                "content": (
-                    "Current user context:\n" + json.dumps(context, default=str)
-                ),
-            },
-            {
-                "role": "user",
-                "content": message,
-            },
-        ],
+        input=input_messages,
         tools=[SAVE_TODAY_ENTRY_TOOL],
         parallel_tool_calls=False,
         store=False,
     )
-    print("AI RESPONSE OUTPUT:", response.output)
+    # print("AI RESPONSE OUTPUT:", response.output)
+    tool_outputs = []
+    fallback_response = None
+
     for item in response.output:
         if item.type != "function_call":
             continue
@@ -142,7 +162,47 @@ async def generate_ai_response(
             payload=payload,
         )
 
-        print("AI ENTRY SAVED:", entry.id)
-        print("NEW VALUE:", entry.value)
+        fallback_response = build_entry_confirmation(
+            goal_name=goal["name"],
+            operation=arguments.operation,
+            value=arguments.value,
+            current_value=entry.value,
+        )
 
-    return response.output_text
+        tool_outputs.append(
+            {
+                "type": "function_call_output",
+                "call_id": item.call_id,
+                "output": json.dumps(
+                    {
+                        "success": True,
+                        "goal_name": goal["name"],
+                        "operation": arguments.operation,
+                        "value": arguments.value,
+                        "current_value": entry.value,
+                    }
+                ),
+            }
+        )
+    if not tool_outputs:
+        return response.output_text
+
+    try:
+        follow_up_response = await client.responses.create(
+            model=settings.openai_model,
+            instructions=SYSTEM_PROMPT,
+            input=[
+                *input_messages,
+                *[item.model_dump(exclude_none=True) for item in response.output],
+                *tool_outputs,
+            ],
+            store=False,
+        )
+
+        if follow_up_response.output_text:
+            return follow_up_response.output_text
+
+    except APIError as exc:
+        print(f"AI follow-up failed: {exc}")
+
+    return fallback_response or ("Your entry was saved successfully.")
