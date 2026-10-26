@@ -1,0 +1,35 @@
+.message {
+  display: flex;
+  width: 100%;
+
+  &--user {
+    justify-content: flex-end;
+
+    .message__bubble {
+      background: var(--color-primary);
+      color: var(--color-button-text);
+      border-bottom-right-radius: 6px;
+    }
+  }
+
+  &--assistant {
+    justify-content: flex-start;
+
+    .message__bubble {
+      background: var(--color-surface-hover);
+      color: var(--color-text-primary);
+      border-bottom-left-radius: 6px;
+    }
+  }
+
+  &__bubble {
+    max-width: 85%;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-card);
+
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}

@@ -8,12 +8,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import {
-  NavigationEnd,
-  Router,
-  RouterLink, RouterLinkActive,
-  RouterOutlet,
-} from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideCalendarDays,
   LucideChevronUp,
@@ -26,6 +21,8 @@ import {
 
 import { AuthService } from '@core/services/auth.service';
 import { Logo } from '@shared/ui/logo/logo';
+import { AssistantPanel } from '@features/assistant/assistant-panel/assistant-panel';
+import { LucideSparkles } from '@lucide/angular';
 
 @Component({
   selector: 'app-app-layout',
@@ -41,6 +38,8 @@ import { Logo } from '@shared/ui/logo/logo';
     LucideSettings,
     LucideLogOut,
     LucideChevronUp,
+    AssistantPanel,
+    LucideSparkles,
   ],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
@@ -57,8 +56,17 @@ export class AppLayout {
   private readonly nav = viewChild<ElementRef<HTMLElement>>('nav');
   private readonly destroyRef = inject(DestroyRef);
 
-  /** Left edge of the tab bar highlight, so the next move can start from where it was. */
   private pillX: number | null = null;
+
+  readonly isAssistantOpen = signal(false);
+
+  toggleAssistant(): void {
+    this.isAssistantOpen.update((open) => !open);
+  }
+
+  closeAssistant(): void {
+    this.isAssistantOpen.set(false);
+  }
 
   constructor() {
     afterNextRender(() => {

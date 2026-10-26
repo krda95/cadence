@@ -112,5 +112,23 @@
     <div class="page-container">
       <router-outlet />
     </div>
+    @if (!isAssistantOpen()) {
+      <button
+        type="button"
+        class="assistant-trigger"
+        aria-label="Open AI Assistant"
+        (click)="toggleAssistant()"
+      >
+        <svg lucideSparkles aria-hidden="true"></svg>
+      </button>
+    }
+
+    @if (isAssistantOpen()) {
+      <app-assistant-panel
+        animate.enter="assistant-enter"
+        animate.leave="assistant-leave"
+        (closeAssistant)="closeAssistant()"
+      />
+    }
   </main>
 </div>

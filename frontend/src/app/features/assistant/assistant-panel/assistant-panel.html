@@ -1,0 +1,60 @@
+<aside class="assistant-panel" aria-label="AI Assistant">
+  <header class="assistant-panel__header">
+    <div class="assistant-panel__icon">
+      <svg lucideSparkles aria-hidden="true"></svg>
+    </div>
+
+    <div class="assistant-panel__heading">
+      <h2>Assistant</h2>
+      <p>Log activities in plain words</p>
+    </div>
+
+    <button
+      type="button"
+      class="assistant-panel__close"
+      aria-label="Close assistant"
+      (click)="closeAssistant.emit()"
+    >
+      <svg lucideX aria-hidden="true"></svg>
+    </button>
+  </header>
+
+  <div class="assistant-panel__messages">
+    @for (message of messages(); track message.id) {
+      <app-assistant-message [message]="message" />
+    }
+  </div>
+
+  <footer class="assistant-panel__footer">
+    <div class="assistant-panel__suggestions">
+      <button type="button" (click)="draft.set(draft() + '8500 steps')">8500 steps</button>
+
+      <button type="button" (click)="draft.set(draft() + 'studied 45 min & read 20 min')">
+        studied 45 min & read 20 min
+      </button>
+    </div>
+
+    <div class="assistant-panel__composer">
+      <textarea
+        #messageInput
+        rows="1"
+        maxlength="2000"
+        placeholder="e.g. 9200 steps and 2150 kcal"
+        aria-label="Message to assistant"
+        [value]="draft()"
+        (input)="onDraftInput(messageInput.value)"
+        (keydown.enter)="onEnter($event)"
+      ></textarea>
+
+      <button
+        type="button"
+        class="assistant-panel__send"
+        aria-label="Send message"
+        [disabled]="!draft().trim()"
+        (click)="sendMessage()"
+      >
+        <svg lucideSend aria-hidden="true"></svg>
+      </button>
+    </div>
+  </footer>
+</aside>
