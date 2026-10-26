@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     supabase_service_role_key: str
     supabase_avatar_bucket: str = "avatars"
 
+    openai_api_key: str
+    openai_model: str = "gpt-5-mini"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
