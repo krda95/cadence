@@ -20,4 +20,5 @@ class DashboardStreakResponse(BaseModel):
 class DashboardResponse(BaseModel):
     today: DashboardTodayResponse
     week: DashboardPeriodResponse
+    previous_week: DashboardPeriodResponse
     streak: DashboardStreakResponse

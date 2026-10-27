@@ -20,6 +20,8 @@ async def get_dashboard(
 ) -> DashboardResponse:
     today = get_user_today()
     week_start = today - timedelta(days=today.weekday())
+    previous_week_start = week_start - timedelta(days=7)
+    previous_week_end = week_start - timedelta(days=1)
     weekly_scores: list[float] = []
     weekly_score: float | None = None
     history: list[dict] = []
@@ -53,6 +55,19 @@ async def get_dashboard(
         round(sum(weekly_scores) / len(weekly_scores), 2) if weekly_scores else None
     )
 
+    previous_weekly_scores = [
+        day["daily_score"]
+        for day in history
+        if previous_week_start <= day["date"] <= previous_week_end
+        and day["daily_score"] is not None
+    ]
+
+    previous_weekly_score = (
+        round(sum(previous_weekly_scores) / len(previous_weekly_scores), 2)
+        if previous_weekly_scores
+        else None
+    )
+
     return {
         "today": {
             "score": daily_progress["daily_score"],
@@ -62,6 +77,10 @@ async def get_dashboard(
         "week": {
             "score": weekly_score,
             "days_count": len(weekly_scores),
+        },
+        "previous_week": {
+            "score": previous_weekly_score,
+            "days_count": len(previous_weekly_scores),
         },
         "streak": {
             "current": current_streak,
