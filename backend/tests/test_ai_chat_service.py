@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-from openai import APIConnectionError
 from pydantic import ValidationError
 
 import app.services.ai_chat_service as ai_service
@@ -16,7 +15,7 @@ from app.services.ai_chat_service import (
 )
 
 
-def make_function_call(goal_id, operation, value):
+def make_function_call(goal_id, operation, value, call_id="call_123"):
     arguments = json.dumps(
         {
             "goal_id": str(goal_id),
@@ -29,12 +28,12 @@ def make_function_call(goal_id, operation, value):
         type="function_call",
         name="save_today_entry",
         arguments=arguments,
-        call_id="call_123",
+        call_id=call_id,
         model_dump=lambda **kwargs: {
             "type": "function_call",
             "name": "save_today_entry",
             "arguments": arguments,
-            "call_id": "call_123",
+            "call_id": call_id,
         },
     )
 
@@ -185,19 +184,10 @@ async def test_generate_ai_response_set_entry(monkeypatch):
         value=3000,
     )
 
-    first_response = make_ai_response(output=[function_call])
-
-    second_response = make_ai_response(
-        output_text="Your Steps goal has been updated to 3000."
-    )
-
     mock_client = MagicMock()
 
     mock_client.responses.create = AsyncMock(
-        side_effect=[
-            first_response,
-            second_response,
-        ]
+        return_value=make_ai_response(output=[function_call])
     )
 
     mock_save = AsyncMock(
@@ -237,7 +227,7 @@ async def test_generate_ai_response_set_entry(monkeypatch):
         owner_id=owner_id,
     )
 
-    assert result == "Your Steps goal has been updated to 3000."
+    assert result == "Updated Steps to 3000 for today."
 
     mock_save.assert_awaited_once()
 
@@ -250,7 +240,7 @@ async def test_generate_ai_response_set_entry(monkeypatch):
     assert kwargs["payload"].operation == "set"
     assert kwargs["payload"].value == 3000
 
-    assert mock_client.responses.create.await_count == 2
+    mock_client.responses.create.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -266,10 +256,7 @@ async def test_generate_ai_response_increment_entry(monkeypatch):
     mock_client = MagicMock()
 
     mock_client.responses.create = AsyncMock(
-        side_effect=[
-            make_ai_response(output=[function_call]),
-            make_ai_response(output_text="Added 1500 steps. Your total is now 4500."),
-        ]
+        return_value=make_ai_response(output=[function_call])
     )
 
     mock_save = AsyncMock(
@@ -305,7 +292,7 @@ async def test_generate_ai_response_increment_entry(monkeypatch):
         owner_id=uuid4(),
     )
 
-    assert result == "Added 1500 steps. Your total is now 4500."
+    assert result == ("Added 1500 to Steps. Your total for today is now 4500.")
 
     mock_save.assert_awaited_once()
 
@@ -313,6 +300,7 @@ async def test_generate_ai_response_increment_entry(monkeypatch):
 
     assert payload.operation == "increment"
     assert payload.value == 1500
+    mock_client.responses.create.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -365,7 +353,7 @@ async def test_generate_ai_response_rejects_unknown_goal(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_ai_response_fallback(monkeypatch):
+async def test_generate_ai_response_returns_confirmation_after_save(monkeypatch):
     goal_id = uuid4()
 
     function_call = make_function_call(
@@ -377,10 +365,7 @@ async def test_generate_ai_response_fallback(monkeypatch):
     mock_client = MagicMock()
 
     mock_client.responses.create = AsyncMock(
-        side_effect=[
-            make_ai_response(output=[function_call]),
-            APIConnectionError(request=MagicMock()),
-        ]
+        return_value=make_ai_response(output=[function_call])
     )
 
     mock_save = AsyncMock(
@@ -420,7 +405,7 @@ async def test_generate_ai_response_fallback(monkeypatch):
 
     mock_save.assert_awaited_once()
 
-    assert mock_client.responses.create.await_count == 2
+    mock_client.responses.create.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -502,84 +487,6 @@ async def test_generate_ai_response_without_history(monkeypatch):
     assert result == "Hello!"
 
 
-@pytest.mark.asyncio
-async def test_generate_ai_response_preserves_history_after_tool_call(
-    monkeypatch,
-):
-    goal_id = uuid4()
-
-    function_call = make_function_call(
-        goal_id=goal_id,
-        operation="increment",
-        value=0.5,
-    )
-
-    mock_client = MagicMock()
-
-    mock_client.responses.create = AsyncMock(
-        side_effect=[
-            make_ai_response(output=[function_call]),
-            make_ai_response(output_text="Added 0.5 liters to Water."),
-        ]
-    )
-
-    mock_save = AsyncMock(return_value=SimpleNamespace(value=2.0))
-
-    monkeypatch.setattr(
-        ai_service,
-        "AsyncOpenAI",
-        lambda **kwargs: mock_client,
-    )
-
-    monkeypatch.setattr(
-        ai_service,
-        "save_today_entry",
-        mock_save,
-    )
-
-    history = [
-        {
-            "role": "user",
-            "content": "How am I doing with Water?",
-        },
-        {
-            "role": "assistant",
-            "content": "You've completed 1.5 liters.",
-        },
-    ]
-
-    result = await generate_ai_response(
-        message="Add another 0.5 to it",
-        context={
-            "goals": [
-                {
-                    "id": str(goal_id),
-                    "name": "Water",
-                }
-            ]
-        },
-        session=MagicMock(),
-        owner_id=uuid4(),
-        history=history,
-    )
-
-    assert result == "Added 0.5 liters to Water."
-
-    assert mock_client.responses.create.await_count == 2
-    mock_save.assert_awaited_once()
-
-    first_call = mock_client.responses.create.await_args_list[0]
-    second_call = mock_client.responses.create.await_args_list[1]
-
-    first_input = first_call.kwargs["input"]
-    second_input = second_call.kwargs["input"]
-
-    assert first_input[1:3] == history
-    assert second_input[: len(first_input)] == first_input
-
-    assert second_input[-1]["type"] == "function_call_output"
-
-
 def test_ai_chat_request_rejects_more_than_10_history_messages():
     history = [
         {
@@ -611,3 +518,72 @@ def test_ai_chat_request_rejects_invalid_history_roles(role):
                 }
             ],
         )
+
+
+@pytest.mark.asyncio
+async def test_generate_ai_response_multiple_entries(monkeypatch):
+    steps_id = uuid4()
+    running_id = uuid4()
+
+    function_calls = [
+        make_function_call(
+            goal_id=steps_id,
+            operation="increment",
+            value=3000,
+            call_id="call_steps",
+        ),
+        make_function_call(
+            goal_id=running_id,
+            operation="increment",
+            value=1.5,
+            call_id="call_running",
+        ),
+    ]
+
+    mock_client = MagicMock()
+    mock_client.responses.create = AsyncMock(
+        return_value=make_ai_response(output=function_calls)
+    )
+
+    mock_save = AsyncMock(
+        side_effect=[
+            SimpleNamespace(value=3000),
+            SimpleNamespace(value=1.5),
+        ]
+    )
+
+    monkeypatch.setattr(
+        ai_service,
+        "AsyncOpenAI",
+        lambda **kwargs: mock_client,
+    )
+
+    monkeypatch.setattr(
+        ai_service,
+        "save_today_entry",
+        mock_save,
+    )
+
+    result = await generate_ai_response(
+        message="Add 3000 steps and 1.5 miles",
+        context={
+            "goals": [
+                {"id": str(steps_id), "name": "Walk"},
+                {"id": str(running_id), "name": "Running"},
+            ]
+        },
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    assert mock_save.await_count == 2
+
+    assert mock_save.await_args_list[0].kwargs["goal_id"] == steps_id
+    assert mock_save.await_args_list[1].kwargs["goal_id"] == running_id
+
+    assert "3000" in result
+    assert "1.5" in result
+    assert "Walk" in result
+    assert "Running" in result
+
+    mock_client.responses.create.assert_awaited_once()
