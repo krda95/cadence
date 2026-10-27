@@ -29,6 +29,7 @@ export class AssistantPanel {
   readonly closeAssistant = output<void>();
   private readonly historyService = inject(AssistantHistoryService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly messages = this.historyService.messages;
 
   readonly welcomeMessage: Message = {
@@ -85,6 +86,8 @@ export class AssistantPanel {
 
     afterNextRender(() => {
       this.messageInput()?.nativeElement.focus();
+      this.trackVisualViewport();
+      this.lockPageScroll();
     });
 
     this.destroyRef.onDestroy(() => clearInterval(interval));
@@ -106,6 +109,78 @@ export class AssistantPanel {
           behavior: reduceMotion ? 'instant' : 'smooth',
         });
       },
+    });
+  }
+
+  private lockPageScroll(): void {
+    if (!window.matchMedia('(max-width: 600px)').matches) {
+      return;
+    }
+
+    const { documentElement: html, body } = document;
+    const scrollY = window.scrollY;
+    const previous = {
+      htmlOverflow: html.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+    };
+
+    html.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `${-scrollY}px`;
+    body.style.width = '100%';
+
+    const host = this.host.nativeElement;
+    const guard = (event: TouchEvent) => {
+      const target = event.target as HTMLElement;
+      const scroller = target.closest<HTMLElement>('.assistant-panel__messages, textarea');
+
+      if (!scroller || scroller.scrollHeight <= scroller.clientHeight) {
+        event.preventDefault();
+      }
+    };
+
+    host.addEventListener('touchmove', guard, { passive: false });
+
+    this.destroyRef.onDestroy(() => {
+      host.removeEventListener('touchmove', guard);
+      html.style.overflow = previous.htmlOverflow;
+      body.style.position = previous.position;
+      body.style.top = previous.top;
+      body.style.width = previous.width;
+      window.scrollTo(0, scrollY);
+    });
+  }
+
+  private trackVisualViewport(): void {
+    const viewport = window.visualViewport;
+
+    if (!viewport) {
+      return;
+    }
+
+    const host = this.host.nativeElement;
+    let lastHeight = viewport.height;
+
+    const sync = () => {
+      host.style.setProperty('--assistant-vv-height', `${viewport.height}px`);
+      host.style.setProperty('--assistant-vv-top', `${viewport.offsetTop}px`);
+
+      if (viewport.height !== lastHeight) {
+        lastHeight = viewport.height;
+        const container = this.messagesContainer()?.nativeElement;
+        container?.scrollTo({ top: container.scrollHeight, behavior: 'instant' });
+      }
+    };
+
+    sync();
+    viewport.addEventListener('resize', sync);
+    viewport.addEventListener('scroll', sync);
+
+    this.destroyRef.onDestroy(() => {
+      viewport.removeEventListener('resize', sync);
+      viewport.removeEventListener('scroll', sync);
     });
   }
 
