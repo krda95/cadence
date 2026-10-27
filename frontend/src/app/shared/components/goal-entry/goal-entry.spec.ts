@@ -113,6 +113,18 @@ describe('GoalEntry', () => {
     expect(alert?.textContent).toContain("Couldn't save");
   });
 
+  it('saves when Enter is pressed in the value input', () => {
+    render(DAILY, true);
+    component.entryValue.set(1.5);
+    const saved = vi.fn();
+    component.entrySaved.subscribe(saved);
+
+    const input = fixture.nativeElement.querySelector('.goal-entry__persistent-input input');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(saved).toHaveBeenCalledTimes(1);
+  });
+
   it('gives the action button an accessible name that includes the goal', () => {
     render(DAILY);
 
