@@ -203,6 +203,22 @@ export class AssistantPanel {
     textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }
 
+  addSuggestion(text: string): void {
+    const current = this.draft();
+    const separator = current && !/\s$/.test(current) ? ' ' : '';
+
+    this.draft.set(current + separator + text);
+
+    const textarea = this.messageInput()?.nativeElement;
+
+    if (textarea) {
+      textarea.value = this.draft();
+      textarea.focus();
+    }
+
+    this.resizeTextarea();
+  }
+
   onDraftInput(value: string): void {
     this.draft.set(value);
     this.resizeTextarea();

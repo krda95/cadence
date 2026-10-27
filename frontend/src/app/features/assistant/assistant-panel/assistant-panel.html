@@ -46,13 +46,13 @@
   <footer class="assistant-panel__footer">
     @if (!isLoading()) {
       <div class="assistant-panel__suggestions">
-        <button type="button" (click)="draft.set(draft() + '8500 steps'); resizeTextarea()">
+        <button type="button" (click)="addSuggestion('8500 steps')">
           8500 steps
         </button>
 
         <button
           type="button"
-          (click)="draft.set(draft() + 'studied 45 min & read 20 min'); resizeTextarea()"
+          (click)="addSuggestion('studied 45 min & read 20 min')"
         >
           studied 45 min & read 20 min
         </button>
