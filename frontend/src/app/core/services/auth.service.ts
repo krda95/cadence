@@ -16,10 +16,12 @@ import { LoginRequest, LoginResponse, UserProfile } from '@models/loginModel';
 import { RegisterRequest, RegisterResponse } from '@models/registerModel';
 import { ForgotPasswordRequest, MessageResponse } from '@models/forgotModel';
 import { ResetPasswordRequest } from '@models/resetModel';
+import { AssistantHistoryService } from '@features/assistant/services/assistant-history.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly assistantHistory = inject(AssistantHistoryService);
   private readonly apiAuthUrl = `${environment.apiUrl}/auth`;
   private readonly apiMeUrl = `${environment.apiUrl}/me`;
   private readonly accessTokenKey = 'access_token';
@@ -85,6 +87,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.refreshTokenKey);
+    this.assistantHistory.clearHistory();
     this.currentUser.set(null);
   }
 

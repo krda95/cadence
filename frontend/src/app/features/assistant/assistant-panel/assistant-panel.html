@@ -1,7 +1,7 @@
 <aside class="assistant-panel" aria-label="AI Assistant">
   <header class="assistant-panel__header">
     <div class="assistant-panel__icon">
-      <svg lucideSparkles aria-hidden="true"></svg>
+      <svg lucideBot aria-hidden="true"></svg>
     </div>
 
     <div class="assistant-panel__heading">
@@ -19,20 +19,45 @@
     </button>
   </header>
 
-  <div class="assistant-panel__messages">
+  <div #messagesContainer class="assistant-panel__messages">
+    @if (messages().length === 0) {
+      <app-assistant-message [message]="welcomeMessage" />
+    }
+
     @for (message of messages(); track message.id) {
       <app-assistant-message [message]="message" />
+    }
+    @if (isLoading()) {
+      <div class="assistant-panel__typing" role="status" aria-label="Assistant is typing">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    }
+    @if (errorMessage()) {
+      <div class="assistant-panel__error" role="alert">
+        <p>{{ errorMessage() }}</p>
+
+        <button type="button" (click)="retryMessage()">Try again</button>
+      </div>
     }
   </div>
 
   <footer class="assistant-panel__footer">
-    <div class="assistant-panel__suggestions">
-      <button type="button" (click)="draft.set(draft() + '8500 steps')">8500 steps</button>
+    @if (!isLoading()) {
+      <div class="assistant-panel__suggestions">
+        <button type="button" (click)="draft.set(draft() + '8500 steps'); resizeTextarea()">
+          8500 steps
+        </button>
 
-      <button type="button" (click)="draft.set(draft() + 'studied 45 min & read 20 min')">
-        studied 45 min & read 20 min
-      </button>
-    </div>
+        <button
+          type="button"
+          (click)="draft.set(draft() + 'studied 45 min & read 20 min'); resizeTextarea()"
+        >
+          studied 45 min & read 20 min
+        </button>
+      </div>
+    }
 
     <div class="assistant-panel__composer">
       <textarea
@@ -50,10 +75,10 @@
         type="button"
         class="assistant-panel__send"
         aria-label="Send message"
-        [disabled]="!draft().trim()"
+        [disabled]="!draft().trim() || isLoading()"
         (click)="sendMessage()"
       >
-        <svg lucideSend aria-hidden="true"></svg>
+        <svg lucideArrowUp aria-hidden="true"></svg>
       </button>
     </div>
   </footer>

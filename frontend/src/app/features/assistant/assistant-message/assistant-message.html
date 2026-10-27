@@ -3,7 +3,5 @@
   [class.message--user]="message().role === 'user'"
   [class.message--assistant]="message().role === 'assistant'"
 >
-  <div class="message__bubble">
-    {{ message().content }}
-  </div>
+  <div class="message__bubble">{{ message().content }}</div>
 </div>

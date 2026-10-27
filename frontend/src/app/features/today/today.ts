@@ -1,8 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, effect } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe } from '@angular/common';
 
 import { GoalsService } from '@core/api/goals.service';
+import { AssistantService } from '@core/api/assistant.service';
+
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
 import { scoreBand } from '@shared/utils/score-band';
 import { RouterLink } from '@angular/router';
@@ -15,11 +17,25 @@ import { RouterLink } from '@angular/router';
 })
 export class Today {
   private readonly goalsService = inject(GoalsService);
+  private readonly assistantService = inject(AssistantService);
 
   readonly selectedDate = signal(this.getTodayDate());
   readonly editingGoalId = signal<string | null>(null);
   readonly savingGoalId = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
+
+  constructor() {
+    effect(() => {
+      const version = this.assistantService.dataVersion();
+
+      if (version === 0) {
+        return;
+      }
+
+      this.goalsResource.reload();
+      this.scoreResource.reload();
+    });
+  }
 
   readonly goalsResource = rxResource({
     params: () => this.selectedDate(),
@@ -43,7 +59,6 @@ export class Today {
     { title: 'Weekly', goals: this.goals().filter((goal) => goal.period === 'weekly') },
   ]);
 
-  /** Only true once the goals request succeeded and returned nothing. */
   readonly isEmpty = computed(() => this.goalsResource.hasValue() && this.goals().length === 0);
 
   readonly scoreValue = computed(() => this.score()?.daily_score ?? null);

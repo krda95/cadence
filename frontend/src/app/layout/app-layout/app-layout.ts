@@ -22,7 +22,7 @@ import {
 import { AuthService } from '@core/services/auth.service';
 import { Logo } from '@shared/ui/logo/logo';
 import { AssistantPanel } from '@features/assistant/assistant-panel/assistant-panel';
-import { LucideSparkles } from '@lucide/angular';
+import { LucideBot } from '@lucide/angular';
 
 @Component({
   selector: 'app-app-layout',
@@ -39,7 +39,7 @@ import { LucideSparkles } from '@lucide/angular';
     LucideLogOut,
     LucideChevronUp,
     AssistantPanel,
-    LucideSparkles,
+    LucideBot,
   ],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
