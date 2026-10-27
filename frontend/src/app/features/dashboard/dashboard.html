@@ -17,41 +17,51 @@
 
     <div class="dashboard__grid">
       <section class="week-card" aria-label="This week">
-        <div
-          class="week-card__ring score-ring"
-          role="img"
-          [attr.aria-label]="
-            data.week.score === null
-              ? 'This week: no score'
-              : 'This week: ' + (data.week.score | number: '1.0-0') + '%, ' + weekBand().label
-          "
-          [style.--score]="data.week.score ?? 0"
-          [style.--tone]="weekBand().color"
-        >
-          <div class="score-ring__inner" aria-hidden="true">
-            <span class="score-ring__value">
-              @if (data.week.score !== null) {
-                {{ data.week.score | number: '1.0-0' }}%
-              } @else {
-                –
-              }
-            </span>
-            <span class="score-ring__label">this week</span>
+        @if (displayWeek(); as week) {
+          <div
+            class="week-card__ring score-ring"
+            role="img"
+            [attr.aria-label]="
+              (week.period === 'current' ? 'This week: ' : 'Last week: ') +
+              (week.score | number: '1.0-0') +
+              '%, ' +
+              weekBand().label
+            "
+            [style.--score]="week.score"
+            [style.--tone]="weekBand().color"
+          >
+            <div class="score-ring__inner" aria-hidden="true">
+              <span class="score-ring__value"> {{ week.score | number: '1.0-0' }}% </span>
+
+              <span class="score-ring__label">
+                {{ week.period === 'current' ? 'this week' : 'last week' }}
+              </span>
+            </div>
           </div>
-        </div>
+        }
 
         <div class="week-card__status" [style.--tone]="weekBand().color">
           {{ weekBand().label }}
         </div>
 
-        <div class="week-card__stats">
+        @if (displayWeek(); as week) {
           <div class="stat">
-            <span class="stat__value">{{ data.week.days_count }}</span>
-            <span class="stat__label"
-              >{{ data.week.days_count === 1 ? 'day' : 'days' }} counted</span
-            >
+            <span class="stat__value">{{ week.days_count }}</span>
+            <span class="stat__label"> {{ week.days_count === 1 ? 'day' : 'days' }} counted </span>
           </div>
-        </div>
+
+          @if (weekDifference() !== null) {
+            <div class="week-card__comparison">
+              {{ weekDifference()! > 0 ? '+' : '' }}{{ weekDifference() }} pp vs last week
+            </div>
+          }
+        }
+        @if (!displayWeek()) {
+          <div class="week-card__empty">
+            <h2>Your journey starts here</h2>
+            <p>Complete your first day to see your weekly progress.</p>
+          </div>
+        }
       </section>
 
       <section class="today-card" aria-labelledby="today-card-title">

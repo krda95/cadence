@@ -17,5 +17,6 @@ export interface DashboardStreakResponse {
 export interface DashboardResponse {
   today: DashboardTodayResponse;
   week: DashboardWeekResponse;
+  previous_week: DashboardWeekResponse;
   streak: DashboardStreakResponse;
 }

@@ -30,10 +30,6 @@
   @include m.action-button;
 }
 
-// ---------------------------------------------------------------------------
-// Dashboard shell
-// ---------------------------------------------------------------------------
-
 .dashboard {
   container: dashboard / inline-size;
 
@@ -69,7 +65,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-6);
 
-    // Narrow: week and today take a full row each, the two streaks share the next one.
     @container dashboard (max-width: 40rem) {
       gap: var(--space-4);
 
@@ -126,10 +121,6 @@
   }
 }
 
-// ---------------------------------------------------------------------------
-// Shared pieces
-// ---------------------------------------------------------------------------
-
 .score-ring {
   &__value {
     @extend %numeral;
@@ -170,12 +161,9 @@
     color: var(--color-text-secondary);
 
     font-size: var(--font-size-md);
+    text-align: center;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Week card
-// ---------------------------------------------------------------------------
 
 .week-card {
   @include card;
@@ -218,16 +206,73 @@
 
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
+    text-align: center;
   }
 
   &__stats {
     grid-area: stats;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: var(--space-3);
+
+    text-align: center;
+  }
+
+  &__comparison {
+    color: var(--color-text-secondary);
+
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+
+    &--positive {
+      color: var(--color-score-great);
+    }
+
+    &--negative {
+      color: var(--color-text-secondary);
+    }
+  }
+
+  &__empty {
+    grid-column: 1 / -1;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: var(--space-3);
+    min-height: 8.5rem;
+
+    text-align: center;
+
+    h2 {
+      margin: 0;
+
+      color: var(--color-text-primary);
+
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    p {
+      max-width: 22rem;
+      margin: 0;
+
+      color: var(--color-text-secondary);
+
+      font-size: var(--font-size-sm);
+      line-height: 1.5;
+    }
+  }
+  @container dashboard (max-width: 40rem) {
+    column-gap: var(--space-4);
   }
 }
-
-// ---------------------------------------------------------------------------
-// Today card
-// ---------------------------------------------------------------------------
 
 .today-card {
   @include card;
@@ -330,9 +375,6 @@
       border-radius: inherit;
     }
 
-    // The card draws the focus ring and the press feedback. A transform here would make the
-    // link the containing block of the stretched ::after, shrinking the hit area to the pill
-    // the moment it is pressed, so the release would miss it and the click be lost.
     &:active {
       transform: none;
     }
@@ -347,10 +389,6 @@
     }
   }
 }
-
-// ---------------------------------------------------------------------------
-// Streak cards
-// ---------------------------------------------------------------------------
 
 .streak-card {
   @include card;
@@ -407,10 +445,6 @@
     font-size: var(--font-size-md);
   }
 }
-
-// ---------------------------------------------------------------------------
-// Loading skeleton
-// ---------------------------------------------------------------------------
 
 .skeleton {
   @include m.skeleton-block;
