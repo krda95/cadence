@@ -1,0 +1,266 @@
+<div class="about">
+  <header class="about-header">
+    <a routerLink="/login" class="about-header__brand" aria-label="Cadence">
+      <app-logo />
+    </a>
+
+    <a routerLink="/login" class="about-header__back">
+      <span aria-hidden="true">←</span>
+      Back to Cadence
+    </a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero__content">
+        <span class="hero__eyebrow"> PRODUCT MANAGER · ENGINEER · AI BUILDER </span>
+
+        <h1 class="hero__title">
+          <span class="hero__greeting">
+            <span class="hero__avatar">
+              <img src="/images/portrait.webp" alt="" width="800" height="1000" />
+            </span>
+            Hi, I'm Krystian.
+          </span>
+
+          <span class="hero__title-accent"> I build products that make a difference. </span>
+        </h1>
+
+        <p class="hero__description">
+          Product Manager with 8+ years of experience bridging technology, data, and business. From
+          engineering complex data platforms to building AI-powered products.
+        </p>
+
+        <div class="hero__actions">
+          <a routerLink="/about" fragment="experience" class="hero__button hero__button--primary">
+            Explore my journey
+
+            <span aria-hidden="true">↓</span>
+          </a>
+
+          <a routerLink="/about" fragment="contact" class="hero__button hero__button--secondary">
+            Get in touch
+          </a>
+        </div>
+      </div>
+
+      <div class="hero__visual">
+        <div class="hero__visual-glow"></div>
+
+        <div class="hero__portrait">
+          <img
+            src="/images/portrait.webp"
+            alt="Krystian Dajewski"
+            width="800"
+            height="1000"
+            fetchpriority="high"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section class="impact" aria-label="Career highlights">
+      <div class="impact__item">
+        <span class="impact__value">8+</span>
+        <span class="impact__label">Years in technology</span>
+      </div>
+
+      <div class="impact__item">
+        <span class="impact__value">400K+</span>
+        <span class="impact__label">Events processed daily</span>
+      </div>
+
+      <div class="impact__item">
+        <span class="impact__value">&lt;100ms</span>
+        <span class="impact__label">API response time achieved</span>
+      </div>
+    </section>
+
+    <section id="experience" class="experience">
+      <div class="experience__header">
+        <span class="experience__eyebrow">01 / MY JOURNEY</span>
+
+        <h2 class="experience__title">
+          From engineering to
+          <span>building better products.</span>
+        </h2>
+
+        <p class="experience__intro">
+          My journey has taken me from writing code and working with complex data systems to leading
+          product development and building AI-powered experiences.
+        </p>
+      </div>
+
+      <div class="timeline">
+        @for (item of experience; track item.period + item.company; let first = $first) {
+          <article class="timeline__item" [class.timeline__item--active]="first">
+            <div class="timeline__period">
+              {{ item.period }}
+            </div>
+
+            <div class="timeline__marker">
+              <span class="timeline__dot"></span>
+            </div>
+
+            <div class="timeline__content">
+              <span class="timeline__company">{{ item.company }}</span>
+
+              <h3 class="timeline__role">{{ item.role }}</h3>
+
+              <p class="timeline__description">
+                {{ item.description }}
+              </p>
+
+              <div class="timeline__highlights">
+                @for (highlight of item.highlights; track highlight) {
+                  <span class="timeline__tag">{{ highlight }}</span>
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section id="expertise" class="expertise">
+      <div class="expertise__header">
+        <span class="expertise__eyebrow">02 / WHAT I DO</span>
+
+        <h2 class="expertise__title">
+          Three perspectives.
+          <span>One product mindset.</span>
+        </h2>
+
+        <p class="expertise__intro">
+          My strength lies in connecting product thinking, technical expertise, and emerging
+          technologies to build solutions that deliver real value.
+        </p>
+      </div>
+
+      <div class="expertise__grid">
+        @for (item of expertise; track item.number) {
+          <article class="expertise-card">
+            <div class="expertise-card__top">
+              <span class="expertise-card__number">{{ item.number }}</span>
+            </div>
+
+            <div class="expertise-card__content">
+              <span class="expertise-card__subtitle">
+                {{ item.subtitle }}
+              </span>
+
+              <h3 class="expertise-card__title">
+                {{ item.title }}
+              </h3>
+
+              <p class="expertise-card__description">
+                {{ item.description }}
+              </p>
+            </div>
+
+            <div class="expertise-card__skills">
+              @for (skill of item.skills; track skill) {
+                <span class="expertise-card__skill">{{ skill }}</span>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section id="cadence" class="featured-project">
+      <div class="featured-project__header">
+        <span class="featured-project__eyebrow"> 03 / SELECTED WORK </span>
+
+        <h2 class="featured-project__heading">Something I'm building.</h2>
+      </div>
+
+      <article class="project-card">
+        <div class="project-card__top">
+          <span>INDEPENDENT PROJECT</span>
+          <span>2026 - PRESENT</span>
+        </div>
+
+        <div class="project-card__content">
+          <h3 class="project-card__name">Cadence<span>.</span></h3>
+
+          <p class="project-card__headline">
+            From product strategy<br />
+            to production code.
+          </p>
+
+          <p class="project-card__description">
+            Cadence is my independent project where product thinking, software engineering, and AI
+            come together. An AI-powered habit tracker and personal coach designed to help people
+            build better habits and make meaningful progress.
+          </p>
+
+          <div class="project-card__technologies">
+            <span>Angular</span>
+            <span>FastAPI</span>
+            <span>PostgreSQL</span>
+            <span>Supabase</span>
+            <span>AI</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="beyond">
+      <div class="beyond__header">
+        <span class="beyond__eyebrow">04 / BEYOND WORK</span>
+
+        <h2 class="beyond__title">
+          More than
+          <span>just pixels & code.</span>
+        </h2>
+      </div>
+
+      <p class="beyond__description">
+        Outside of work, you'll probably find me following Formula 1, exploring astronomy, playing
+        padel, or experimenting with another side project. I'm naturally curious, and I enjoy
+        learning how things work - whether it's technology or something completely unrelated.
+      </p>
+    </section>
+
+    <section id="contact" class="contact">
+      <span class="contact__eyebrow">05 / GET IN TOUCH</span>
+
+      <h2 class="contact__title">
+        Have an idea worth building?
+        <span>Let's make it happen.</span>
+      </h2>
+
+      <p class="contact__description">
+        I'm always open to meaningful conversations about product development, technology, and AI.
+        Let's connect and see what we can create.
+      </p>
+
+      <div class="contact__actions">
+        <a
+          class="contact__link contact__link--primary"
+          href="https://www.linkedin.com/in/krystian-dajewski"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Let's connect on LinkedIn
+          <span aria-hidden="true">↗</span>
+        </a>
+
+        <a
+          class="contact__link"
+          href="https://github.com/krda95"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Explore my GitHub
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+  </main>
+  <footer class="about-footer">
+    <span>© 2026 Krystian Dajewski</span>
+    <span>Built with curiosity and caffeine.</span>
+  </footer>
+</div>

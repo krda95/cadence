@@ -1,5 +1,10 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { ActivatedRouteSnapshot, provideRouter, withViewTransitions } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  provideRouter,
+  withViewTransitions,
+  withInMemoryScrolling,
+} from '@angular/router';
 import { AuthLayout } from '@layout/auth-layout/auth-layout';
 import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -17,6 +22,11 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(
       routes,
+      withInMemoryScrolling({
+        anchorScrolling: 'enabled',
+
+        scrollPositionRestoration: 'enabled',
+      }),
       // Signing in or out is a change of world, not of page: cross-fade it. Moving between
       // pages inside the app stays instant, so nothing else is slowed down.
       withViewTransitions({

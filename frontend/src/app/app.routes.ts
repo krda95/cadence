@@ -46,6 +46,10 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'about',
+    loadComponent: () => import('@features/about/about').then((m) => m.About),
+  },
+  {
     path: '',
     component: AppLayout,
     canActivate: [authGuard],
