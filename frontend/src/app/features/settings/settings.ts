@@ -1,15 +1,16 @@
 import { Component, inject, signal } from '@angular/core';
 
-import { LucidePencil } from '@lucide/angular';
+import { LucideChevronRight, LucidePencil } from '@lucide/angular';
 
 import { AuthService } from '@core/services/auth.service';
 import { scoreBandRanges } from '@shared/utils/score-band';
 
 import { AvatarEditor } from './avatar-editor/avatar-editor';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-settings',
-  imports: [AvatarEditor, LucidePencil],
+  imports: [AvatarEditor, LucideChevronRight, LucidePencil, RouterLink],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })

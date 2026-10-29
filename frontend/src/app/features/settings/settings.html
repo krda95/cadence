@@ -75,6 +75,21 @@
 
     <p class="settings-section__hint">These ranges are fixed for now.</p>
   </section>
+  <section class="settings-section" aria-labelledby="settings-about">
+    <h2 class="settings-section__title" id="settings-about">About</h2>
+
+    <a class="settings-about-link" routerLink="/about">
+      <span class="settings-about-link__content">
+        <span class="settings-about-link__title">Behind Cadence</span>
+
+        <span class="settings-about-link__description">
+          Discover the person behind the product.
+        </span>
+      </span>
+
+      <svg class="settings-about-link__chevron" lucideChevronRight aria-hidden="true"></svg>
+    </a>
+  </section>
 </div>
 
 <app-avatar-editor [open]="isAvatarEditorOpen()" (closed)="isAvatarEditorOpen.set(false)" />

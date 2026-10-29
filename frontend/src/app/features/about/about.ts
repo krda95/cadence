@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Logo } from '../../shared/ui/logo/logo';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-about',
@@ -9,17 +10,20 @@ import { Logo } from '../../shared/ui/logo/logo';
   styleUrl: './about.scss',
 })
 export class About {
+  private readonly authService = inject(AuthService);
+
+  readonly cadenceRoute = this.authService.isLoggedIn() ? '/dashboard' : '/login';
   readonly experience = [
     {
       period: '2026 - Present',
-      company: 'Blaze Technology',
+      company: 'Blaze Tech.',
       role: 'Product Manager',
       description:
         'Building AI-powered products in healthcare SaaS, connecting product strategy with modern technologies and user needs.',
       highlights: [
         'LLM-powered AI assistant',
         'Passkey authentication and SSO',
-        'API integrations',
+        'API & Webhook integrations',
       ],
     },
     {
@@ -27,12 +31,8 @@ export class About {
       company: 'FARA AS',
       role: 'Product Owner',
       description:
-        'Led the development of data analytics products for public transport operators, translating complex business needs into scalable solutions.',
-      highlights: [
-        'Product strategy and roadmap',
-        'Data analytics platforms',
-        'Cross-functional team collaboration',
-      ],
+        'Led the development of data analytics products for public transport operators, translating complex business needs into real solutions.',
+      highlights: ['Product roadmap', 'Data analysis', 'Cross-functional team collaboration'],
     },
     {
       period: '2020 - 2021',
@@ -40,7 +40,7 @@ export class About {
       role: 'Data Software Engineer',
       description:
         'Developed full-stack functionality and data processing solutions, building a strong technical foundation for product leadership.',
-      highlights: ['Full-stack development', 'Data engineering', 'System integrations'],
+      highlights: ['Full-stack development', 'Data engineering'],
     },
     {
       period: '2018 - 2019',
@@ -48,7 +48,7 @@ export class About {
       role: 'Technology Business Consultant',
       description:
         'Worked on enterprise technology solutions and automation of system monitoring processes.',
-      highlights: ['Enterprise systems', 'Process automation', 'Technical consulting'],
+      highlights: ['Enterprise systems', 'Automation', 'Technical consulting'],
     },
   ];
 
@@ -58,14 +58,8 @@ export class About {
       title: 'Product',
       subtitle: 'From complexity to clarity.',
       description:
-        'I turn complex business challenges into clear product strategies, meaningful user experiences, and measurable outcomes.',
-      skills: [
-        'Product Strategy',
-        'Product Discovery',
-        'Roadmapping',
-        'Stakeholder Management',
-        'Product Analytics',
-      ],
+        'I turn complex business challenges into clear product strategies, meaningful user experiences, and measurable goals.',
+      skills: ['Product Discovery', 'Roadmapping', 'Stakeholder Mgmt.', 'Product Analytics'],
     },
     {
       number: '02',

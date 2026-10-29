@@ -1,12 +1,12 @@
 <div class="about">
   <header class="about-header">
-    <a routerLink="/login" class="about-header__brand" aria-label="Cadence">
+    <a [routerLink]="cadenceRoute" class="about-header__brand" aria-label="Cadence">
       <app-logo />
     </a>
 
-    <a routerLink="/login" class="about-header__back">
+    <a [routerLink]="cadenceRoute" class="about-header__back">
       <span aria-hidden="true">←</span>
-      Back to Cadence
+      Back to App
     </a>
   </header>
 
@@ -62,7 +62,7 @@
     <section class="impact" aria-label="Career highlights">
       <div class="impact__item">
         <span class="impact__value">8+</span>
-        <span class="impact__label">Years in technology</span>
+        <span class="impact__label">Years in IT</span>
       </div>
 
       <div class="impact__item">
@@ -72,13 +72,13 @@
 
       <div class="impact__item">
         <span class="impact__value">&lt;100ms</span>
-        <span class="impact__label">API response time achieved</span>
+        <span class="impact__label">API response time</span>
       </div>
     </section>
 
     <section id="experience" class="experience">
       <div class="experience__header">
-        <span class="experience__eyebrow">01 / MY JOURNEY</span>
+        <span class="experience__eyebrow">MY JOURNEY</span>
 
         <h2 class="experience__title">
           From engineering to
@@ -87,7 +87,7 @@
 
         <p class="experience__intro">
           My journey has taken me from writing code and working with complex data systems to leading
-          product development and building AI-powered experiences.
+          product development and building AI-powered features.
         </p>
       </div>
 
@@ -124,7 +124,7 @@
 
     <section id="expertise" class="expertise">
       <div class="expertise__header">
-        <span class="expertise__eyebrow">02 / WHAT I DO</span>
+        <span class="expertise__eyebrow">WHAT I DO</span>
 
         <h2 class="expertise__title">
           Three perspectives.
@@ -132,7 +132,7 @@
         </h2>
 
         <p class="expertise__intro">
-          My strength lies in connecting product thinking, technical expertise, and emerging
+          My strength lies in connecting product vision, technical expertise, and emerging
           technologies to build solutions that deliver real value.
         </p>
       </div>
@@ -170,36 +170,33 @@
 
     <section id="cadence" class="featured-project">
       <div class="featured-project__header">
-        <span class="featured-project__eyebrow"> 03 / SELECTED WORK </span>
+        <span class="featured-project__eyebrow"> SELECTED WORK </span>
 
-        <h2 class="featured-project__heading">Something I'm building.</h2>
+        <h2 class="featured-project__heading">Cadence</h2>
       </div>
 
       <article class="project-card">
         <div class="project-card__top">
-          <span>INDEPENDENT PROJECT</span>
-          <span>2026 - PRESENT</span>
+          <span>OWN PROJECT</span>
         </div>
 
         <div class="project-card__content">
-          <h3 class="project-card__name">Cadence<span>.</span></h3>
-
           <p class="project-card__headline">
             From product strategy<br />
-            to production code.
+            to production.
           </p>
 
           <p class="project-card__description">
-            Cadence is my independent project where product thinking, software engineering, and AI
-            come together. An AI-powered habit tracker and personal coach designed to help people
-            build better habits and make meaningful progress.
+            Cadence is my own project where product thinking, software engineering, and AI come
+            together. An AI-powered habit tracker and personal coach designed to help people build
+            better habits and make progress.
           </p>
 
           <div class="project-card__technologies">
             <span>Angular</span>
+            <span>Python</span>
             <span>FastAPI</span>
             <span>PostgreSQL</span>
-            <span>Supabase</span>
             <span>AI</span>
           </div>
         </div>
@@ -208,59 +205,68 @@
 
     <section class="beyond">
       <div class="beyond__header">
-        <span class="beyond__eyebrow">04 / BEYOND WORK</span>
+        <span class="beyond__eyebrow">BEYOND WORK</span>
 
         <h2 class="beyond__title">
           More than
-          <span>just pixels & code.</span>
+          <span>just code.</span>
         </h2>
       </div>
 
       <p class="beyond__description">
         Outside of work, you'll probably find me following Formula 1, exploring astronomy, playing
-        padel, or experimenting with another side project. I'm naturally curious, and I enjoy
-        learning how things work - whether it's technology or something completely unrelated.
+        padel with my friends. I'm naturally curious, and I enjoy learning how things work.
       </p>
     </section>
 
     <section id="contact" class="contact">
-      <span class="contact__eyebrow">05 / GET IN TOUCH</span>
+      <span class="contact__eyebrow">GET IN TOUCH</span>
 
       <h2 class="contact__title">
         Have an idea worth building?
-        <span>Let's make it happen.</span>
+        <span>Let's do it.</span>
       </h2>
 
       <p class="contact__description">
-        I'm always open to meaningful conversations about product development, technology, and AI.
-        Let's connect and see what we can create.
+        I'm always open to conversations about development, technology, and AI. Let's connect and
+        see what we can build.
       </p>
 
       <div class="contact__actions">
         <a
-          class="contact__link contact__link--primary"
+          class="contact__social"
           href="https://www.linkedin.com/in/krystian-dajewski"
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="LinkedIn profile (opens in a new tab)"
+          title="LinkedIn"
         >
-          Let's connect on LinkedIn
-          <span aria-hidden="true">↗</span>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.35V9h3.414v1.561h.049c.476-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286ZM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124ZM7.119 20.452H3.555V9h3.564v11.452ZM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003Z"
+            />
+          </svg>
         </a>
 
         <a
-          class="contact__link"
+          class="contact__social"
           href="https://github.com/krda95"
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="GitHub profile (opens in a new tab)"
+          title="GitHub"
         >
-          Explore my GitHub
-          <span aria-hidden="true">↗</span>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M12 .297a12 12 0 0 0-3.793 23.386c.6.111.82-.261.82-.577v-2.234c-3.338.726-4.043-1.416-4.043-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.605-2.665-.304-5.467-1.333-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.53 11.53 0 0 1 12 5.803c1.02.005 2.047.138 3.003.404 2.291-1.552 3.297-1.23 3.297-1.23.655 1.652.243 2.873.12 3.176.77.84 1.235 1.91 1.235 3.221 0 4.61-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.216.694.825.576A12.001 12.001 0 0 0 12 .297Z"
+            />
+          </svg>
         </a>
       </div>
     </section>
   </main>
   <footer class="about-footer">
     <span>© 2026 Krystian Dajewski</span>
-    <span>Built with curiosity and caffeine.</span>
+    <span>Built with curiosity and motivation.</span>
   </footer>
 </div>

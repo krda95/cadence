@@ -6,8 +6,9 @@
   gap: var(--space-7);
 
   width: 100%;
-  // Settings read best as a column, not stretched across a wide window.
   max-width: 40rem;
+
+  margin-bottom: 5rem;
 
   &__title {
     margin: 0;
@@ -115,7 +116,6 @@
       transform: scale(1.08);
     }
 
-    // Feedback on press, not on release.
     &:active {
       transform: scale(0.94);
     }
@@ -128,7 +128,6 @@
 
   &__avatar {
     position: relative;
-    // Keep the image's z-index local so it can't climb over the edit button.
     isolation: isolate;
 
     display: grid;
@@ -140,8 +139,6 @@
 
     border-radius: 50%;
 
-    // Neutral until we know there is no photo: green only backs the initial,
-    // so it never flashes (or fringes the edge) while an image loads.
     background: var(--color-surface-hover);
     color: var(--color-button-text);
 
@@ -186,7 +183,6 @@
     min-width: 0;
   }
 
-  // Shown exactly as the user wrote it: no case changes on someone's name.
   &__name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -253,9 +249,97 @@
   }
 }
 
+.settings-about-link {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+
+  margin: calc(-1 * var(--space-2));
+  padding: var(--space-3) var(--space-2);
+  min-height: 4.5rem;
+
+  border-radius: var(--radius-md);
+
+  color: var(--color-text-primary);
+  text-decoration: none;
+
+  transition:
+    background 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--color-surface-hover);
+    }
+
+    &:hover .settings-about-link__chevron {
+      transform: translateX(2px);
+    }
+  }
+
+  &:active {
+    background: var(--color-surface-active);
+    transform: scale(0.99);
+    transition-duration: 100ms;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    color: var(--color-primary);
+    font-weight: var(--font-weight-semibold);
+
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+  }
+
+  &__description {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  &__chevron {
+    flex: none;
+
+    width: 1.25rem;
+    height: 1.25rem;
+
+    color: var(--color-primary);
+
+    transition: transform 200ms var(--ease-out);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .profile__avatar-image,
   .profile__edit {
     transition: none;
+  }
+
+  .settings-about-link,
+  .settings-about-link__chevron {
+    transition: none;
+
+    &:active {
+      transform: none;
+    }
   }
 }

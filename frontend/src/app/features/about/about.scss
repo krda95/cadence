@@ -25,6 +25,7 @@
 :host {
   --about-max: 1280px;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --about-band: color-mix(in srgb, var(--color-text-primary) 3%, var(--color-background));
 
   display: block;
   min-height: 100vh;
@@ -276,14 +277,13 @@
 
 .impact {
   width: min(100% - 4rem, var(--about-max));
-  margin: 0 auto 4rem;
+  margin: 0 auto;
   padding: 2.5rem 0;
 
   display: grid;
   grid-template-columns: repeat(3, 1fr);
 
   border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
 
   &__item {
     display: flex;
@@ -313,9 +313,22 @@
 }
 
 .experience {
+  position: relative;
+  isolation: isolate;
+
   width: min(100% - 4rem, var(--about-max));
   margin-inline: auto;
-  padding-bottom: 5rem;
+  padding-block: 5rem;
+
+  // Full-bleed band behind the width-limited content.
+  &::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0 calc(50% - 50vw);
+
+    background: var(--about-band);
+  }
 
   &__header {
     max-width: 800px;
@@ -353,7 +366,7 @@
 .expertise {
   width: min(100% - 4rem, var(--about-max));
   margin-inline: auto;
-  padding-bottom: 5rem;
+  padding-block: 5rem;
 
   &__header {
     max-width: 800px;
@@ -477,7 +490,7 @@
 @media (max-width: 768px) {
   .expertise {
     width: min(100% - 2rem, var(--about-max));
-    padding-bottom: 1.5rem;
+    padding-block: 3rem 1.5rem;
 
     &__header {
       margin-bottom: 3rem;
@@ -528,29 +541,11 @@
   border: 1px solid var(--color-border);
   border-radius: 28px;
 
-  background: var(--color-surface);
-
-  &::before {
-    content: '';
-    position: absolute;
-
-    top: -200px;
-    right: -150px;
-
-    width: 650px;
-    aspect-ratio: 1;
-
-    border-radius: 50%;
-
-    background: radial-gradient(
-      circle,
-      color-mix(in srgb, var(--color-primary) 18%, transparent),
-      color-mix(in srgb, var(--color-tertiary) 8%, transparent) 40%,
-      transparent 70%
-    );
-
-    pointer-events: none;
-  }
+  // Same background as the hero panel on the login page.
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(155, 214, 189, 0.2), transparent 52%),
+    radial-gradient(110% 110% at 100% 100%, rgba(198, 179, 234, 0.18), transparent 55%), #181b21;
+  background-origin: border-box;
 
   &__top {
     position: relative;
@@ -625,7 +620,7 @@
 @media (max-width: 768px) {
   .featured-project {
     width: min(100% - 2rem, var(--about-max));
-    padding-bottom: 1.5rem;
+    padding-block: 3rem 1.5rem;
   }
 
   .project-card {
@@ -814,7 +809,6 @@
     grid-template-columns: 1fr;
     gap: 2rem;
     padding-block: 2.5rem;
-    margin-bottom: 1.5rem;
 
     &__value {
       font-size: clamp(2.25rem, 12vw, 3rem);
@@ -895,8 +889,6 @@
   margin-inline: auto;
   padding-bottom: 5rem;
 
-  text-align: center;
-
   &__eyebrow {
     color: var(--color-primary);
     font-size: var(--font-size-xs);
@@ -918,7 +910,7 @@
   }
 
   &__description {
-    margin: 2rem auto 0;
+    margin: 2rem 0 0;
     max-width: 680px;
     color: var(--color-text-secondary);
     font-size: var(--font-size-lg);
@@ -926,10 +918,52 @@
   }
 }
 .contact {
-  padding: clamp(3rem, 6vw, 5rem) 2rem 3.5rem;
-  text-align: center;
+  padding: clamp(3rem, 6vw, 5rem) max(2rem, calc((100% - var(--about-max)) / 2)) 3.5rem;
 
-  border-top: 1px solid var(--color-border);
+  background: var(--about-band);
+
+  &__social {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 52px;
+    height: 52px;
+
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+
+    text-decoration: none;
+
+    transition:
+      color 200ms ease,
+      border-color 200ms ease,
+      background 200ms ease,
+      transform 200ms ease;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    &:hover {
+      border-color: var(--color-primary);
+      background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+      transform: translateY(-3px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 4px;
+    }
+  }
 
   &__eyebrow {
     color: var(--color-primary);
@@ -939,7 +973,7 @@
   }
 
   &__title {
-    margin: 1.5rem auto;
+    margin: 1.5rem 0;
     max-width: 950px;
 
     font-size: clamp(3rem, 6vw, 6rem);
@@ -964,7 +998,7 @@
   }
 
   &__description {
-    margin: 0 auto;
+    margin: 0;
     max-width: 580px;
 
     color: var(--color-text-secondary);
@@ -974,7 +1008,6 @@
 
   &__actions {
     display: flex;
-    justify-content: center;
     flex-wrap: wrap;
     gap: 1rem;
     margin-top: 2.5rem;
@@ -1031,8 +1064,6 @@
   justify-content: space-between;
   gap: 1rem;
 
-  border-top: 1px solid var(--color-border);
-
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
@@ -1048,11 +1079,15 @@
   }
 
   .contact {
-    padding-inline: 1rem;
+    padding-inline: max(1rem, calc((100% - var(--about-max)) / 2));
     padding-bottom: 1.5rem;
 
     &__description {
       font-size: var(--font-size-md);
+    }
+
+    &__actions {
+      justify-content: center;
     }
   }
 
