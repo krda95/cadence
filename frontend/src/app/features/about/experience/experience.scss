@@ -1,0 +1,236 @@
+:host {
+  display: block;
+}
+
+.experience {
+  position: relative;
+  isolation: isolate;
+
+  width: min(100% - 4rem, var(--about-max));
+  margin-inline: auto;
+  padding-block: 5rem;
+
+  // Full-bleed band behind the width-limited content.
+  &::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0 calc(50% - 50vw);
+
+    background: var(--about-band);
+  }
+
+  &__header {
+    max-width: 800px;
+    margin-bottom: 3rem;
+  }
+
+  &__eyebrow {
+    color: var(--color-primary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.18em;
+  }
+
+  &__title {
+    margin: 1.5rem 0;
+
+    font-size: clamp(2.5rem, 4vw, 4.5rem);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+
+    span {
+      color: var(--color-text-secondary);
+    }
+  }
+
+  &__intro {
+    max-width: 650px;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+.timeline {
+  &__item {
+    display: grid;
+    grid-template-columns: 180px 40px 1fr;
+    gap: 2rem;
+
+    &:hover {
+      .timeline__dot {
+        background: var(--color-primary);
+        box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-primary) 12%, transparent);
+      }
+
+      .timeline__role {
+        color: var(--color-primary);
+      }
+    }
+  }
+
+  &__item--active {
+    .timeline__dot {
+      background: var(--color-primary);
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-primary) 12%, transparent);
+    }
+
+    .timeline__period,
+    .timeline__role {
+      color: var(--color-primary);
+    }
+  }
+
+  &__period {
+    padding-top: 0.3rem;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  &__marker {
+    position: relative;
+    display: flex;
+    justify-content: center;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 22px;
+      bottom: 0;
+      width: 1px;
+      background: var(--color-border);
+    }
+  }
+
+  .timeline__item:last-child .timeline__marker::after {
+    display: none;
+  }
+
+  &__dot {
+    position: relative;
+    z-index: 1;
+
+    width: 12px;
+    height: 12px;
+    margin-top: 5px;
+
+    border: 2px solid var(--color-primary);
+    border-radius: 50%;
+    background: var(--color-background);
+
+    transition:
+      background 200ms var(--ease-out),
+      box-shadow 200ms var(--ease-out);
+  }
+
+  &__content {
+    padding-bottom: 2.5rem;
+  }
+
+  &__company {
+    color: var(--color-primary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  &__role {
+    margin: 0.75rem 0 1rem;
+
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.02em;
+
+    transition: color 200ms var(--ease-out);
+  }
+
+  &__description {
+    max-width: 650px;
+    margin-bottom: 1.5rem;
+
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed);
+  }
+
+  &__highlights {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  &__tag {
+    padding: 0.5rem 0.875rem;
+
+    border: 1px solid var(--color-border);
+    border-radius: 100px;
+
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 768px) {
+  .experience {
+    width: min(100% - 2rem, var(--about-max));
+    padding-bottom: 1.5rem;
+
+    &__header {
+      margin-bottom: 3rem;
+    }
+
+    &__intro {
+      font-size: var(--font-size-md);
+    }
+  }
+
+  .timeline {
+    &__item {
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 1rem;
+    }
+
+    &__period {
+      grid-column: 2;
+      grid-row: 1;
+      padding-top: 0;
+    }
+
+    &__marker {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+    }
+
+    &__content {
+      grid-column: 2;
+      grid-row: 2;
+      padding-bottom: 2rem;
+    }
+
+    &__role {
+      font-size: var(--font-size-xl);
+    }
+  }
+}
+
+// Balanced headings and no orphaned last words.
+.experience__title {
+  text-wrap: balance;
+}
+
+.experience__intro,
+.timeline__description {
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline__dot,
+  .timeline__role {
+    transition: none;
+  }
+}

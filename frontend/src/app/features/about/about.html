@@ -11,53 +11,7 @@
   </header>
 
   <main>
-    <section class="hero">
-      <div class="hero__content">
-        <span class="hero__eyebrow"> PRODUCT MANAGER · ENGINEER · AI BUILDER </span>
-
-        <h1 class="hero__title">
-          <span class="hero__greeting">
-            <span class="hero__avatar">
-              <img src="/images/portrait.webp" alt="" width="800" height="1000" />
-            </span>
-            Hi, I'm Krystian.
-          </span>
-
-          <span class="hero__title-accent"> I build products that make a difference. </span>
-        </h1>
-
-        <p class="hero__description">
-          Product Manager with 8+ years of experience bridging technology, data, and business. From
-          engineering complex data platforms to building AI-powered products.
-        </p>
-
-        <div class="hero__actions">
-          <a routerLink="/about" fragment="experience" class="hero__button hero__button--primary">
-            Explore my journey
-
-            <span aria-hidden="true">↓</span>
-          </a>
-
-          <a routerLink="/about" fragment="contact" class="hero__button hero__button--secondary">
-            Get in touch
-          </a>
-        </div>
-      </div>
-
-      <div class="hero__visual">
-        <div class="hero__visual-glow"></div>
-
-        <div class="hero__portrait">
-          <img
-            src="/images/portrait.webp"
-            alt="Krystian Dajewski"
-            width="800"
-            height="1000"
-            fetchpriority="high"
-          />
-        </div>
-      </div>
-    </section>
+    <app-about-hero />
 
     <section class="impact" aria-label="Career highlights">
       <div class="impact__item">
@@ -76,97 +30,9 @@
       </div>
     </section>
 
-    <section id="experience" class="experience">
-      <div class="experience__header">
-        <span class="experience__eyebrow">MY JOURNEY</span>
+    <app-about-experience />
 
-        <h2 class="experience__title">
-          From engineering to
-          <span>building better products.</span>
-        </h2>
-
-        <p class="experience__intro">
-          My journey has taken me from writing code and working with complex data systems to leading
-          product development and building AI-powered features.
-        </p>
-      </div>
-
-      <div class="timeline">
-        @for (item of experience; track item.period + item.company; let first = $first) {
-          <article class="timeline__item" [class.timeline__item--active]="first">
-            <div class="timeline__period">
-              {{ item.period }}
-            </div>
-
-            <div class="timeline__marker">
-              <span class="timeline__dot"></span>
-            </div>
-
-            <div class="timeline__content">
-              <span class="timeline__company">{{ item.company }}</span>
-
-              <h3 class="timeline__role">{{ item.role }}</h3>
-
-              <p class="timeline__description">
-                {{ item.description }}
-              </p>
-
-              <div class="timeline__highlights">
-                @for (highlight of item.highlights; track highlight) {
-                  <span class="timeline__tag">{{ highlight }}</span>
-                }
-              </div>
-            </div>
-          </article>
-        }
-      </div>
-    </section>
-
-    <section id="expertise" class="expertise">
-      <div class="expertise__header">
-        <span class="expertise__eyebrow">WHAT I DO</span>
-
-        <h2 class="expertise__title">
-          Three perspectives.
-          <span>One product mindset.</span>
-        </h2>
-
-        <p class="expertise__intro">
-          My strength lies in connecting product vision, technical expertise, and emerging
-          technologies to build solutions that deliver real value.
-        </p>
-      </div>
-
-      <div class="expertise__grid">
-        @for (item of expertise; track item.number) {
-          <article class="expertise-card">
-            <div class="expertise-card__top">
-              <span class="expertise-card__number">{{ item.number }}</span>
-            </div>
-
-            <div class="expertise-card__content">
-              <span class="expertise-card__subtitle">
-                {{ item.subtitle }}
-              </span>
-
-              <h3 class="expertise-card__title">
-                {{ item.title }}
-              </h3>
-
-              <p class="expertise-card__description">
-                {{ item.description }}
-              </p>
-            </div>
-
-            <div class="expertise-card__skills">
-              @for (skill of item.skills; track skill) {
-                <span class="expertise-card__skill">{{ skill }}</span>
-              }
-            </div>
-          </article>
-        }
-      </div>
-    </section>
+    <app-about-expertise />
 
     <section id="cadence" class="featured-project">
       <div class="featured-project__header">

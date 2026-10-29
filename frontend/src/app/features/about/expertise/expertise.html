@@ -1,0 +1,45 @@
+<section id="expertise" class="expertise">
+  <div class="expertise__header">
+    <span class="expertise__eyebrow">WHAT I DO</span>
+
+    <h2 class="expertise__title">
+      Three perspectives.
+      <span>One product mindset.</span>
+    </h2>
+
+    <p class="expertise__intro">
+      My strength lies in connecting product vision, technical expertise, and emerging technologies
+      to build solutions that deliver real value.
+    </p>
+  </div>
+
+  <div class="expertise__grid">
+    @for (item of expertise; track item.number) {
+      <article class="expertise-card">
+        <div class="expertise-card__top">
+          <span class="expertise-card__number">{{ item.number }}</span>
+        </div>
+
+        <div class="expertise-card__content">
+          <span class="expertise-card__subtitle">
+            {{ item.subtitle }}
+          </span>
+
+          <h3 class="expertise-card__title">
+            {{ item.title }}
+          </h3>
+
+          <p class="expertise-card__description">
+            {{ item.description }}
+          </p>
+        </div>
+
+        <div class="expertise-card__skills">
+          @for (skill of item.skills; track skill) {
+            <span class="expertise-card__skill">{{ skill }}</span>
+          }
+        </div>
+      </article>
+    }
+  </div>
+</section>

@@ -1,0 +1,45 @@
+<section id="experience" class="experience">
+  <div class="experience__header">
+    <span class="experience__eyebrow">MY JOURNEY</span>
+
+    <h2 class="experience__title">
+      From engineering to
+      <span>building better products.</span>
+    </h2>
+
+    <p class="experience__intro">
+      My journey has taken me from writing code and working with complex data systems to leading
+      product development and building AI-powered features.
+    </p>
+  </div>
+
+  <div class="timeline">
+    @for (item of experience; track item.period + item.company; let first = $first) {
+      <article class="timeline__item" [class.timeline__item--active]="first">
+        <div class="timeline__period">
+          {{ item.period }}
+        </div>
+
+        <div class="timeline__marker">
+          <span class="timeline__dot"></span>
+        </div>
+
+        <div class="timeline__content">
+          <span class="timeline__company">{{ item.company }}</span>
+
+          <h3 class="timeline__role">{{ item.role }}</h3>
+
+          <p class="timeline__description">
+            {{ item.description }}
+          </p>
+
+          <div class="timeline__highlights">
+            @for (highlight of item.highlights; track highlight) {
+              <span class="timeline__tag">{{ highlight }}</span>
+            }
+          </div>
+        </div>
+      </article>
+    }
+  </div>
+</section>
