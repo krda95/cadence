@@ -39,6 +39,10 @@ Instead of focusing only on the finish line, Cadence emphasizes the rhythm of sh
 
 ![Daily Progress Tracking](docs/images/today.png)
 
+### AI Assistant
+
+![AI Goal Update](docs/images/today-AI.png)
+
 ### History
 
 ![Progress History](docs/images/history.png)
