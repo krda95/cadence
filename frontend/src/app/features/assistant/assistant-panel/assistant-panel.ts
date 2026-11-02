@@ -18,6 +18,7 @@ import {
 } from '../models/assistant-message.model';
 import { AssistantService } from '../../../core/api/assistant.service';
 import { AssistantHistoryService } from '../services/assistant-history.service';
+import { createAssistantMessageId } from '../utils/assistant-message-id';
 
 @Component({
   selector: 'app-assistant-panel',
@@ -56,7 +57,7 @@ export class AssistantPanel {
     this.assistantService.sendMessage(request).subscribe({
       next: (response) => {
         this.historyService.addMessage({
-          id: crypto.randomUUID(),
+          id: createAssistantMessageId(),
           role: 'assistant',
           content: response.message,
         });
@@ -241,7 +242,7 @@ export class AssistantPanel {
       }));
 
     this.historyService.addMessage({
-      id: crypto.randomUUID(),
+      id: createAssistantMessageId(),
       role: 'user',
       content,
     });
