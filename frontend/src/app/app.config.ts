@@ -11,8 +11,8 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { timezoneInterceptor } from './core/interceptors/timezone.interceptor';
+import { coldStartInterceptor } from './core/interceptors/cold-start.interceptor';
 
-/** True while the router state is showing a signed-out page (sign in, sign up, reset…). */
 const usesAuthLayout = (snapshot: ActivatedRouteSnapshot): boolean =>
   snapshot.pathFromRoot.some((route) => route.component === AuthLayout) ||
   snapshot.children.some(usesAuthLayout);
@@ -37,6 +37,8 @@ export const appConfig: ApplicationConfig = {
         },
       }),
     ),
-    provideHttpClient(withInterceptors([authInterceptor, timezoneInterceptor])),
+    provideHttpClient(
+      withInterceptors([coldStartInterceptor, authInterceptor, timezoneInterceptor]),
+    ),
   ],
 };

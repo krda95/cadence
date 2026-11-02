@@ -4,8 +4,10 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '@core/services/auth.service';
+import { StartupService } from '@core/services/startup.service';
 import { Button } from '@shared/ui/button/button';
 import { InputComponent } from '@shared/ui/input/input';
+import { defer, finalize } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -17,12 +19,11 @@ export class Login {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly startupService = inject(StartupService);
 
   readonly isSubmitting = signal(false);
-  /** What went wrong with the last attempt, shown above the button. */
   readonly errorMessage = signal<string | null>(null);
 
-  /** Set by the sign-up page after creating an account. */
   readonly justRegistered = signal(history.state?.['registered'] === true);
 
   readonly loginForm = this.fb.nonNullable.group({
@@ -34,6 +35,9 @@ export class Login {
   });
 
   login(): void {
+    if (this.isSubmitting()) {
+      return;
+    }
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
@@ -43,21 +47,25 @@ export class Login {
     this.errorMessage.set(null);
     this.justRegistered.set(false);
 
-    // The button stays busy from the press until the dashboard is on screen. Releasing it as soon
-    // as the response arrives leaves a dead gap where nothing looks like it is happening.
-    this.authService.login(this.loginForm.getRawValue()).subscribe({
-      next: async () => {
-        const navigated = await this.router.navigate(['/dashboard']);
+    defer(() => {
+      this.startupService.start();
 
-        if (!navigated) {
+      return this.authService.login(this.loginForm.getRawValue());
+    })
+      .pipe(finalize(() => this.startupService.success()))
+      .subscribe({
+        next: async () => {
+          const navigated = await this.router.navigate(['/dashboard']);
+
+          if (!navigated) {
+            this.isSubmitting.set(false);
+          }
+        },
+        error: (error: HttpErrorResponse) => {
           this.isSubmitting.set(false);
-        }
-      },
-      error: (error: HttpErrorResponse) => {
-        this.isSubmitting.set(false);
-        this.errorMessage.set(this.describe(error));
-      },
-    });
+          this.errorMessage.set(this.describe(error));
+        },
+      });
   }
 
   private describe(error: HttpErrorResponse): string {

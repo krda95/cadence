@@ -24,7 +24,13 @@
       placeholder="••••••••"
     />
 
-    <a class="link" routerLink="/forgot-password">Forgot password?</a>
+    <a
+      class="link"
+      [routerLink]="isSubmitting() ? null : '/forgot-password'"
+      [attr.aria-disabled]="isSubmitting()"
+      [attr.tabindex]="isSubmitting() ? -1 : null"
+      >Forgot password?
+    </a>
 
     @if (errorMessage(); as message) {
       <p class="banner banner--error" role="alert">{{ message }}</p>
@@ -42,10 +48,19 @@
 
   <p class="footer">
     New to Cadence?
-    <a routerLink="/register">Sign up</a>
+    <a
+      [routerLink]="isSubmitting() ? null : '/register'"
+      [attr.aria-disabled]="isSubmitting()"
+      [attr.tabindex]="isSubmitting() ? -1 : null"
+      >Sign up</a
+    >
   </p>
   <div class="login__about">
-    <a routerLink="/about">
+    <a
+      [routerLink]="isSubmitting() ? null : '/about'"
+      [attr.aria-disabled]="isSubmitting()"
+      [attr.tabindex]="isSubmitting() ? -1 : null"
+    >
       Behind Cadence
       <span aria-hidden="true">↗</span>
     </a>

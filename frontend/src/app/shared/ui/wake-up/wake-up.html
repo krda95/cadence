@@ -1,0 +1,20 @@
+<div class="wake-up">
+  <div class="wake-up__content">
+    <div class="wake-up__logo">
+      <app-logo />
+    </div>
+
+    @if (startupService.status() === 'waking') {
+      <div class="wake-up__message" [class.wake-up__message--visible]="messageVisible()">
+        <h2>{{ currentMessage().title }}</h2>
+        <p>{{ currentMessage().description }}</p>
+      </div>
+    }
+
+    @if (startupService.status() === 'error') {
+      <h2>Unable to connect</h2>
+
+      <p>Something went wrong while connecting to Cadence. Please try again.</p>
+    }
+  </div>
+</div>

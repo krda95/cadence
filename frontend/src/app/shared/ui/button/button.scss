@@ -78,7 +78,7 @@ button {
 
 // Busy, not unavailable: keep the button at full strength so the spinner reads as progress.
 button[aria-busy='true']:disabled {
-  opacity: 1;
+  opacity: 0.55;
   cursor: progress;
 }
 
