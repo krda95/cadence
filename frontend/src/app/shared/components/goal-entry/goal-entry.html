@@ -2,7 +2,7 @@
   <div class="goal-entry__header">
     <div class="goal-entry__identity">
       <div class="goal-entry__icon">
-        <app-icon [name]="goal().icon" [color]="goal().color" [size]="22" />
+        <app-icon [name]="goal().icon || 'target'" [color]="goal().color" [size]="22" />
       </div>
 
       <div class="goal-entry__info">

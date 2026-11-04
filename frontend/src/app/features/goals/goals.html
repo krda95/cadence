@@ -132,7 +132,7 @@
 
               <div class="goal-card__content">
                 <div class="goal-card__icon" [style.--goal-color]="goal.color">
-                  <app-icon [name]="goal.icon" [color]="goal.color" [size]="22" />
+                  <app-icon [name]="goal.icon || 'target'" [color]="goal.color" [size]="22" />
                 </div>
 
                 <div class="goal-card__info">

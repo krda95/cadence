@@ -1,6 +1,8 @@
+<app-scroll-header title="Today" [heading]="pageHeading" />
+
 <section class="today">
   <header class="today__header">
-    <div class="today__heading">
+    <div #pageHeading class="today__heading">
       <p class="today__date">{{ selectedDate() | date: 'EEEE, MMMM d' }}</p>
       <h1 class="today__title">Today</h1>
 

@@ -6,12 +6,13 @@ import { GoalsService } from '@core/api/goals.service';
 import { AssistantService } from '@core/api/assistant.service';
 
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
+import { ScrollHeader } from '@shared/components/scroll-header/scroll-header';
 import { scoreBand } from '@shared/utils/score-band';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-today',
-  imports: [GoalEntry, DatePipe, DecimalPipe, RouterLink],
+  imports: [GoalEntry, ScrollHeader, DatePipe, DecimalPipe, RouterLink],
   templateUrl: './today.html',
   styleUrl: './today.scss',
 })

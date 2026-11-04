@@ -1,3 +1,5 @@
+<app-scroll-header title="History" [date]="selectedDate()" [heading]="pageHeading" />
+
 <section class="history">
   <header class="history__header">
     <div class="history__header__top">
@@ -17,7 +19,7 @@
         (click)="incrementBy(1)"
         >></app-button
       >
-      <div class="history__heading">
+      <div #pageHeading class="history__heading">
         <p class="history__date">{{ selectedDate() | date: 'EEEE, MMMM d' }}</p>
 
         <h1 class="history__title">History</h1>

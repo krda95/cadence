@@ -1,0 +1,8 @@
+<div class="scroll-header" [class.scroll-header--visible]="visible()" aria-hidden="true">
+  <div class="scroll-header__inner">
+    <span class="scroll-header__title">{{ title() }}</span>
+    @if (date(); as selectedDate) {
+      <span class="scroll-header__date">{{ selectedDate | date: 'EEEE, MMMM d' }}</span>
+    }
+  </div>
+</div>

@@ -63,6 +63,9 @@ $mobile-bar-height: 72px;
 }
 
 .app-layout {
+  --page-header-top: 0px;
+  --page-header-left: #{$sidebar-width};
+
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
@@ -428,6 +431,11 @@ $mobile-bar-height: 72px;
 }
 
 @media (max-width: bp.$desktop) {
+  .app-layout {
+    --page-header-top: #{$mobile-bar-height};
+    --page-header-left: 0px;
+  }
+
   .sidebar {
     width: auto;
     height: auto;

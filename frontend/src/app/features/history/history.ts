@@ -16,6 +16,7 @@ import moment, { min } from 'moment';
 import { GoalsService } from '@core/api/goals.service';
 import { DayProgressResponse } from '@models/progressModel';
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
+import { ScrollHeader } from '@shared/components/scroll-header/scroll-header';
 import { Button } from '@shared/ui/button/button';
 import { scoreBand } from '@shared/utils/score-band';
 import { RouterLink } from '@angular/router';
@@ -28,7 +29,7 @@ interface PickerSlot {
 
 @Component({
   selector: 'app-history',
-  imports: [DatePipe, GoalEntry, Button, DecimalPipe, RouterLink],
+  imports: [DatePipe, GoalEntry, ScrollHeader, Button, DecimalPipe, RouterLink],
   templateUrl: './history.html',
   styleUrl: './history.scss',
 })
