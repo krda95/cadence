@@ -17,6 +17,7 @@ dependencies = [
     "python-multipart>=0.0.32",
     "sqlalchemy>=2.0.51",
     "supabase==2.31.0",
+    "tzdata>=2026.6",
 ]
 
 [dependency-groups]

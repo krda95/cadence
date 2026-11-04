@@ -74,11 +74,95 @@ Lista zainstalowanych pakietów:
 python -m pip list
 ```
 
-Aktualizacja `requirements.txt` po instalacji nowych pakietów:
+---
+
+## Zarządzanie zależnościami
+
+W projekcie Cadence wykorzystujemy `uv` do zarządzania zależnościami Pythona.
+
+Źródłem prawdy są:
+- `pyproject.toml` — deklaracja zależności projektu.
+- `uv.lock` — zablokowane wersje zależności.
+- `requirements.txt` — zależności produkcyjne wykorzystywane m.in. przez Dockera.
+- `requirements-dev.txt` — zależności developerskie i testowe.
+
+### Dodawanie nowych zależności
+
+Nowe zależności dodajemy za pomocą:
 
 ```bash
-python -m pip freeze > requirements.txt
+uv add nazwa-pakietu
 ```
+
+Następnie aktualizujemy `requirements.txt`:
+
+```bash
+uv export --no-dev --no-hashes --format requirements-txt -o requirements.txt
+```
+
+Nie używamy `pip freeze > requirements.txt`, ponieważ może to spowodować zapisanie niepotrzebnych pakietów z lokalnego środowiska.
+
+### Weryfikacja zmian
+
+Po aktualizacji zależności:
+
+```bash
+python -m pytest tests --ignore=tests/integration
+git diff pyproject.toml uv.lock requirements.txt
+```
+
+Sprawdzamy, czy:
+- wszystkie testy przechodzą,
+- nowe zależności znajdują się w odpowiednich plikach,
+- nie pojawiły się nieoczekiwane aktualizacje innych pakietów.
+
+---
+
+## Docker — kontrola po zmianach w backendzie
+
+Docker wykorzystuje własne środowisko Pythona i instaluje zależności niezależnie od lokalnego `.venv`.
+
+Dlatego każda zmiana zależności, wersji Pythona lub sposobu uruchamiania backendu wymaga sprawdzenia kompatybilności z Dockerem.
+
+### Checklist
+
+Po zmianach w backendzie sprawdzamy:
+
+1. Czy `requirements.txt` zawiera wszystkie nowe zależności produkcyjne?
+2. Czy `Dockerfile` instaluje zależności z aktualnego pliku?
+3. Czy wersja Pythona w Dockerze jest zgodna z wymaganiami projektu?
+4. Czy nowe zależności działają w środowisku Linux?
+5. Czy backend uruchamia się poprawnie po przebudowaniu obrazu?
+
+### Przebudowanie obrazu
+
+Z katalogu zawierającego `compose.yaml` lub `docker-compose.yml`:
+
+```bash
+docker compose build backend
+```
+
+Uruchomienie:
+
+```bash
+docker compose up -d backend
+```
+
+Sprawdzenie logów:
+
+```bash
+docker compose logs --tail=100 backend
+```
+
+### Ważne
+
+Nie każda zmiana zależności wymaga modyfikacji `Dockerfile`.
+
+Jeżeli Docker instaluje pakiety z `requirements.txt`, aktualizacja tego pliku i przebudowanie obrazu powinny wystarczyć.
+
+Zmiana wersji Pythona, bibliotek systemowych lub sposobu instalowania zależności może jednak wymagać aktualizacji samego `Dockerfile`.
+
+**Zasada projektu:** przed zakończeniem zmian dotyczących zależności backendu zawsze sprawdzamy ich wpływ na środowisko Docker.
 
 
 ## Migracje Alembic
