@@ -8,10 +8,11 @@ import { DashboardService } from '@core/api/dashboard.service';
 import { AuthService } from '@core/services/auth.service';
 import { scoreBand } from '@shared/utils/score-band';
 import { streakColor } from './streak-color';
+import { ActivityChart } from './activity-chart/activity-chart';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, DatePipe, DecimalPipe, LucideFlame, LucideTrophy],
+  imports: [RouterLink, DatePipe, DecimalPipe, LucideFlame, LucideTrophy, ActivityChart],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

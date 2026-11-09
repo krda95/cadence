@@ -14,9 +14,25 @@ export interface DashboardStreakResponse {
   longest: number;
 }
 
+export interface DashboardActivityDayResponse {
+  date: string;
+  score: number | null;
+}
+
+export interface DashboardActivityResponse {
+  period: 'week' | 'month';
+  offset: number;
+  date_from: string;
+  date_to: string;
+  min_offset: number;
+  max_offset: number;
+  data: DashboardActivityDayResponse[];
+}
+
 export interface DashboardResponse {
   today: DashboardTodayResponse;
   week: DashboardWeekResponse;
   previous_week: DashboardWeekResponse;
   streak: DashboardStreakResponse;
+  activity: DashboardActivityResponse;
 }

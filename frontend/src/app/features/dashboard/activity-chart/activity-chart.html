@@ -1,0 +1,134 @@
+<section class="activity-chart" aria-labelledby="activity-chart-title">
+  <header class="activity-chart__header">
+    <h2 class="activity-chart__title" id="activity-chart-title">Activity</h2>
+
+    <div class="activity-chart__period-switch" aria-label="Chart period">
+      <button
+        type="button"
+        [class.active]="period() === 'week'"
+        [attr.aria-pressed]="period() === 'week'"
+        [disabled]="resource.isLoading()"
+        (click)="setPeriod('week')"
+      >
+        Week
+      </button>
+
+      <button
+        type="button"
+        [class.active]="period() === 'month'"
+        [attr.aria-pressed]="period() === 'month'"
+        [disabled]="resource.isLoading()"
+        (click)="setPeriod('month')"
+      >
+        Month
+      </button>
+    </div>
+  </header>
+
+  <div class="activity-chart__navigation">
+    <button
+      type="button"
+      class="activity-chart__nav-button"
+      aria-label="Previous period"
+      [disabled]="resource.isLoading() || !canGoPrevious()"
+      (click)="previousPeriod()"
+    >
+      <svg lucideChevronLeft aria-hidden="true"></svg>
+    </button>
+
+    <span class="activity-chart__date-range">
+      {{ dateRange() }}
+    </span>
+
+    <button
+      type="button"
+      class="activity-chart__nav-button"
+      aria-label="Next period"
+      [disabled]="resource.isLoading() || !canGoNext()"
+      (click)="nextPeriod()"
+    >
+      <svg lucideChevronRight aria-hidden="true"></svg>
+    </button>
+  </div>
+
+  @if (resource.error()) {
+    <div class="activity-chart__error" role="alert">
+      Couldn't load activity.
+
+      <button type="button" (click)="resource.reload()">Try again</button>
+    </div>
+  } @else {
+    <div class="activity-chart__plot" [attr.aria-busy]="resource.isLoading()">
+      <div class="activity-chart__y-axis" aria-hidden="true">
+        <span>100%</span>
+        <span>75%</span>
+        <span>50%</span>
+        <span>25%</span>
+        <span>0%</span>
+      </div>
+
+      <div class="activity-chart__graph">
+        <div class="activity-chart__grid-lines" aria-hidden="true">
+          @for (line of [100, 75, 50, 25, 0]; track line) {
+            <div class="activity-chart__grid-line"></div>
+          }
+        </div>
+
+        @if (resource.isLoading()) {
+          <div
+            class="activity-chart__bars"
+            [class.activity-chart__bars--month]="period() === 'month'"
+            role="status"
+            aria-label="Loading activity"
+          >
+            @for (height of skeletonBars(); track $index) {
+              <div class="activity-chart__bar-column" aria-hidden="true">
+                <div class="activity-chart__bar-track">
+                  <div
+                    class="activity-chart__skeleton activity-chart__skeleton--bar"
+                    [style.height.%]="height"
+                  ></div>
+                </div>
+
+                <div class="activity-chart__skeleton activity-chart__skeleton--label"></div>
+              </div>
+            }
+          </div>
+        } @else if (activity()) {
+          <div
+            class="activity-chart__bars"
+            [class.activity-chart__bars--month]="period() === 'month'"
+          >
+            @for (bar of bars(); track bar.date) {
+              <div
+                class="activity-chart__bar-column"
+                [attr.aria-label]="
+                  bar.date + ': ' + (bar.score === null ? 'No score' : bar.score + '%')
+                "
+              >
+                <div class="activity-chart__bar-track">
+                  <div
+                    class="activity-chart__bar"
+                    [class.activity-chart__bar--empty]="bar.score === null"
+                    [style.height.%]="bar.height"
+                    [style.background-color]="bar.color"
+                  >
+                    <div class="activity-chart__tooltip">
+                      <span>{{ bar.date | date: 'MMM d, y' }}</span>
+
+                      <strong>
+                        @if (bar.score !== null) {
+                          {{ bar.score | number: '1.0-0' }}%
+                        }
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,310 @@
+.activity-chart {
+  padding: var(--space-7);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  min-height: 16rem;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  &__title {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    min-height: 16rem;
+    color: var(--color-text-secondary);
+  }
+
+  &__period-switch {
+    display: flex;
+    padding: var(--space-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-background);
+
+    button {
+      padding: var(--space-2) var(--space-4);
+      border: 0;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+
+      &.active {
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+
+        cursor: not-allowed;
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--color-primary);
+      }
+    }
+  }
+
+  &__navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    margin: var(--space-6) 0;
+  }
+
+  &__date-range {
+    min-width: 9rem;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    text-align: center;
+  }
+
+  &__nav-button {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+
+  &__plot {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: var(--space-3);
+    height: 16rem;
+  }
+
+  &__y-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-bottom: 1.5rem;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    text-align: right;
+  }
+
+  &__graph {
+    position: relative;
+    min-width: 0;
+  }
+
+  &__grid-lines {
+    position: absolute;
+    inset: 0 0 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  &__grid-line {
+    width: 100%;
+    border-top: 1px dashed var(--color-border);
+  }
+
+  &__bars {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--space-3);
+    height: 100%;
+
+    &--month {
+      grid-template-columns: repeat(31, minmax(0, 1fr));
+      gap: 3px;
+    }
+  }
+
+  &__bar-column {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+
+    &:hover .activity-chart__tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  &__bar-track {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__bar {
+    position: relative;
+    width: min(100%, 2.5rem);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: height 250ms ease;
+
+    &--empty {
+      //   height: 3px !important;
+      opacity: 0.35;
+    }
+  }
+
+  &__bar-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.5rem;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+  }
+
+  &__bars--month &__bar-label {
+    font-size: 0.6rem;
+  }
+
+  &__tooltip {
+    position: absolute;
+    z-index: 5;
+    bottom: calc(100% + 0.5rem);
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+
+    min-width: 6rem;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+    color: var(--color-text-primary);
+
+    font-size: var(--font-size-xs);
+    text-align: center;
+    white-space: nowrap;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+  }
+
+  @media (max-width: 600px) {
+    padding: var(--space-4);
+
+    &__plot {
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      gap: var(--space-2);
+      height: 13rem;
+    }
+
+    &__bars {
+      gap: var(--space-1);
+
+      &--month {
+        gap: 1px;
+      }
+    }
+
+    &__bars--month &__bar-label {
+      font-size: 0.5rem;
+    }
+  }
+
+  &__skeleton {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+    opacity: 0.55;
+
+    animation: activity-chart-pulse 1.4s ease-in-out infinite;
+
+    &--title {
+      width: 6rem;
+      height: 1.25rem;
+    }
+
+    &--switch {
+      width: 8.5rem;
+      height: 2.25rem;
+      border-radius: var(--radius-lg);
+    }
+
+    &--arrow {
+      width: 2rem;
+      height: 2rem;
+      border-radius: var(--radius-md);
+    }
+
+    &--date {
+      width: 9rem;
+      height: 1rem;
+    }
+
+    &--bar {
+      width: min(100%, 2.5rem);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    }
+
+    &--label {
+      width: 65%;
+      height: 0.65rem;
+      margin: 0.425rem 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__skeleton {
+      animation: none;
+    }
+  }
+}
+@keyframes activity-chart-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}

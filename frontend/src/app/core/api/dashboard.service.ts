@@ -11,7 +11,12 @@ import { environment } from '../../../environments/environment';
 export class DashboardService {
   private readonly http = inject(HttpClient);
 
-  getDashboard(): Observable<DashboardResponse> {
-    return this.http.get<DashboardResponse>(`${environment.apiUrl}/dashboard`);
+  getDashboard(period: 'week' | 'month' = 'week', offset = 0): Observable<DashboardResponse> {
+    return this.http.get<DashboardResponse>(`${environment.apiUrl}/dashboard`, {
+      params: {
+        period,
+        offset,
+      },
+    });
   }
 }

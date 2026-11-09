@@ -28,6 +28,7 @@ Freemium model (future consideration).
 
 - [ ] Different progress treatment of lack of entries input
 - [ ] Edit username
+- [ ] Merge goals (sum, diff)
 
 ### Phase 1 – Product Experience
 
