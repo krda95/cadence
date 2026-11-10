@@ -3,9 +3,13 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.timezone import get_request_timezone
 from app.models.goal import Goal
 from app.models.goal_entry import GoalEntry
-from app.services.progress_service import get_user_today
+from app.services.progress_service import (
+    get_goal_created_date,
+    get_user_today,
+)
 
 
 async def get_ai_user_context(
@@ -38,6 +42,7 @@ async def get_ai_user_context(
                 "name": goal.name,
                 "unit": goal.unit,
                 "period": goal.period.value,
+                "created_date": get_goal_created_date(goal).isoformat(),
                 "target_type": goal.target_type.value,
                 "target_value": goal.target_value,
                 "today_value": entry.value if entry else None,
@@ -47,5 +52,6 @@ async def get_ai_user_context(
 
     return {
         "today": today.isoformat(),
+        "timezone": get_request_timezone().key,
         "goals": goals,
     }

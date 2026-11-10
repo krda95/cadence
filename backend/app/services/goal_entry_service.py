@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.goal import Goal
 from app.models.goal_entry import GoalEntry
 from app.schemas.goal_entry import GoalEntryOperation, GoalEntryUpsert
-from app.services.progress_service import get_user_today
+from app.services.progress_service import get_goal_created_date, get_user_today
 
 
 async def get_owned_goal_or_404(
@@ -35,6 +35,25 @@ async def get_owned_goal_or_404(
     return goal
 
 
+def validate_entry_date(
+    goal: Goal,
+    entry_date: date,
+) -> None:
+    today = get_user_today()
+
+    if entry_date > today:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Cannot create entries for future dates",
+        )
+
+    if entry_date < get_goal_created_date(goal):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Goal did not exist on the specified date",
+        )
+
+
 async def upsert_goal_entry(
     session: AsyncSession,
     goal_id: uuid.UUID,
@@ -42,10 +61,15 @@ async def upsert_goal_entry(
     entry_date: date,
     payload: GoalEntryUpsert,
 ) -> GoalEntry:
-    await get_owned_goal_or_404(
+    goal = await get_owned_goal_or_404(
         goal_id=goal_id,
         owner_id=owner_id,
         session=session,
+    )
+
+    validate_entry_date(
+        goal=goal,
+        entry_date=entry_date,
     )
 
     result = await session.execute(
@@ -74,10 +98,11 @@ async def upsert_goal_entry(
     return entry
 
 
-async def save_today_entry(
+async def save_goal_entry(
     session: AsyncSession,
     goal_id: uuid.UUID,
     owner_id: uuid.UUID,
+    entry_date: date,
     payload: GoalEntryOperation,
 ) -> GoalEntry:
     goal = await get_owned_goal_or_404(
@@ -92,12 +117,15 @@ async def save_today_entry(
             detail="Cannot update an inactive goal",
         )
 
-    today = get_user_today()
+    validate_entry_date(
+        goal=goal,
+        entry_date=entry_date,
+    )
 
     stmt = insert(GoalEntry).values(
         id=uuid.uuid4(),
         goal_id=goal_id,
-        entry_date=today,
+        entry_date=entry_date,
         value=payload.value,
     )
 
@@ -133,3 +161,18 @@ async def save_today_entry(
     await session.refresh(entry)
 
     return entry
+
+
+async def save_today_entry(
+    session: AsyncSession,
+    goal_id: uuid.UUID,
+    owner_id: uuid.UUID,
+    payload: GoalEntryOperation,
+) -> GoalEntry:
+    return await save_goal_entry(
+        session=session,
+        goal_id=goal_id,
+        owner_id=owner_id,
+        entry_date=get_user_today(),
+        payload=payload,
+    )

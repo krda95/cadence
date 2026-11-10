@@ -1,15 +1,17 @@
 import json
+from datetime import date
 from math import isfinite
 from typing import Literal, TypedDict
 from uuid import UUID
 
-from openai import APIError, AsyncOpenAI
+from fastapi import HTTPException, status
+from openai import AsyncOpenAI
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.schemas.goal_entry import GoalEntryOperation
-from app.services.goal_entry_service import save_today_entry
+from app.services.goal_entry_service import save_goal_entry
 
 SYSTEM_PROMPT = """
 You are Cadence Assistant, an AI assistant inside
@@ -24,6 +26,15 @@ GENERAL RULES:
 - Never modify goals or entries without clear user intent.
 - Never claim that an entry was saved unless the operation succeeded.
 - Do not expose internal tool calls, JSON arguments, or tool results.
+
+ENTRY DATES:
+- Always pass entry_date in YYYY-MM-DD format.
+- If the user omits the date, use today's date from the context.
+- Resolve relative dates such as "yesterday" or "wczoraj" from
+  the user's local "today" in the context.
+- If the requested date is ambiguous, ask for clarification about
+  that operation.
+- Never substitute today for an explicitly requested date.
 
 GOAL MATCHING:
 - Match user requests to existing goals based on their names,
@@ -67,7 +78,7 @@ MULTIPLE OPERATIONS:
   is ambiguous, invalid, or references a missing goal.
 - Skip only the operations that cannot be safely completed.
 - Never invent a replacement goal for a missing goal.
-- Use a separate save_today_entry tool call for each valid update.
+- Use a separate save_goal_entry tool call for each valid update.
 - Do not omit valid operations.
 
 OPERATION TYPES:
@@ -144,7 +155,7 @@ Expected behavior:
 - Increment Protein by 30.
 - Increment Carbohydrates by 80.
 - Increment Fat by 22.
-- Execute four separate save_today_entry tool calls.
+- Execute four separate save_goal_entry tool calls.
 - Confirm all successfully saved entries.
 
 Example 6:
@@ -161,7 +172,7 @@ Expected behavior:
 - Increment Protein by 30.
 - Increment Carbohydrates by 80.
 - Increment Fat by 22.
-- Execute four separate save_today_entry tool calls.
+- Execute four separate save_goal_entry tool calls.
 
 Example 7:
 Existing goals: Calories (kcal), Protein (g), Fat (g).
@@ -178,12 +189,12 @@ Expected behavior:
 - Confirm only successfully saved entries.
 """
 
-SAVE_TODAY_ENTRY_TOOL = {
+SAVE_GOAL_ENTRY_TOOL = {
     "type": "function",
-    "name": "save_today_entry",
+    "name": "save_goal_entry",
     "description": (
-        "Save or update today's entry for an existing active goal. "
-        "Use 'set' to replace today's value and 'increment' to add "
+        "Save or update a goal entry for an existing active goal. "
+        "Use 'set' to replace the value and 'increment' to add "
         "to the existing value. "
         "Only call this function when the user's intent is clear."
     ),
@@ -199,12 +210,16 @@ SAVE_TODAY_ENTRY_TOOL = {
                 "type": "string",
                 "enum": ["set", "increment"],
             },
+            "entry_date": {
+                "type": "string",
+                "description": "Local entry date in YYYY-MM-DD format.",
+            },
             "value": {
                 "type": "number",
                 "description": "Non-negative value to save.",
             },
         },
-        "required": ["goal_id", "operation", "value"],
+        "required": ["goal_id", "operation", "entry_date", "value"],
         "additionalProperties": False,
     },
 }
@@ -215,8 +230,9 @@ class ChatHistoryMessage(TypedDict):
     content: str
 
 
-class SaveTodayEntryArguments(BaseModel):
+class SaveGoalEntryArguments(BaseModel):
     goal_id: UUID
+    entry_date: date
     operation: Literal["set", "increment"]
     value: float = Field(ge=0)
 
@@ -233,6 +249,7 @@ def build_entry_confirmation(
     operation: str,
     value: float,
     current_value: float,
+    date_label: str = "today",
 ) -> str:
     formatted_value = f"{value:g}"
     formatted_total = f"{current_value:g}"
@@ -240,10 +257,10 @@ def build_entry_confirmation(
     if operation == "increment":
         return (
             f"Added {formatted_value} to {goal_name}. "
-            f"Your total for today is now {formatted_total}."
+            f"Your total for {date_label} is now {formatted_total}."
         )
 
-    return f"Updated {goal_name} to {formatted_total} for today."
+    return f"Updated {goal_name} to {formatted_total} for {date_label}."
 
 
 async def generate_ai_response(
@@ -276,23 +293,22 @@ async def generate_ai_response(
         model=settings.openai_model,
         instructions=SYSTEM_PROMPT,
         input=input_messages,
-        tools=[SAVE_TODAY_ENTRY_TOOL],
+        tools=[SAVE_GOAL_ENTRY_TOOL],
         parallel_tool_calls=True,
         store=False,
     )
     # print("AI RESPONSE OUTPUT:", response.output)
-    tool_outputs = []
-    confirmations = []
+
+    results = []
 
     for item in response.output:
         if item.type != "function_call":
             continue
 
-        if item.name != "save_today_entry":
+        if item.name != "save_goal_entry":
             raise ValueError(f"Unsupported function: {item.name}")
 
-        arguments = SaveTodayEntryArguments.model_validate_json(item.arguments)
-
+        arguments = SaveGoalEntryArguments.model_validate_json(item.arguments)
         goal = next(
             (
                 goal
@@ -307,47 +323,37 @@ async def generate_ai_response(
                 "The requested goal is not available in the user's context."
             )
 
-        print("Validated function call:", arguments)
-        print("Matched goal:", goal["name"])
+        entry_date = arguments.entry_date.isoformat()
+        date_label = "today" if entry_date == context["today"] else entry_date
         payload = GoalEntryOperation(
-            operation=arguments.operation, value=arguments.value
+            operation=arguments.operation,
+            value=arguments.value,
         )
 
-        entry = await save_today_entry(
-            session=session,
-            goal_id=arguments.goal_id,
-            owner_id=owner_id,
-            payload=payload,
-        )
+        try:
+            entry = await save_goal_entry(
+                session=session,
+                goal_id=arguments.goal_id,
+                owner_id=owner_id,
+                entry_date=arguments.entry_date,
+                payload=payload,
+            )
+        except HTTPException as error:
+            if error.status_code != status.HTTP_422_UNPROCESSABLE_CONTENT:
+                raise
+            results.append(
+                f"Could not update {goal['name']} for {date_label}. {error.detail}."
+            )
+            continue
 
-        confirmations.append(
+        results.append(
             build_entry_confirmation(
                 goal_name=goal["name"],
                 operation=arguments.operation,
                 value=arguments.value,
                 current_value=entry.value,
+                date_label=date_label,
             )
         )
 
-        tool_outputs.append(
-            {
-                "type": "function_call_output",
-                "call_id": item.call_id,
-                "output": json.dumps(
-                    {
-                        "success": True,
-                        "goal_name": goal["name"],
-                        "operation": arguments.operation,
-                        "value": arguments.value,
-                        "current_value": entry.value,
-                    }
-                ),
-            }
-        )
-    if not tool_outputs:
-        return response.output_text
-
-    if confirmations:
-        return "\n".join(confirmations).strip()
-
-    return response.output_text
+    return "\n".join(results) if results else response.output_text
