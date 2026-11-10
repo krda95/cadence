@@ -37,7 +37,8 @@ export class AssistantPanel {
     id: 'welcome',
     role: 'assistant',
     content:
-      'Hi! Tell me what you did and I\'ll log it. Try:\n"I walked 8500 steps and studied for 45 min"',
+      'Hi! I can log activities and update past entries. Write in any language.\n\n' +
+      'Try “Set my steps to 8500 for yesterday.”',
   };
 
   readonly draft = this.historyService.draft;

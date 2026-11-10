@@ -5,7 +5,7 @@ from typing import Literal, TypedDict
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from openai import AsyncOpenAI
+from openai import APIError, AsyncOpenAI
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +20,7 @@ a personal goal-tracking application.
 You have access to the user's existing goals and today's entries.
 
 GENERAL RULES:
-- Always respond in English.
+- Reply in the language of the user's latest message.
 - Only reference goals provided in the context.
 - Never invent goals, entries, or progress values.
 - Never modify goals or entries without clear user intent.
@@ -356,4 +356,26 @@ async def generate_ai_response(
             )
         )
 
-    return "\n".join(results) if results else response.output_text
+    if not results:
+        return response.output_text
+
+    fallback = "\n".join(results)
+    try:
+        localized = await client.responses.create(
+            model=settings.openai_model,
+            instructions=(
+                "Translate the operation results into the language of the user's "
+                "message. Use the message only to identify the language. "
+                "Preserve goal names, dates, numeric values, and the outcome "
+                "of each operation. Return only the translated results."
+            ),
+            input=json.dumps(
+                {"user_message": message, "operation_results": results},
+                ensure_ascii=False,
+            ),
+            store=False,
+        )
+    except APIError:
+        return fallback
+
+    return localized.output_text.strip() or fallback

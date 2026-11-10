@@ -135,6 +135,10 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: var(--space-6);
+    color-scheme: dark;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-text-secondary) 60%, var(--color-surface))
+      transparent;
   }
 
   &__error {

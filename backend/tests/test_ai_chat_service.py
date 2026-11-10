@@ -61,6 +61,17 @@ def make_ai_response(output=None, output_text=""):
     )
 
 
+def make_save_response_mock(*function_calls):
+    def respond(**kwargs):
+        if "tools" in kwargs:
+            return make_ai_response(output=list(function_calls))
+
+        payload = json.loads(kwargs["input"])
+        return make_ai_response(output_text="\n".join(payload["operation_results"]))
+
+    return AsyncMock(side_effect=respond)
+
+
 def test_save_entry_arguments_accepts_valid_set():
     goal_id = uuid4()
 
@@ -238,9 +249,7 @@ async def test_generate_ai_response_set_entry(monkeypatch, entry_date):
 
     mock_client = MagicMock()
 
-    mock_client.responses.create = AsyncMock(
-        return_value=make_ai_response(output=[function_call])
-    )
+    mock_client.responses.create = make_save_response_mock(function_call)
 
     mock_save = AsyncMock(
         return_value=SimpleNamespace(
@@ -295,7 +304,7 @@ async def test_generate_ai_response_set_entry(monkeypatch, entry_date):
     assert kwargs["payload"].operation == "set"
     assert kwargs["payload"].value == 3000
 
-    mock_client.responses.create.assert_awaited_once()
+    assert mock_client.responses.create.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -316,10 +325,8 @@ async def test_generate_ai_response_handles_dated_and_today_entries(
         goal_id, "increment", 3000, call_id="call_dated", entry_date=entry_date
     )
     mock_client = MagicMock()
-    mock_client.responses.create = AsyncMock(
-        return_value=make_ai_response(
-            output=[dated_call, make_function_call(goal_id, "set", 1500)]
-        )
+    mock_client.responses.create = make_save_response_mock(
+        dated_call, make_function_call(goal_id, "set", 1500)
     )
     dated_result = (
         HTTPException(status_code=422, detail=error_detail)
@@ -373,8 +380,8 @@ async def test_generate_ai_response_propagates_other_save_errors(
 ):
     goal_id = uuid4()
     mock_client = MagicMock()
-    mock_client.responses.create = AsyncMock(
-        return_value=make_ai_response(output=[make_function_call(goal_id, "set", 1500)])
+    mock_client.responses.create = make_save_response_mock(
+        make_function_call(goal_id, "set", 1500)
     )
     error = HTTPException(status_code=status_code, detail="Save failed")
     mock_save = AsyncMock(side_effect=error)
@@ -446,9 +453,7 @@ async def test_generate_ai_response_increment_entry(monkeypatch, entry_date):
 
     mock_client = MagicMock()
 
-    mock_client.responses.create = AsyncMock(
-        return_value=make_ai_response(output=[function_call])
-    )
+    mock_client.responses.create = make_save_response_mock(function_call)
 
     mock_save = AsyncMock(
         return_value=SimpleNamespace(
@@ -494,7 +499,7 @@ async def test_generate_ai_response_increment_entry(monkeypatch, entry_date):
 
     assert payload.operation == "increment"
     assert payload.value == 1500
-    mock_client.responses.create.assert_awaited_once()
+    assert mock_client.responses.create.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -547,60 +552,54 @@ async def test_generate_ai_response_rejects_unknown_goal(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_ai_response_returns_confirmation_after_save(monkeypatch):
+@pytest.mark.parametrize(
+    "message, expected_reply",
+    [
+        (
+            "Add 1500 steps",
+            "Added 1500 to Steps. Your total for today is now 4500.",
+        ),
+        (
+            "Dodaj 1500 kroków",
+            "Dodano 1500 do celu Steps. Dzisiejsza suma to 4500.",
+        ),
+    ],
+)
+async def test_generate_ai_response_returns_localized_confirmation(
+    monkeypatch, message, expected_reply
+):
     goal_id = uuid4()
-
-    function_call = make_function_call(
-        goal_id=goal_id,
-        operation="increment",
-        value=1500,
-    )
-
     mock_client = MagicMock()
-
     mock_client.responses.create = AsyncMock(
-        return_value=make_ai_response(output=[function_call])
+        side_effect=[
+            make_ai_response(output=[make_function_call(goal_id, "increment", 1500)]),
+            make_ai_response(output_text=expected_reply),
+        ]
     )
-
-    mock_save = AsyncMock(
-        return_value=SimpleNamespace(
-            id=uuid4(),
-            value=4500,
-        )
-    )
-
-    monkeypatch.setattr(
-        ai_service,
-        "AsyncOpenAI",
-        lambda **kwargs: mock_client,
-    )
-
-    monkeypatch.setattr(
-        ai_service,
-        "save_goal_entry",
-        mock_save,
-    )
+    mock_save = AsyncMock(return_value=SimpleNamespace(value=4500))
+    monkeypatch.setattr(ai_service, "AsyncOpenAI", lambda **kwargs: mock_client)
+    monkeypatch.setattr(ai_service, "save_goal_entry", mock_save)
 
     result = await generate_ai_response(
-        message="Add 1500 steps",
+        message=message,
         context={
-            "goals": [
-                {
-                    "id": str(goal_id),
-                    "name": "Steps",
-                }
-            ],
             "today": TEST_TODAY.isoformat(),
+            "goals": [{"id": str(goal_id), "name": "Steps"}],
         },
         session=MagicMock(),
         owner_id=uuid4(),
     )
 
-    assert result == ("Added 1500 to Steps. Your total for today is now 4500.")
-
+    assert result == expected_reply
     mock_save.assert_awaited_once()
+    assert mock_client.responses.create.await_count == 2
 
-    mock_client.responses.create.assert_awaited_once()
+    translation_call = mock_client.responses.create.await_args_list[1].kwargs
+    assert "tools" not in translation_call
+    assert json.loads(translation_call["input"]) == {
+        "user_message": message,
+        "operation_results": ["Added 1500 to Steps. Your total for today is now 4500."],
+    }
 
 
 @pytest.mark.asyncio
@@ -736,9 +735,7 @@ async def test_generate_ai_response_multiple_entries(monkeypatch):
     ]
 
     mock_client = MagicMock()
-    mock_client.responses.create = AsyncMock(
-        return_value=make_ai_response(output=function_calls)
-    )
+    mock_client.responses.create = make_save_response_mock(*function_calls)
 
     mock_save = AsyncMock(
         side_effect=[
@@ -782,4 +779,4 @@ async def test_generate_ai_response_multiple_entries(monkeypatch):
     assert "Walk" in result
     assert "Running" in result
 
-    mock_client.responses.create.assert_awaited_once()
+    assert mock_client.responses.create.await_count == 2

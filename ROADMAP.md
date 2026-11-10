@@ -32,8 +32,8 @@ Freemium model (future consideration).
 
 ### Phase 1 – Product Experience
 
-- [ ] Activity Chart
-- [ ] Historical Entries Editing
+- [x] Activity Chart
+- [x] Historical Entries Editing
 - [ ] Google OAuth
 - [ ] Onboarding Wizard
 - [ ] Goal Templates
