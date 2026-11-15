@@ -28,6 +28,9 @@ from app.schemas.progress import (
     WeeklyProgressResponse,
 )
 from app.services.goal_entry_service import (
+    delete_goal_entry as delete_goal_entry_service,
+)
+from app.services.goal_entry_service import (
     get_owned_goal_or_404,
 )
 from app.services.goal_entry_service import (
@@ -448,25 +451,9 @@ async def delete_goal_entry(
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    await get_owned_goal_or_404(
+    await delete_goal_entry_service(
+        session=session,
         goal_id=goal_id,
         owner_id=current_user.id,
-        session=session,
+        entry_date=entry_date,
     )
-
-    result = await session.execute(
-        select(GoalEntry).where(
-            GoalEntry.goal_id == goal_id,
-            GoalEntry.entry_date == entry_date,
-        )
-    )
-    entry = result.scalar_one_or_none()
-
-    if entry is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Goal entry not found",
-        )
-
-    await session.delete(entry)
-    await session.commit()

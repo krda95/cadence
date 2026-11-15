@@ -98,6 +98,15 @@
             (input)="entryNote.set($any($event.target).value)"
           ></textarea>
         </div>
+        @if (isDeleting()) {
+          <p class="goal-entry__warning" role="status">
+            Leaving this empty will delete today's entry, including its note.
+          </p>
+        }
+
+        @if (entryValidationError(); as message) {
+          <p class="goal-entry__error" role="alert">{{ message }}</p>
+        }
 
         @if (saveError(); as message) {
           <p class="goal-entry__error" role="alert">{{ message }}</p>
@@ -113,8 +122,17 @@
             Cancel
           </app-button>
 
-          <app-button type="submit" variant="primary" [disabled]="!canSave()" (click)="save()">
-            {{ isSaving() ? 'Saving…' : 'Save' }}
+          <app-button
+            type="submit"
+            [variant]="isDeleting() ? 'danger' : 'primary'"
+            [disabled]="!canSave()"
+            (click)="save()"
+          >
+            @if (isSaving()) {
+              {{ isDeleting() ? 'Deleting…' : 'Saving…' }}
+            } @else {
+              {{ isDeleting() ? 'Delete entry' : 'Save' }}
+            }
           </app-button>
         </div>
       </div>

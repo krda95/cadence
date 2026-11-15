@@ -75,6 +75,59 @@ describe('GoalEntry', () => {
     expect(saved).toEqual([{ goalId: 'g2', value: 4, note: 'felt good' }]);
   });
 
+  it('treats an empty input as a delete when an entry exists, and warns about the note', () => {
+    render(DAILY, true);
+    const deleted: { goalId: string }[] = [];
+    const saved: unknown[] = [];
+    component.entryDeleted.subscribe((event) => deleted.push(event));
+    component.entrySaved.subscribe((event) => saved.push(event));
+
+    component.onEntryValueChange('');
+    fixture.detectChanges();
+
+    expect(component.isDeleting()).toBe(true);
+    expect(component.canSave()).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      "delete today's entry, including its note",
+    );
+
+    component.save();
+
+    expect(deleted).toEqual([{ goalId: 'g1' }]);
+    expect(saved).toEqual([]);
+  });
+
+  it('deletes a weekly entry even though the total would drop below the earlier days', () => {
+    render(WEEKLY, true);
+    const deleted: { goalId: string }[] = [];
+    component.entryDeleted.subscribe((event) => deleted.push(event));
+
+    component.onEntryValueChange('');
+    component.save();
+
+    expect(deleted).toEqual([{ goalId: 'g2' }]);
+  });
+
+  it('does not offer a delete when there is no entry to remove', () => {
+    render({ ...DAILY, entry_value: null, period_value: 0 }, true);
+
+    component.onEntryValueChange('');
+    fixture.detectChanges();
+
+    expect(component.isDeleting()).toBe(false);
+    expect(component.canSave()).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('including its note');
+  });
+
+  it('does not treat invalid text as a delete', () => {
+    render(DAILY, true);
+
+    component.onEntryValueChange('abc');
+
+    expect(component.isDeleting()).toBe(false);
+    expect(component.canSave()).toBe(false);
+  });
+
   it('keeps the editor open after saving; the parent closes it on success', () => {
     render(DAILY, true);
     let cancelled = 0;

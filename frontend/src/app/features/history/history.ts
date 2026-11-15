@@ -208,6 +208,25 @@ export class History {
       });
   }
 
+  deleteEntry(event: { goalId: string }): void {
+    this.savingGoalId.set(event.goalId);
+    this.saveError.set(null);
+
+    this.goalsService.deleteEntry(event.goalId, this.toDateString(this.selectedDate())).subscribe({
+      next: () => {
+        this.savingGoalId.set(null);
+        this.editingGoalId.set(null);
+        this.goalsResource.reload();
+        this.rangeResource.reload();
+      },
+      error: (error) => {
+        console.error('Failed to delete entry', error);
+        this.savingGoalId.set(null);
+        this.saveError.set("Couldn't delete your entry. Try again.");
+      },
+    });
+  }
+
   private pickerStrip(): HTMLElement | null {
     return this.host.nativeElement.querySelector('.history__header__bottom');
   }

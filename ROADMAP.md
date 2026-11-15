@@ -35,6 +35,7 @@ Freemium model (future consideration).
 - [x] Activity Chart
 - [x] Historical Entries Editing
 - [x] Change of weekly algorithm
+- [ ] Quick Increment
 - [ ] Google OAuth
 - [ ] Onboarding Wizard
 - [ ] Goal Templates

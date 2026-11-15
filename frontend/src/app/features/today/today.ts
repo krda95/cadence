@@ -109,6 +109,25 @@ export class Today {
       });
   }
 
+  deleteEntry(event: { goalId: string }): void {
+    this.savingGoalId.set(event.goalId);
+    this.saveError.set(null);
+
+    this.goalsService.deleteEntry(event.goalId, this.selectedDate()).subscribe({
+      next: () => {
+        this.savingGoalId.set(null);
+        this.editingGoalId.set(null);
+        this.goalsResource.reload();
+        this.scoreResource.reload();
+      },
+      error: (error) => {
+        console.error('Failed to delete entry', error);
+        this.savingGoalId.set(null);
+        this.saveError.set("Couldn't delete your entry. Try again.");
+      },
+    });
+  }
+
   private getTodayDate(): string {
     const today = new Date();
 

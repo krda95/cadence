@@ -37,12 +37,14 @@ export class GoalEntry {
 
   readonly entryValue = signal<number | null>(null);
   readonly entryNote = signal('');
+  readonly entryValidationError = signal<string | null>(null);
 
   readonly entrySaved = output<{
     goalId: string;
     value: number;
     note: string | null;
   }>();
+  readonly entryDeleted = output<{ goalId: string }>();
   readonly editStarted = output<void>();
   readonly editCancelled = output<void>();
 
@@ -57,7 +59,7 @@ export class GoalEntry {
     return goal.period === 'daily' ? (goal.entry_value ?? 0) : goal.period_value;
   });
 
-  /** For non-daily goals: what was logged in the period before today. */
+  /* For non-daily goals: what was logged in the period before today. */
   readonly valueBeforeToday = computed(() => {
     const goal = this.goal();
 
@@ -89,10 +91,25 @@ export class GoalEntry {
     return percent === 100 ? 'Within limit' : 'Over limit';
   });
 
+  /** An empty input removes today's entry together with its note. */
+  readonly isDeleting = computed(
+    () => this.entryValue() === null && this.entryValidationError() === null && this.hasEntry(),
+  );
+
+  private readonly hasEntry = computed(() => this.goal().entry_value !== null);
+
   readonly canSave = computed(() => {
     const value = this.entryValue();
 
-    return !this.isSaving() && value !== null && value >= this.valueBeforeToday();
+    if (this.isSaving()) {
+      return false;
+    }
+
+    if (this.isDeleting()) {
+      return true;
+    }
+
+    return value !== null && value >= this.valueBeforeToday();
   });
 
   constructor() {
@@ -114,6 +131,7 @@ export class GoalEntry {
   }
 
   startEditing(): void {
+    this.entryValidationError.set(null);
     this.entryValue.set(this.todayValue());
     this.entryNote.set(this.goal().note ?? '');
     this.valueInput()?.focusAndSelect();
@@ -129,15 +147,27 @@ export class GoalEntry {
   }
 
   onEntryValueChange(value: string): void {
-    if (value === '') {
+    this.entryValidationError.set(null);
+
+    const normalizedValue = value.trim().replace(',', '.');
+
+    if (normalizedValue === '') {
       this.entryValue.set(null);
       return;
     }
 
-    const parsedValue = Number(value.replace(',', '.'));
+    const parsedValue = Number(normalizedValue);
 
-    if (!Number.isNaN(parsedValue) && parsedValue >= 0) {
-      this.entryValue.set(parsedValue);
+    if (!Number.isFinite(parsedValue)) {
+      this.entryValue.set(null);
+      this.entryValidationError.set('Enter a valid number.');
+      return;
+    }
+
+    this.entryValue.set(parsedValue);
+
+    if (parsedValue < 0) {
+      this.entryValidationError.set('Value must be zero or greater.');
     }
   }
 
@@ -157,9 +187,18 @@ export class GoalEntry {
 
   /** Emits the entry. The parent closes the editor once the save has succeeded. */
   save(): void {
+    if (!this.canSave()) {
+      return;
+    }
+
+    if (this.isDeleting()) {
+      this.entryDeleted.emit({ goalId: this.goal().goal_id });
+      return;
+    }
+
     const enteredValue = this.entryValue();
 
-    if (!this.canSave() || enteredValue === null) {
+    if (enteredValue === null) {
       return;
     }
 

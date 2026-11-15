@@ -118,4 +118,45 @@ describe('Today', () => {
     expect(component.saveError()).toBeTruthy();
     expect(component.savingGoalId()).toBeNull();
   });
+
+  it('deletes an entry, closes the editor and reloads the day', async () => {
+    entries().flush([GOAL]);
+    daily().flush(SCORE);
+    await settle();
+
+    const component = fixture.componentInstance;
+    component.startEditing('g1');
+    component.deleteEntry({ goalId: 'g1' });
+
+    http
+      .expectOne((req) => req.method === 'DELETE')
+      .flush(null, { status: 204, statusText: 'No Content' });
+    fixture.detectChanges();
+
+    expect(component.editingGoalId()).toBeNull();
+    expect(component.savingGoalId()).toBeNull();
+
+    entries().flush([{ ...GOAL, entry_value: null, period_value: 0 }]);
+    daily().flush(SCORE);
+    await settle();
+  });
+
+  it('keeps the editor open and shows an error when deleting fails', async () => {
+    entries().flush([GOAL]);
+    daily().flush(SCORE);
+    await settle();
+
+    const component = fixture.componentInstance;
+    component.startEditing('g1');
+    component.deleteEntry({ goalId: 'g1' });
+
+    http
+      .expectOne((req) => req.method === 'DELETE')
+      .flush('boom', { status: 500, statusText: 'Server Error' });
+    await settle();
+
+    expect(component.editingGoalId()).toBe('g1');
+    expect(component.saveError()).toContain("Couldn't delete");
+    expect(component.savingGoalId()).toBeNull();
+  });
 });

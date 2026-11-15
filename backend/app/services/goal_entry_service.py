@@ -98,6 +98,36 @@ async def upsert_goal_entry(
     return entry
 
 
+async def delete_goal_entry(
+    session: AsyncSession,
+    goal_id: uuid.UUID,
+    owner_id: uuid.UUID,
+    entry_date: date,
+) -> None:
+    await get_owned_goal_or_404(
+        goal_id=goal_id,
+        owner_id=owner_id,
+        session=session,
+    )
+
+    result = await session.execute(
+        select(GoalEntry).where(
+            GoalEntry.goal_id == goal_id,
+            GoalEntry.entry_date == entry_date,
+        )
+    )
+    entry = result.scalar_one_or_none()
+
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Goal entry not found",
+        )
+
+    await session.delete(entry)
+    await session.commit()
+
+
 async def save_goal_entry(
     session: AsyncSession,
     goal_id: uuid.UUID,

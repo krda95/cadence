@@ -64,6 +64,10 @@ export class GoalsService {
     );
   }
 
+  deleteEntry(goalId: string, date: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiGoalsUrl}/${goalId}/entries/${date}`);
+  }
+
   getDayScore(date: string): Observable<DailyProgressResponse> {
     return this.http.get<DailyProgressResponse>(`${this.apiGoalsUrl}/progress/daily`, {
       params: { date },

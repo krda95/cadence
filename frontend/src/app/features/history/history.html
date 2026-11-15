@@ -120,6 +120,7 @@
                 [isSaving]="savingGoalId() === goal.goal_id"
                 [saveError]="editingGoalId() === goal.goal_id ? saveError() : null"
                 (entrySaved)="saveEntry($event)"
+                (entryDeleted)="deleteEntry($event)"
                 (editStarted)="startEditing(goal.goal_id)"
                 (editCancelled)="cancelEditing()"
               />
