@@ -59,7 +59,7 @@ async def get_current_user(
         return CurrentUser(
             id=uuid.UUID(user_data["id"]),
             email=user_data.get("email"),
-            username=user_metadata.get("display_name")
+            username=user_metadata.get("display_name"),
         )
     except (KeyError, ValueError) as error:
         raise HTTPException(

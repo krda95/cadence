@@ -275,7 +275,7 @@ def test_new_goals_are_appended_to_period() -> None:
                 period="daily",
             )
             created_goal_ids.append(goal_1["id"])
-            
+
             goal_2 = create_goal(
                 client,
                 headers,

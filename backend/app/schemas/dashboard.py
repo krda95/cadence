@@ -8,6 +8,7 @@ class DashboardTodayResponse(BaseModel):
     score: float | None
     scored_components_count: int
     pending_components_count: int
+    has_entries: bool
 
 
 class DashboardPeriodResponse(BaseModel):
@@ -23,6 +24,7 @@ class DashboardStreakResponse(BaseModel):
 class DashboardActivityDayResponse(BaseModel):
     date: date
     score: float | None
+    included_in_averages: bool
 
 
 class DashboardActivityResponse(BaseModel):

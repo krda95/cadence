@@ -2,11 +2,46 @@ from datetime import date
 
 import pytest
 
+from app.schemas.dashboard import DashboardActivityDayResponse
+from app.schemas.progress import DayProgressResponse
 from app.services.dashboard_service import (
     build_activity_data,
     calculate_streaks,
     get_activity_period_bounds,
 )
+
+
+def make_day(
+    day: date = date(2026, 11, 2),
+    daily_score: float | None = None,
+    included_in_averages: bool = True,
+) -> DayProgressResponse:
+    return DayProgressResponse(
+        date=day,
+        timezone="Europe/Warsaw",
+        daily_score=daily_score,
+        is_final=True,
+        scored_components_count=0,
+        pending_components_count=0,
+        components=[],
+        periodic_progress=[],
+        has_entries=False,
+        included_in_averages=included_in_averages,
+        base_score=None,
+        weekly_adjustment_pp=0.0,
+    )
+
+
+def activity_day(
+    day: date,
+    score: float | None,
+    included_in_averages: bool,
+) -> DashboardActivityDayResponse:
+    return DashboardActivityDayResponse(
+        date=day,
+        score=score,
+        included_in_averages=included_in_averages,
+    )
 
 
 @pytest.mark.parametrize(
@@ -190,9 +225,9 @@ def test_get_activity_bounds_rejects_previous_period_without_goals():
 
 def test_build_activity_data_maps_scores_to_dates():
     history = [
-        {"date": date(2026, 11, 2), "daily_score": 80.0},
-        {"date": date(2026, 11, 4), "daily_score": 100.0},
-        {"date": date(2026, 11, 5), "daily_score": 0.0},
+        make_day(date(2026, 11, 2), 80.0, True),
+        make_day(date(2026, 11, 4), 100.0, True),
+        make_day(date(2026, 11, 5), 0.0, True),
     ]
 
     result = build_activity_data(
@@ -204,13 +239,13 @@ def test_build_activity_data_maps_scores_to_dates():
     assert len(result) == 7
 
     assert result == [
-        {"date": date(2026, 11, 2), "score": 80.0},
-        {"date": date(2026, 11, 3), "score": None},
-        {"date": date(2026, 11, 4), "score": 100.0},
-        {"date": date(2026, 11, 5), "score": 0.0},
-        {"date": date(2026, 11, 6), "score": None},
-        {"date": date(2026, 11, 7), "score": None},
-        {"date": date(2026, 11, 8), "score": None},
+        activity_day(date(2026, 11, 2), 80.0, True),
+        activity_day(date(2026, 11, 3), None, False),
+        activity_day(date(2026, 11, 4), 100.0, True),
+        activity_day(date(2026, 11, 5), 0.0, True),
+        activity_day(date(2026, 11, 6), None, False),
+        activity_day(date(2026, 11, 7), None, False),
+        activity_day(date(2026, 11, 8), None, False),
     ]
 
 
@@ -222,14 +257,14 @@ def test_build_activity_data_with_empty_history():
     )
 
     assert len(result) == 7
-    assert all(day["score"] is None for day in result)
+    assert all(day.score is None and not day.included_in_averages for day in result)
 
 
 def test_build_activity_data_ignores_dates_outside_period():
     history = [
-        {"date": date(2026, 10, 31), "daily_score": 100.0},
-        {"date": date(2026, 11, 3), "daily_score": 75.0},
-        {"date": date(2026, 11, 10), "daily_score": 50.0},
+        make_day(date(2026, 10, 31), 100.0, True),
+        make_day(date(2026, 11, 3), 75.0, True),
+        make_day(date(2026, 11, 10), 50.0, True),
     ]
 
     result = build_activity_data(
@@ -240,10 +275,10 @@ def test_build_activity_data_ignores_dates_outside_period():
 
     assert len(result) == 7
 
-    scored_days = [day for day in result if day["score"] is not None]
+    scored_days = [day for day in result if day.score is not None]
 
     assert scored_days == [
-        {"date": date(2026, 11, 3), "score": 75.0},
+        activity_day(date(2026, 11, 3), 75.0, True),
     ]
 
 
@@ -267,9 +302,25 @@ def test_calculate_streaks(
     expected_current,
     expected_longest,
 ):
-    history = [{"daily_score": score} for score in scores]
+    history = [make_day(daily_score=score) for score in scores]
 
     current, longest = calculate_streaks(history)
 
     assert current == expected_current
     assert longest == expected_longest
+
+
+def test_build_activity_data_preserves_pending_day_score():
+    history = [
+        make_day(date(2026, 11, 7), 100.0, False),
+    ]
+
+    result = build_activity_data(
+        history=history,
+        date_from=date(2026, 11, 7),
+        date_to=date(2026, 11, 7),
+    )
+
+    assert result == [
+        activity_day(date(2026, 11, 7), 100.0, False),
+    ]

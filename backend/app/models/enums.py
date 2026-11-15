@@ -11,6 +11,7 @@ class GoalTargetType(str, Enum):
     MIN = "min"
     MAX = "max"
 
+
 class ProgressStatus(str, Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"

@@ -59,8 +59,9 @@ class PeriodProgressItem(BaseModel):
     status: ProgressStatus
     is_final: bool
 
-    # True for weekly/monthly max
     caused_daily_penalty: bool
+
+    daily_adjustment_pp: float
 
 
 class DailyProgressResponse(BaseModel):
@@ -80,6 +81,13 @@ class DailyProgressResponse(BaseModel):
 
     components: list[DailyScoreComponent]
     periodic_progress: list[PeriodProgressItem]
+
+    has_entries: bool
+    included_in_averages: bool
+
+    base_score: float | None = Field(ge=0, le=100)
+    weekly_adjustment_pp: float
+
 
 class WeeklyProgressItem(BaseModel):
     goal_id: UUID
@@ -152,22 +160,5 @@ class WeeklyProgressResponse(BaseModel):
     items: list[WeeklyProgressItem]
 
 
-class DayProgressResponse(BaseModel):
-    date: date
-    timezone: str
-
-    daily_score: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-    )
-
-    is_final: bool
-
-    scored_components_count: int
-    pending_components_count: int
-
-    components: list[DailyScoreComponent]
-    periodic_progress: list[PeriodProgressItem]
-
+class DayProgressResponse(DailyProgressResponse):
     weekly_progress: WeeklyProgressResponse | None = None

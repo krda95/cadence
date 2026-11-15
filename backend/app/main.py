@@ -26,7 +26,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_url],
     # In development also accept the dev server opened by LAN address (testing from a phone).
-    allow_origin_regex=LAN_ORIGIN_REGEX if settings.environment == "development" else None,
+    allow_origin_regex=LAN_ORIGIN_REGEX
+    if settings.environment == "development"
+    else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -2,12 +2,23 @@ from dataclasses import dataclass
 
 from app.models.enums import GoalTargetType, ProgressStatus
 
+WEEKLY_MIN_BONUS_PP = 5.0
+WEEKLY_MAX_PENALTY_PP = -5.0
+WEEKLY_ADJUSTMENT_LIMIT_PP = 10.0
+
 
 @dataclass(frozen=True)
 class ScoreResult:
     score: float | None
     status: ProgressStatus
     included_in_daily_score: bool
+
+
+@dataclass(frozen=True)
+class DailyScoreResult:
+    base_score: float
+    weekly_adjustment_pp: float
+    daily_score: float
 
 
 def calculate_min_score(
@@ -20,10 +31,15 @@ def calculate_min_score(
     - 5 000 / 10 000 -> 50%
     - 12 000 / 10 000 -> 100%
     """
-    if target_value == 0:
+    if target_value <= 0:
+        raise ValueError("Minimum goal target must be greater than zero")
+
+    progress_percent = (current_value / target_value) * 100
+
+    if progress_percent > 100.0:
         return 100.0
 
-    return min((current_value / target_value) * 100, 100.0)
+    return progress_percent
 
 
 def calculate_max_score(
@@ -39,8 +55,7 @@ def calculate_max_score(
 
 
 def calculate_daily_min_result(
-    entry_exists: bool,
-    entry_value: float,
+    entry_value: float | None,
     target_value: float,
     is_day_final: bool,
 ) -> ScoreResult:
@@ -50,14 +65,14 @@ def calculate_daily_min_result(
     - brak wpisu w zakończonym dniu -> 0%, missed;
     - wpis istnieje -> wynik proporcjonalny.
     """
-    if not entry_exists and not is_day_final:
+    if entry_value is None and not is_day_final:
         return ScoreResult(
             score=None,
             status=ProgressStatus.PENDING,
             included_in_daily_score=False,
         )
 
-    current_value = entry_value if entry_exists else 0.0
+    current_value = entry_value if entry_value is not None else 0.0
     score = calculate_min_score(
         current_value=current_value,
         target_value=target_value,
@@ -78,18 +93,24 @@ def calculate_daily_min_result(
 
 
 def calculate_daily_max_result(
-    entry_exists: bool,
-    entry_value: float,
+    entry_value: float | None,
     target_value: float,
     is_day_final: bool,
 ) -> ScoreResult:
     """
     Daily MAX:
-    - brak wpisu oznacza wartość 0;
-    - brak wpisu w zakończonym dniu = achieved, 100%;
-    - przekroczenie limitu = 0%.
+    - brak wpisu w trwającym dniu -> pending, poza bazą dnia;
+    - brak wpisu w zakończonym dniu -> achieved, 100%;
+    - zapisany wpis w limicie -> 100%;
+    - przekroczenie limitu -> 0%.
     """
-    current_value = entry_value if entry_exists else 0.0
+    if entry_value is None and not is_day_final:
+        return ScoreResult(
+            score=None,
+            status=ProgressStatus.PENDING,
+            included_in_daily_score=False,
+        )
+    current_value = entry_value if entry_value is not None else 0.0
     score = calculate_max_score(
         current_value=current_value,
         target_value=target_value,
@@ -124,10 +145,8 @@ def causes_period_max_daily_penalty(
     """
     total_after_day = total_before_day + entry_value_for_day
 
-    return (
-        entry_value_for_day > 0
-        and total_after_day > target_value
-    )
+    return entry_value_for_day > 0 and total_after_day > target_value
+
 
 def calculate_period_score(
     target_type: GoalTargetType,
@@ -153,6 +172,7 @@ def calculate_period_score(
         target_value=target_value,
     )
 
+
 def calculate_average_score(scores: list[float]) -> float | None:
     """
     Returns an equally weighted average of goal scores.
@@ -164,6 +184,7 @@ def calculate_average_score(scores: list[float]) -> float | None:
         return None
     return round(sum(scores) / len(scores), 2)
 
+
 def calculate_weekly_score(
     goal_scores: list[float],
     is_week_final: bool,
@@ -174,3 +195,50 @@ def calculate_weekly_score(
     if not is_week_final:
         return None
     return calculate_average_score(goal_scores)
+
+
+def calculate_weekly_daily_adjustment(
+    target_type: GoalTargetType,
+    entry_value: float,
+) -> float:
+    """Adds an adjustment for a daily score, based on the status of the weekly goal."""
+    if entry_value <= 0:
+        return 0.0
+
+    if target_type == GoalTargetType.MIN:
+        return WEEKLY_MIN_BONUS_PP
+
+    return WEEKLY_MAX_PENALTY_PP
+
+
+def calculate_daily_score(
+    daily_scores: list[float],
+    weekly_adjustments: list[float],
+) -> DailyScoreResult:
+    """
+    Calculates the final daily score, including weekly adjustments.
+    - base_score: average of daily scores for all goals;
+    - weekly_adjustment_pp: sum of weekly adjustments, limited to ±10 p.p.;
+    - daily_score: base_score + weekly_adjustment_pp, limited to 0-100
+    """
+    base_score = sum(daily_scores) / len(daily_scores) if daily_scores else 100.0
+
+    weekly_adjustment_pp = sum(weekly_adjustments)
+
+    if weekly_adjustment_pp > WEEKLY_ADJUSTMENT_LIMIT_PP:
+        weekly_adjustment_pp = WEEKLY_ADJUSTMENT_LIMIT_PP
+    elif weekly_adjustment_pp < -WEEKLY_ADJUSTMENT_LIMIT_PP:
+        weekly_adjustment_pp = -WEEKLY_ADJUSTMENT_LIMIT_PP
+
+    daily_score = base_score + weekly_adjustment_pp
+
+    if daily_score > 100.0:
+        daily_score = 100.0
+    elif daily_score < 0.0:
+        daily_score = 0.0
+
+    return DailyScoreResult(
+        base_score=round(base_score, 2),
+        weekly_adjustment_pp=round(weekly_adjustment_pp, 2),
+        daily_score=round(daily_score, 2),
+    )

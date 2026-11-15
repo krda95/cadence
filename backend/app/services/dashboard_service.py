@@ -8,7 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import get_request_timezone
 from app.models.goal import Goal
-from app.schemas.dashboard import DashboardResponse
+from app.schemas.dashboard import (
+    DashboardActivityDayResponse,
+    DashboardActivityResponse,
+    DashboardPeriodResponse,
+    DashboardResponse,
+    DashboardStreakResponse,
+    DashboardTodayResponse,
+)
+from app.schemas.progress import DailyProgressResponse, DayProgressResponse
+from app.services.progress_rules import calculate_average_score
 from app.services.progress_service import (
     build_daily_progress,
     calculate_progress_range,
@@ -67,25 +76,33 @@ def get_activity_period_bounds(
 
 
 def build_activity_data(
-    history: list[dict],
+    history: list[DayProgressResponse],
     date_from: date,
     date_to: date,
-) -> list[dict]:
-    scores_by_date = {
-        day["date"]: day["daily_score"]
-        for day in history
-        if date_from <= day["date"] <= date_to
+) -> list[DashboardActivityDayResponse]:
+    progress_by_date = {
+        day.date: day for day in history if date_from <= day.date <= date_to
     }
 
-    activity_data = []
+    activity_data: list[DashboardActivityDayResponse] = []
     current_date = date_from
 
     while current_date <= date_to:
+        day_progress = progress_by_date.get(current_date)
+
+        if day_progress is None:
+            score = None
+            included_in_averages = False
+        else:
+            score = day_progress.daily_score
+            included_in_averages = day_progress.included_in_averages
+
         activity_data.append(
-            {
-                "date": current_date,
-                "score": scores_by_date.get(current_date),
-            }
+            DashboardActivityDayResponse(
+                date=current_date,
+                score=score,
+                included_in_averages=included_in_averages,
+            )
         )
 
         current_date += timedelta(days=1)
@@ -103,9 +120,7 @@ async def get_dashboard(
     week_start = today - timedelta(days=today.weekday())
     previous_week_start = week_start - timedelta(days=7)
     previous_week_end = week_start - timedelta(days=1)
-    weekly_scores: list[float] = []
-    weekly_score: float | None = None
-    history: list[dict] = []
+    history: list[DayProgressResponse] = []
 
     first_goal_date = await get_first_goal_date(
         session=session,
@@ -127,7 +142,7 @@ async def get_dashboard(
             date_to=today,
         )
 
-        daily_progress = history[-1]
+        daily_progress: DailyProgressResponse = history[-1]
 
     else:
         daily_progress = build_daily_progress(
@@ -135,31 +150,30 @@ async def get_dashboard(
             reference_date=today,
             today=today,
         )
-    completed_history = [day for day in history if day["date"] < today]
+
+    completed_history = [day for day in history if day.date < today]
 
     current_streak, longest_streak = calculate_streaks(completed_history)
-    weekly_scores = [
-        day["daily_score"]
-        for day in completed_history
-        if day["date"] >= week_start and day["daily_score"] is not None
+
+    scored_history = [
+        day
+        for day in history
+        if day.included_in_averages and day.daily_score is not None
     ]
 
-    weekly_score = (
-        round(sum(weekly_scores) / len(weekly_scores), 2) if weekly_scores else None
-    )
+    weekly_scores = [
+        day.daily_score for day in scored_history if week_start <= day.date <= today
+    ]
+
+    weekly_score = calculate_average_score(weekly_scores)
 
     previous_weekly_scores = [
-        day["daily_score"]
-        for day in completed_history
-        if previous_week_start <= day["date"] <= previous_week_end
-        and day["daily_score"] is not None
+        day.daily_score
+        for day in scored_history
+        if previous_week_start <= day.date <= previous_week_end
     ]
 
-    previous_weekly_score = (
-        round(sum(previous_weekly_scores) / len(previous_weekly_scores), 2)
-        if previous_weekly_scores
-        else None
-    )
+    previous_weekly_score = calculate_average_score(previous_weekly_scores)
 
     activity_data = build_activity_data(
         history=history,
@@ -167,34 +181,35 @@ async def get_dashboard(
         date_to=activity_date_to,
     )
 
-    return {
-        "today": {
-            "score": daily_progress["daily_score"],
-            "scored_components_count": daily_progress["scored_components_count"],
-            "pending_components_count": daily_progress["pending_components_count"],
-        },
-        "week": {
-            "score": weekly_score,
-            "days_count": len(weekly_scores),
-        },
-        "previous_week": {
-            "score": previous_weekly_score,
-            "days_count": len(previous_weekly_scores),
-        },
-        "streak": {
-            "current": current_streak,
-            "longest": longest_streak,
-        },
-        "activity": {
-            "period": period,
-            "offset": offset,
-            "date_from": activity_date_from,
-            "date_to": activity_date_to,
-            "min_offset": 0,
-            "max_offset": max_offset,
-            "data": activity_data,
-        },
-    }
+    return DashboardResponse(
+        today=DashboardTodayResponse(
+            score=daily_progress.daily_score,
+            scored_components_count=daily_progress.scored_components_count,
+            pending_components_count=daily_progress.pending_components_count,
+            has_entries=daily_progress.has_entries,
+        ),
+        week=DashboardPeriodResponse(
+            score=weekly_score,
+            days_count=len(weekly_scores),
+        ),
+        previous_week=DashboardPeriodResponse(
+            score=previous_weekly_score,
+            days_count=len(previous_weekly_scores),
+        ),
+        streak=DashboardStreakResponse(
+            current=current_streak,
+            longest=longest_streak,
+        ),
+        activity=DashboardActivityResponse(
+            period=period,
+            offset=offset,
+            date_from=activity_date_from,
+            date_to=activity_date_to,
+            min_offset=0,
+            max_offset=max_offset,
+            data=activity_data,
+        ),
+    )
 
 
 async def get_first_goal_date(
@@ -218,7 +233,7 @@ async def get_first_goal_date(
 
 
 def calculate_streaks(
-    daily_progress: list[dict],
+    daily_progress: list[DayProgressResponse],
     great_threshold: float = 90,
 ) -> tuple[int, int]:
     current_streak = 0
@@ -226,7 +241,7 @@ def calculate_streaks(
     running_streak = 0
 
     for day in daily_progress:
-        score = day["daily_score"]
+        score = day.daily_score
 
         if score is not None and score > great_threshold:
             running_streak += 1

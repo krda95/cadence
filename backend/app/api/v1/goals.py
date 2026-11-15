@@ -14,6 +14,7 @@ from app.schemas.goal import (
     GoalReorderRequest,
     GoalResponse,
     GoalUpdate,
+    validate_goal_target,
 )
 from app.schemas.goal_entry import (
     GoalEntryDayResponse,
@@ -129,7 +130,7 @@ async def get_daily_progress(
             detail=str(error),
         ) from error
 
-    return DailyProgressResponse(**progress)
+    return progress
 
 
 @router.get(
@@ -156,7 +157,7 @@ async def get_weekly_progress(
             detail=str(error),
         ) from error
 
-    return WeeklyProgressResponse(**progress)
+    return progress
 
 
 @router.get(
@@ -188,7 +189,7 @@ async def get_progress_range(
             detail=str(error),
         ) from error
 
-    return [DayProgressResponse(**day_progress) for day_progress in progress_days]
+    return progress_days
 
 
 @router.get(
@@ -289,6 +290,26 @@ async def update_my_goal(
     )
 
     update_data = payload.model_dump(exclude_unset=True)
+
+    target_type = update_data.get("target_type", goal.target_type)
+    target_value = update_data.get("target_value", goal.target_value)
+
+    if target_type is None or target_value is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Target type and target value cannot be null",
+        )
+
+    try:
+        validate_goal_target(
+            target_type=target_type,
+            target_value=target_value,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(error),
+        ) from error
 
     for field_name, value in update_data.items():
         setattr(goal, field_name, value)

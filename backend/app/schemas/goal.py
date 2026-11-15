@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.enums import GoalPeriod, GoalTargetType
 
@@ -19,6 +20,14 @@ class GoalCreate(BaseModel):
     target_type: GoalTargetType
     target_value: float = Field(ge=0)
     is_active: bool = True
+
+    @model_validator(mode="after")
+    def validate_target(self) -> Self:
+        validate_goal_target(
+            target_type=self.target_type,
+            target_value=self.target_value,
+        )
+        return self
 
 
 class GoalUpdate(BaseModel):
@@ -52,3 +61,11 @@ class GoalResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     position: int
+
+
+def validate_goal_target(
+    target_type: GoalTargetType,
+    target_value: float,
+) -> None:
+    if target_type == GoalTargetType.MIN and target_value <= 0:
+        raise ValueError("Minimum goal target must be greater than zero")

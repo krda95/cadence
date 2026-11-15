@@ -5,9 +5,11 @@ from app.services.progress_rules import (
     calculate_average_score,
     calculate_daily_max_result,
     calculate_daily_min_result,
+    calculate_daily_score,
     calculate_max_score,
     calculate_min_score,
     calculate_period_score,
+    calculate_weekly_daily_adjustment,
     calculate_weekly_score,
     causes_period_max_daily_penalty,
 )
@@ -21,7 +23,6 @@ from app.services.progress_rules import (
         (5_000, 10_000, 50.0),
         (10_000, 10_000, 100.0),
         (12_000, 10_000, 100.0),
-        (0, 0, 100.0),
     ],
 )
 def test_calculate_min_score(
@@ -66,8 +67,7 @@ def test_calculate_max_score(
 
 def test_daily_min_without_entry_today_is_pending() -> None:
     result = calculate_daily_min_result(
-        entry_exists=False,
-        entry_value=0,
+        entry_value=None,
         target_value=10_000,
         is_day_final=False,
     )
@@ -79,7 +79,6 @@ def test_daily_min_without_entry_today_is_pending() -> None:
 
 def test_daily_min_without_entry_after_day_end_is_missed() -> None:
     result = calculate_daily_min_result(
-        entry_exists=False,
         entry_value=0,
         target_value=10_000,
         is_day_final=True,
@@ -92,7 +91,6 @@ def test_daily_min_without_entry_after_day_end_is_missed() -> None:
 
 def test_daily_min_is_scored_proportionally() -> None:
     result = calculate_daily_min_result(
-        entry_exists=True,
         entry_value=7_500,
         target_value=10_000,
         is_day_final=True,
@@ -105,7 +103,6 @@ def test_daily_min_is_scored_proportionally() -> None:
 
 def test_daily_min_is_achieved_when_target_is_reached() -> None:
     result = calculate_daily_min_result(
-        entry_exists=True,
         entry_value=12_000,
         target_value=10_000,
         is_day_final=True,
@@ -118,8 +115,7 @@ def test_daily_min_is_achieved_when_target_is_reached() -> None:
 
 def test_daily_max_without_entry_after_day_end_is_achieved() -> None:
     result = calculate_daily_max_result(
-        entry_exists=False,
-        entry_value=0,
+        entry_value=None,
         target_value=2,
         is_day_final=True,
     )
@@ -129,22 +125,20 @@ def test_daily_max_without_entry_after_day_end_is_achieved() -> None:
     assert result.included_in_daily_score is True
 
 
-def test_daily_max_without_entry_today_is_in_progress() -> None:
+def test_daily_max_without_entry_today_is_pending() -> None:
     result = calculate_daily_max_result(
-        entry_exists=False,
-        entry_value=0,
+        entry_value=None,
         target_value=2,
         is_day_final=False,
     )
 
-    assert result.score == 100.0
-    assert result.status == ProgressStatus.IN_PROGRESS
-    assert result.included_in_daily_score is True
+    assert result.score is None
+    assert result.status == ProgressStatus.PENDING
+    assert result.included_in_daily_score is False
 
 
 def test_daily_max_limit_exceeded_gives_zero_points() -> None:
     result = calculate_daily_max_result(
-        entry_exists=True,
         entry_value=3,
         target_value=2,
         is_day_final=False,
@@ -283,3 +277,87 @@ def test_weekly_score_without_eligible_goals_is_none() -> None:
         )
         is None
     )
+
+
+@pytest.mark.parametrize(
+    ("target_type", "entry_value", "expected"),
+    [
+        (GoalTargetType.MIN, 0, 0.0),
+        (GoalTargetType.MIN, 1, 5.0),
+        (GoalTargetType.MIN, 2, 5.0),
+        (GoalTargetType.MAX, 0, 0.0),
+        (GoalTargetType.MAX, 1, -5.0),
+        (GoalTargetType.MAX, 2, -5.0),
+    ],
+)
+def test_weekly_daily_adjustment(
+    target_type: GoalTargetType,
+    entry_value: float,
+    expected: float,
+) -> None:
+    assert (
+        calculate_weekly_daily_adjustment(
+            target_type=target_type,
+            entry_value=entry_value,
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("daily_scores", "adjustments", "base", "adjustment", "score"),
+    [
+        ([], [], 100.0, 0.0, 100.0),
+        ([80.0, 60.0], [], 70.0, 0.0, 70.0),
+        ([80.0, 100.0], [], 90.0, 0.0, 90.0),
+        ([], [5.0], 100.0, 5.0, 100.0),
+        ([], [-5.0], 100.0, -5.0, 95.0),
+        ([], [5.0, -5.0], 100.0, 0.0, 100.0),
+        ([70.0], [5.0, 5.0, 5.0], 70.0, 10.0, 80.0),
+        ([70.0], [-5.0, -5.0, -5.0], 70.0, -10.0, 60.0),
+        ([70.0], [5.0, 5.0, 5.0, -5.0], 70.0, 10.0, 80.0),
+        ([0.0], [-5.0], 0.0, -5.0, 0.0),
+        ([98.0], [5.0], 98.0, 5.0, 100.0),
+    ],
+)
+def test_daily_score(
+    daily_scores: list[float],
+    adjustments: list[float],
+    base: float,
+    adjustment: float,
+    score: float,
+) -> None:
+    result = calculate_daily_score(
+        daily_scores=daily_scores,
+        weekly_adjustments=adjustments,
+    )
+
+    assert result.base_score == base
+    assert result.weekly_adjustment_pp == adjustment
+    assert result.daily_score == score
+
+
+def test_daily_max_explicit_zero_today_is_scored() -> None:
+    result = calculate_daily_max_result(
+        entry_value=0,
+        target_value=2,
+        is_day_final=False,
+    )
+
+    assert result.score == 100.0
+    assert result.status == ProgressStatus.IN_PROGRESS
+    assert result.included_in_daily_score is True
+
+
+@pytest.mark.parametrize("target_value", [0, -1])
+def test_min_score_rejects_non_positive_target(
+    target_value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="Minimum goal target must be greater than zero",
+    ):
+        calculate_min_score(
+            current_value=1,
+            target_value=target_value,
+        )

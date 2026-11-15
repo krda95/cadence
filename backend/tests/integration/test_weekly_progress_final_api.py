@@ -261,9 +261,7 @@ def test_weekly_progress_is_final_after_simulated_week(
 
             # Goal was created today, so only today through Sunday
             # should be counted for daily goals.
-            expected_days_counted = (
-                (week_end - scenario_date).days + 1
-            )
+            expected_days_counted = (week_end - scenario_date).days + 1
 
             expected_steps_score = round(
                 100 / expected_days_counted,
@@ -285,13 +283,7 @@ def test_weekly_progress_is_final_after_simulated_week(
                 return "partially_achieved"
 
             expected_weekly_score = round(
-                (
-                    expected_steps_score
-                    + expected_calories_score
-                    + 50
-                    + 0
-                )
-                / 4,
+                (expected_steps_score + expected_calories_score + 50 + 0) / 4,
                 2,
             )
 

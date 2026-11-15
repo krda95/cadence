@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Any
+from typing import TypedDict
 from uuid import UUID
 
 from sqlalchemy import select
@@ -15,22 +15,51 @@ from app.models.enums import (
 from app.models.goal import Goal, GoalPeriod, GoalTargetType
 from app.models.goal_entry import GoalEntry
 from app.schemas.goal_entry import GoalEntryDayResponse
+from app.schemas.progress import (
+    DailyProgressResponse,
+    DailyScoreComponent,
+    DayProgressResponse,
+    PeriodProgressItem,
+    WeeklyProgressItem,
+    WeeklyProgressResponse,
+)
 from app.services.progress_rules import (
     calculate_average_score,
     calculate_daily_max_result,
     calculate_daily_min_result,
+    calculate_daily_score,
     calculate_max_score,
     calculate_min_score,
     calculate_period_score,
+    calculate_weekly_daily_adjustment,
     calculate_weekly_score,
-    causes_period_max_daily_penalty,
 )
+
+
+class GoalIdentity(TypedDict):
+    goal_id: UUID
+    name: str
+    unit: str
+    period: GoalPeriod
+    target_type: GoalTargetType
+    target_value: float
+
+
+def get_goal_identity(goal: Goal) -> GoalIdentity:
+    return {
+        "goal_id": goal.id,
+        "name": goal.name,
+        "unit": goal.unit,
+        "period": goal.period,
+        "target_type": goal.target_type,
+        "target_value": float(goal.target_value),
+    }
+
 
 @dataclass
 class GoalDayState:
     goal: Goal
-    entry_exists: bool
-    entry_value: float
+    entry_value: float | None
     entry_note: str | None
     period_current_value: float
 
@@ -84,9 +113,12 @@ def calculate_limit_usage_percent(
     current_value: float,
     target_value: float,
 ) -> float:
-    # Dla limitu 0:
-    # 0 / 0 oznacza brak wykorzystania limitu,
-    # każda wartość dodatnia oznacza pełne wykorzystanie / przekroczenie.
+    """
+    Dla limitu 0:
+        0 / 0 oznacza brak wykorzystania limitu,
+        każda wartość dodatnia oznacza pełne wykorzystanie / przekroczenie.
+    """
+
     if target_value == 0:
         return 0.0 if current_value == 0 else 100.0
 
@@ -245,8 +277,7 @@ def build_goal_day_states(
         states.append(
             GoalDayState(
                 goal=goal,
-                entry_exists=day_entry is not None,
-                entry_value=(day_entry.value if day_entry is not None else 0.0),
+                entry_value=(day_entry.value if day_entry is not None else None),
                 entry_note=(day_entry.note if day_entry is not None else None),
                 period_current_value=period_current_value,
             )
@@ -259,7 +290,7 @@ async def calculate_daily_progress(
     session: AsyncSession,
     owner_id: UUID,
     reference_date: date,
-) -> dict[str, Any]:
+) -> DailyProgressResponse:
     today = get_user_today()
 
     if reference_date > today:
@@ -282,29 +313,35 @@ def build_daily_progress(
     goal_states: list[GoalDayState],
     reference_date: date,
     today: date,
-) -> dict[str, Any]:
+) -> DailyProgressResponse:
     is_day_final = reference_date < today
 
     if not goal_states:
-        return {
-            "date": reference_date,
-            "timezone": get_request_timezone().key,
-            "daily_score": None,
-            "is_final": is_day_final,
-            "scored_components_count": 0,
-            "pending_components_count": 0,
-            "components": [],
-            "periodic_progress": [],
-        }
+        return DailyProgressResponse(
+            date=reference_date,
+            timezone=get_request_timezone().key,
+            daily_score=None,
+            is_final=is_day_final,
+            scored_components_count=0,
+            pending_components_count=0,
+            components=[],
+            periodic_progress=[],
+            has_entries=False,
+            included_in_averages=False,
+            base_score=None,
+            weekly_adjustment_pp=0.0,
+        )
 
-    components: list[dict[str, Any]] = []
-    periodic_progress: list[dict[str, Any]] = []
+    components: list[DailyScoreComponent] = []
+    periodic_progress: list[PeriodProgressItem] = []
     component_scores: list[float] = []
     pending_components_count = 0
+    weekly_adjustments: list[float] = []
+
+    has_entries = any(state.entry_value is not None for state in goal_states)
 
     for state in goal_states:
         goal = state.goal
-        entry_exists = state.entry_exists
         entry_value = state.entry_value
         period_current_value = state.period_current_value
 
@@ -315,46 +352,35 @@ def build_daily_progress(
 
         is_period_final = period_end < today
 
-        base_component = {
-            "goal_id": goal.id,
-            "name": goal.name,
-            "unit": goal.unit,
-            "period": goal.period,
-            "target_type": goal.target_type,
-            "target_value": float(goal.target_value),
-        }
+        base_component = get_goal_identity(goal)
 
-        # ------------------------------------------------------------
         # DAILY GOALS
-        # ------------------------------------------------------------
         if goal.period == GoalPeriod.DAILY:
             if goal.target_type == GoalTargetType.MIN:
                 result = calculate_daily_min_result(
-                    entry_exists=entry_exists,
                     entry_value=entry_value,
                     target_value=float(goal.target_value),
                     is_day_final=is_day_final,
                 )
             else:
                 result = calculate_daily_max_result(
-                    entry_exists=entry_exists,
                     entry_value=entry_value,
                     target_value=float(goal.target_value),
                     is_day_final=is_day_final,
                 )
 
-            current_value = entry_value if entry_exists else 0.0
+            current_value = entry_value if entry_value is not None else 0.0
             components.append(
-                {
+                DailyScoreComponent(
                     **base_component,
-                    "current_value": current_value,
-                    "score": (
+                    current_value=current_value,
+                    score=(
                         round(result.score, 2) if result.score is not None else None
                     ),
-                    "status": result.status,
-                    "included_in_daily_score": result.included_in_daily_score,
-                    "is_period_limit_penalty": False,
-                }
+                    status=result.status,
+                    included_in_daily_score=result.included_in_daily_score,
+                    is_period_limit_penalty=False,
+                )
             )
 
             if result.included_in_daily_score:
@@ -364,9 +390,18 @@ def build_daily_progress(
 
             continue
 
-        # ------------------------------------------------------------
-        # WEEKLY / MONTHLY GOALS
-        # ------------------------------------------------------------
+        # WEEKLY GOALS
+        # Korekta zależy od wpisu tego dnia, a nie od sumy tygodnia.
+        daily_adjustment_pp = 0.0
+
+        if goal.period == GoalPeriod.WEEKLY and entry_value is not None:
+            daily_adjustment_pp = calculate_weekly_daily_adjustment(
+                target_type=goal.target_type,
+                entry_value=entry_value,
+            )
+            weekly_adjustments.append(daily_adjustment_pp)
+
+        caused_daily_penalty = daily_adjustment_pp < 0
         if goal.target_type == GoalTargetType.MIN:
             period_score = calculate_min_score(
                 current_value=period_current_value,
@@ -384,7 +419,6 @@ def build_daily_progress(
 
             progress_percent: float | None = round(period_score, 2)
             limit_usage_percent: float | None = None
-            caused_daily_penalty = False
 
         else:
             period_score = calculate_max_score(
@@ -392,7 +426,6 @@ def build_daily_progress(
                 target_value=float(goal.target_value),
             )
             period_result = calculate_daily_max_result(
-                entry_exists=True,
                 entry_value=period_current_value,
                 target_value=float(goal.target_value),
                 is_day_final=is_period_final,
@@ -408,58 +441,42 @@ def build_daily_progress(
                 2,
             )
 
-            total_before_day = period_current_value - entry_value
-            caused_daily_penalty = causes_period_max_daily_penalty(
-                entry_value_for_day=entry_value,
-                total_before_day=total_before_day,
-                target_value=float(goal.target_value),
-            )
-
-            if caused_daily_penalty:
-                components.append(
-                    {
-                        **base_component,
-                        "current_value": period_current_value,
-                        "score": 0.0,
-                        "status": ProgressStatus.EXCEEDED,
-                        "included_in_daily_score": True,
-                        "is_period_limit_penalty": True,
-                    }
-                )
-                component_scores.append(0.0)
-
         periodic_progress.append(
-            {
+            PeriodProgressItem(
                 **base_component,
-                "period_start": period_start,
-                "period_end": period_end,
-                "current_value": round(period_current_value, 2),
-                "progress_percent": progress_percent,
-                "limit_usage_percent": limit_usage_percent,
-                "status": period_status,
-                "is_final": is_period_final,
-                "caused_daily_penalty": caused_daily_penalty,
-            }
+                period_start=period_start,
+                period_end=period_end,
+                current_value=round(period_current_value, 2),
+                progress_percent=progress_percent,
+                limit_usage_percent=limit_usage_percent,
+                status=period_status,
+                is_final=is_period_final,
+                caused_daily_penalty=caused_daily_penalty,
+                daily_adjustment_pp=daily_adjustment_pp,
+            )
         )
 
-    daily_score = None
+    score_result = calculate_daily_score(
+        daily_scores=component_scores,
+        weekly_adjustments=weekly_adjustments,
+    )
 
-    if component_scores:
-        daily_score = round(
-            sum(component_scores) / len(component_scores),
-            2,
-        )
+    included_in_averages = is_day_final or has_entries
 
-    return {
-        "date": reference_date,
-        "timezone": get_request_timezone().key,
-        "daily_score": daily_score,
-        "is_final": is_day_final,
-        "scored_components_count": len(component_scores),
-        "pending_components_count": pending_components_count,
-        "components": components,
-        "periodic_progress": periodic_progress,
-    }
+    return DailyProgressResponse(
+        date=reference_date,
+        timezone=get_request_timezone().key,
+        daily_score=score_result.daily_score,
+        base_score=score_result.base_score,
+        weekly_adjustment_pp=score_result.weekly_adjustment_pp,
+        has_entries=has_entries,
+        included_in_averages=included_in_averages,
+        is_final=is_day_final,
+        scored_components_count=len(component_scores),
+        pending_components_count=pending_components_count,
+        components=components,
+        periodic_progress=periodic_progress,
+    )
 
 
 async def get_goal_entries_for_date(
@@ -483,7 +500,7 @@ async def get_goal_entries_for_date(
             target_type=state.goal.target_type,
             target_value=float(state.goal.target_value),
             unit=state.goal.unit,
-            entry_value=(state.entry_value if state.entry_exists else None),
+            entry_value=state.entry_value,
             period_value=round(
                 state.period_current_value,
                 2,
@@ -542,7 +559,7 @@ async def calculate_weekly_progress(
     session: AsyncSession,
     owner_id: UUID,
     reference_date: date,
-) -> dict[str, Any]:
+) -> WeeklyProgressResponse:
     today = get_user_today()
 
     if reference_date > today:
@@ -596,7 +613,7 @@ def build_weekly_progress(
     entries_by_goal: dict[UUID, dict[date, GoalEntryDay]],
     reference_date: date,
     today: date,
-) -> dict[str, Any]:
+) -> WeeklyProgressResponse:
     week_start, week_end = get_period_bounds(
         GoalPeriod.WEEKLY,
         reference_date,
@@ -605,30 +622,22 @@ def build_weekly_progress(
     is_week_final = week_end < today
     calculation_end = week_end if is_week_final else reference_date
 
-    # Monthly goals do not participate in weekly progress yet.
     applicable_goals = [
-        goal
-        for goal in goals
-        if goal.period
-        in {
-            GoalPeriod.DAILY,
-            GoalPeriod.WEEKLY,
-        }
-        and get_goal_created_date(goal) <= calculation_end
+        goal for goal in goals if get_goal_created_date(goal) <= calculation_end
     ]
 
     if not applicable_goals:
-        return {
-            "date": reference_date,
-            "timezone": get_request_timezone().key,
-            "period_start": week_start,
-            "period_end": week_end,
-            "is_final": is_week_final,
-            "weekly_score": None,
-            "items": [],
-        }
+        return WeeklyProgressResponse(
+            date=reference_date,
+            timezone=get_request_timezone().key,
+            period_start=week_start,
+            period_end=week_end,
+            is_final=is_week_final,
+            weekly_score=None,
+            items=[],
+        )
 
-    items: list[dict[str, Any]] = []
+    items: list[WeeklyProgressItem] = []
     final_goal_scores: list[float] = []
 
     for goal in applicable_goals:
@@ -646,18 +655,9 @@ def build_weekly_progress(
             goal_created_date,
         )
 
-        base_item = {
-            "goal_id": goal.id,
-            "name": goal.name,
-            "unit": goal.unit,
-            "period": goal.period,
-            "target_type": goal.target_type,
-            "target_value": float(goal.target_value),
-        }
+        base_item = get_goal_identity(goal)
 
-        # ----------------------------------------------------------
         # DAILY GOALS
-        # ----------------------------------------------------------
         if goal.period == GoalPeriod.DAILY:
             daily_scores: list[float] = []
 
@@ -665,21 +665,19 @@ def build_weekly_progress(
                 goal_start_date,
                 calculation_end,
             ):
-                entry_exists = current_day in goal_entries
-                entry_value = goal_entries[current_day].value if entry_exists else 0.0
+                day_entry = goal_entries.get(current_day)
+                entry_value = day_entry.value if day_entry is not None else None
 
                 is_day_final = current_day < today
 
                 if goal.target_type == GoalTargetType.MIN:
                     result = calculate_daily_min_result(
-                        entry_exists=entry_exists,
                         entry_value=entry_value,
                         target_value=float(goal.target_value),
                         is_day_final=is_day_final,
                     )
                 else:
                     result = calculate_daily_max_result(
-                        entry_exists=entry_exists,
                         entry_value=entry_value,
                         target_value=float(goal.target_value),
                         is_day_final=is_day_final,
@@ -700,26 +698,24 @@ def build_weekly_progress(
                 final_goal_scores.append(final_score)
 
             items.append(
-                {
+                WeeklyProgressItem(
                     **base_item,
-                    "days_counted": len(daily_scores),
-                    "daily_average_score": daily_average_score,
-                    "current_value": None,
-                    "progress_percent": None,
-                    "limit_usage_percent": None,
-                    "score": final_score,
-                    "status": get_weekly_item_status(
+                    days_counted=len(daily_scores),
+                    daily_average_score=daily_average_score,
+                    current_value=None,
+                    progress_percent=None,
+                    limit_usage_percent=None,
+                    score=final_score,
+                    status=get_weekly_item_status(
                         score=final_score,
                         is_week_final=is_week_final,
                     ),
-                    "included_in_weekly_score": (final_score is not None),
-                }
+                    included_in_weekly_score=(final_score is not None),
+                )
             )
             continue
 
-        # ----------------------------------------------------------
         # WEEKLY GOALS
-        # ----------------------------------------------------------
         weekly_current_value = sum(
             entry.value
             for entry_day, entry in goal_entries.items()
@@ -757,26 +753,26 @@ def build_weekly_progress(
             )
 
         items.append(
-            {
+            WeeklyProgressItem(
                 **base_item,
-                "days_counted": None,
-                "daily_average_score": None,
-                "current_value": round(
+                days_counted=None,
+                daily_average_score=None,
+                current_value=round(
                     weekly_current_value,
                     2,
                 ),
-                "progress_percent": (
+                progress_percent=(
                     round(progress_percent, 2) if progress_percent is not None else None
                 ),
-                "limit_usage_percent": (
+                limit_usage_percent=(
                     round(limit_usage_percent, 2)
                     if limit_usage_percent is not None
                     else None
                 ),
-                "score": (round(final_score, 2) if final_score is not None else None),
-                "status": status,
-                "included_in_weekly_score": (final_score is not None),
-            }
+                score=(round(final_score, 2) if final_score is not None else None),
+                status=status,
+                included_in_weekly_score=(final_score is not None),
+            )
         )
 
     weekly_score = calculate_weekly_score(
@@ -784,15 +780,25 @@ def build_weekly_progress(
         is_week_final=is_week_final,
     )
 
-    return {
-        "date": reference_date,
-        "timezone": get_request_timezone().key,
-        "period_start": week_start,
-        "period_end": week_end,
-        "is_final": is_week_final,
-        "weekly_score": weekly_score,
-        "items": items,
-    }
+    return WeeklyProgressResponse(
+        date=reference_date,
+        timezone=get_request_timezone().key,
+        period_start=week_start,
+        period_end=week_end,
+        is_final=is_week_final,
+        weekly_score=weekly_score,
+        items=items,
+    )
+
+
+def to_day_progress(
+    daily_progress: DailyProgressResponse,
+    weekly_progress: WeeklyProgressResponse | None,
+) -> DayProgressResponse:
+    return DayProgressResponse(
+        **dict(daily_progress),
+        weekly_progress=weekly_progress,
+    )
 
 
 def is_end_of_week(reference_date: date) -> bool:
@@ -804,7 +810,7 @@ async def calculate_progress_range(
     owner_id: UUID,
     date_from: date,
     date_to: date,
-) -> list[dict[str, Any]]:
+) -> list[DayProgressResponse]:
     """
     Liczy daily_progress dla każdego dnia z [date_from, date_to]
     oraz weekly_progress dla dni będących końcem tygodnia (niedziela).
@@ -827,14 +833,14 @@ async def calculate_progress_range(
 
     if not goals:
         return [
-            {
-                **build_daily_progress(
+            to_day_progress(
+                build_daily_progress(
                     goal_states=[],
                     reference_date=day,
                     today=today,
                 ),
-                "weekly_progress": None,
-            }
+                weekly_progress=None,
+            )
             for day in iter_dates(date_from, date_to)
         ]
 
@@ -853,7 +859,7 @@ async def calculate_progress_range(
         date_to=date_to,
     )
 
-    results: list[dict[str, Any]] = []
+    results: list[DayProgressResponse] = []
 
     for day in iter_dates(date_from, date_to):
         goal_states = build_goal_day_states(
@@ -878,11 +884,6 @@ async def calculate_progress_range(
                 today=today,
             )
 
-        results.append(
-            {
-                **day_progress,
-                "weekly_progress": weekly_progress,
-            }
-        )
+        results.append(to_day_progress(day_progress, weekly_progress))
 
     return results

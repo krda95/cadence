@@ -134,7 +134,7 @@ def test_build_daily_progress_reports_request_timezone():
         today=date(2026, 3, 10),
     )
 
-    assert result["timezone"] == "America/New_York"
+    assert result.timezone == "America/New_York"
 
 
 class FakeResult:
@@ -243,9 +243,7 @@ async def test_api_defaults_to_utc_without_header(api_overrides):
     assert response.json()["timezone"] == "UTC"
 
 
-async def test_api_default_date_is_today_in_header_timezone(
-    api_overrides, frozen_now
-):
+async def test_api_default_date_is_today_in_header_timezone(api_overrides, frozen_now):
     warsaw = (await get_daily({TIMEZONE_HEADER: "Europe/Warsaw"})).json()
     new_york = (await get_daily({TIMEZONE_HEADER: "America/New_York"})).json()
 
