@@ -25,6 +25,10 @@ const SCORE = {
   is_final: false,
   scored_components_count: 2,
   pending_components_count: 1,
+  has_entries: true,
+  included_in_averages: true,
+  base_score: 0,
+  weekly_adjustment_pp: 0,
 } as DailyProgressResponse;
 
 describe('Today', () => {

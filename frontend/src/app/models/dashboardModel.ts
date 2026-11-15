@@ -2,6 +2,7 @@ export interface DashboardTodayResponse {
   score: number | null;
   scored_components_count: number;
   pending_components_count: number;
+  has_entries: boolean;
 }
 
 export interface DashboardWeekResponse {
@@ -15,6 +16,7 @@ export interface DashboardStreakResponse {
 }
 
 export interface DashboardActivityDayResponse {
+  included_in_averages: boolean;
   date: string;
   score: number | null;
 }

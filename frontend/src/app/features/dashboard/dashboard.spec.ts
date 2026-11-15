@@ -7,7 +7,7 @@ import { DashboardResponse } from '@models/dashboardModel';
 import { Dashboard } from './dashboard';
 
 const RESPONSE: DashboardResponse = {
-  today: { score: 82, scored_components_count: 3, pending_components_count: 1 },
+  today: { score: 82, scored_components_count: 3, pending_components_count: 1, has_entries: true },
   week: { score: null, days_count: 1 },
   previous_week: { score: null, days_count: 0 },
   streak: { current: 0, longest: 5 },
@@ -18,7 +18,13 @@ const RESPONSE: DashboardResponse = {
     date_to: '2026-11-08',
     min_offset: 0,
     max_offset: 3,
-    data: [{ date: '2026-11-02', score: 40 }],
+    data: [
+      {
+        date: '2026-11-02',
+        score: 40,
+        included_in_averages: true,
+      },
+    ],
   },
 };
 

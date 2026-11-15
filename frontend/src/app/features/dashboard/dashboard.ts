@@ -60,7 +60,15 @@ export class Dashboard {
 
     return Math.round(data.week.score - data.previous_week.score);
   });
-  readonly todayBand = computed(() => scoreBand(this.data()?.today.score ?? null));
+  readonly todayBand = computed(() => {
+    const today = this.data()?.today;
+
+    if (!today) {
+      return scoreBand(null);
+    }
+
+    return scoreBand(today.score, !today.has_entries);
+  });
   readonly currentStreakColor = computed(() => streakColor(this.data()?.streak.current ?? 0));
   readonly longestStreakColor = computed(() => streakColor(this.data()?.streak.longest ?? 0));
 }

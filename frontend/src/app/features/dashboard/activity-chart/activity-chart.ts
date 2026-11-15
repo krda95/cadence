@@ -77,7 +77,10 @@ export class ActivityChart {
       return {
         ...day,
         height: day.score ?? 0,
-        color: day.score === null ? 'var(--color-border)' : scoreBand(day.score).color,
+        color:
+          day.score === null
+            ? 'var(--color-border)'
+            : scoreBand(day.score, !day.included_in_averages).color,
         label: this.axisLabel(date),
       };
     }),

@@ -32,9 +32,14 @@ export interface PeriodProgressItem {
   status: ProgressStatus;
   is_final: boolean;
   caused_daily_penalty: boolean;
+  daily_adjustment_pp: number;
 }
 
 export interface DailyProgressResponse {
+  has_entries: boolean;
+  included_in_averages: boolean;
+  base_score: number | null;
+  weekly_adjustment_pp: number;
   date: string;
   timezone: string;
   daily_score: number | null;
@@ -82,4 +87,8 @@ export interface DayProgressResponse {
   components: DailyScoreComponent[];
   periodic_progress: PeriodProgressItem[];
   weekly_progress: WeeklyProgressResponse | null;
+  has_entries: boolean;
+  included_in_averages: boolean;
+  base_score: number | null;
+  weekly_adjustment_pp: number;
 }

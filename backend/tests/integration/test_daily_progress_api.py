@@ -1,12 +1,11 @@
 import os
-from typing import Optional
 import uuid
 from datetime import datetime
+from typing import Optional
 from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
-
 
 pytestmark = pytest.mark.integration
 
@@ -106,18 +105,16 @@ def find_item_by_name(items: list[dict], name: str) -> dict:
     raise AssertionError(f"Item named '{name}' was not found.")
 
 
-def test_daily_progress_with_weekly_max_penalty() -> None:
+def test_daily_progress_with_weekly_adjustments() -> None:
     """
-    Scenario:
+    Daily goals contribute scores of 100%, 0% and 100%.
+    Their average is 66.67%.
 
-    - Kroki daily min: 12 000 / 10 000 -> 100
-    - Kalorie daily max: 2 300 / 2 200 -> 0
-    - Czytanie daily min: 20 / 20 -> 100
-    - Treningi weekly min: 2 / 4 -> does not affect daily score
-    - Alkohol weekly max: 3 / 2 -> daily penalty 0
+    The weekly workout entry adds 5 percentage points.
+    The weekly alcohol entry subtracts 5 percentage points.
+    Both adjustments apply once per goal, regardless of entry quantity.
 
-    Expected daily score:
-    (100 + 0 + 100 + 0) / 4 = 50
+    The alcohol penalty also applies within the weekly limit.
     """
     unique_suffix = uuid.uuid4().hex[:8]
     today = datetime.now(WARSAW_TIMEZONE).date()
@@ -242,53 +239,53 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
 
             payload = response.json()
 
-            assert payload["date"] == today_string
+                        assert payload["date"] == today_string
             assert payload["timezone"] == "Europe/Warsaw"
             assert payload["is_final"] is False
+            assert payload["has_entries"] is True
+            assert payload["included_in_averages"] is True
 
-            # The account may hold other goals, so check only this test's components.
+            # Wybieramy cele utworzone przez ten test.
             test_components = [
                 component
                 for component in payload["components"]
-                if component["name"].startswith(f"[TEST {unique_suffix}]")
-                and component["included_in_daily_score"]
+                if component["goal_id"] in created_goal_ids
             ]
-            assert len(test_components) == 4
-            assert (
-                round(
-                    sum(component["score"] for component in test_components)
-                    / len(test_components),
-                    2,
-                )
-                == 50.0
-            )
+
+            # Bazę tworzą wyłącznie trzy cele daily.
+            assert len(test_components) == 3
+
+            for component in test_components:
+                assert component["period"] == "daily"
+                assert component["included_in_daily_score"] is True
+                assert component["is_period_limit_penalty"] is False
 
             steps_component = find_item_by_name(
-                payload["components"],
+                test_components,
                 f"[TEST {unique_suffix}] Kroki",
             )
             assert steps_component["score"] == 100.0
-            assert steps_component["included_in_daily_score"] is True
 
             calories_component = find_item_by_name(
-                payload["components"],
+                test_components,
                 f"[TEST {unique_suffix}] Kalorie",
             )
             assert calories_component["score"] == 0.0
             assert calories_component["status"] == "exceeded"
 
             reading_component = find_item_by_name(
-                payload["components"],
+                test_components,
                 f"[TEST {unique_suffix}] Czytanie",
             )
             assert reading_component["score"] == 100.0
 
-            alcohol_component = find_item_by_name(
-                payload["components"],
-                f"[TEST {unique_suffix}] Alkohol",
-            )
-            assert alcohol_component["score"] == 0.0
-            assert alcohol_component["is_period_limit_penalty"] is True
+            test_daily_scores = [
+                component["score"]
+                for component in test_components
+            ]
+            test_base_score = sum(test_daily_scores) / len(test_daily_scores)
+
+            assert round(test_base_score, 2) == 66.67
 
             workouts_progress = find_item_by_name(
                 payload["periodic_progress"],
@@ -298,6 +295,7 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
             assert workouts_progress["target_value"] == 4.0
             assert workouts_progress["status"] == "in_progress"
             assert workouts_progress["caused_daily_penalty"] is False
+            assert workouts_progress["daily_adjustment_pp"] == 5.0
 
             alcohol_progress = find_item_by_name(
                 payload["periodic_progress"],
@@ -307,6 +305,58 @@ def test_daily_progress_with_weekly_max_penalty() -> None:
             assert alcohol_progress["target_value"] == 2.0
             assert alcohol_progress["status"] == "exceeded"
             assert alcohol_progress["caused_daily_penalty"] is True
+            assert alcohol_progress["daily_adjustment_pp"] == -5.0
+
+            # Wynik całego konta uwzględnia też ewentualne inne cele.
+            expected_daily_score = (
+                payload["base_score"] + payload["weekly_adjustment_pp"]
+            )
+
+            if expected_daily_score > 100.0:
+                expected_daily_score = 100.0
+            elif expected_daily_score < 0.0:
+                expected_daily_score = 0.0
+
+            assert payload["daily_score"] == pytest.approx(
+                expected_daily_score,
+                abs=0.01,
+            )
+
+            # Nadpisujemy 3 drinki wartością 1.
+            # Kara dzienna obowiązuje również w tygodniowym limicie.
+            upsert_entry(
+                client,
+                headers,
+                goal_id=alcohol["id"],
+                entry_date=today_string,
+                value=1,
+            )
+
+            response = client.get(
+                f"{GOALS_PATH}/progress/daily",
+                headers=headers,
+                params={"date": today_string},
+            )
+
+            assert response.status_code == 200, response.text
+
+            updated_payload = response.json()
+
+            updated_alcohol_progress = find_item_by_name(
+                updated_payload["periodic_progress"],
+                f"[TEST {unique_suffix}] Alkohol",
+            )
+
+            assert updated_alcohol_progress["current_value"] == 1.0
+            assert updated_alcohol_progress["status"] == "in_progress"
+            assert updated_alcohol_progress["caused_daily_penalty"] is True
+            assert updated_alcohol_progress["daily_adjustment_pp"] == -5.0
+
+            assert (
+                updated_payload["weekly_adjustment_pp"]
+                == payload["weekly_adjustment_pp"]
+            )
+            assert updated_payload["daily_score"] == payload["daily_score"]
 
         finally:
             for goal_id in created_goal_ids:

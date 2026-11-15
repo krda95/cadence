@@ -63,7 +63,17 @@ export class Today {
   readonly isEmpty = computed(() => this.goalsResource.hasValue() && this.goals().length === 0);
 
   readonly scoreValue = computed(() => this.score()?.daily_score ?? null);
-  readonly band = computed(() => scoreBand(this.scoreValue()));
+  readonly band = computed(() => {
+    const progress = this.score();
+
+    if (!progress) {
+      return scoreBand(null);
+    }
+
+    const isPending = !progress.is_final && !progress.has_entries;
+
+    return scoreBand(progress.daily_score, isPending);
+  });
 
   startEditing(goalId: string): void {
     this.saveError.set(null);
