@@ -72,8 +72,33 @@
         </div>
       }
     </dl>
+  </section>
+  <section class="settings-section" aria-labelledby="settings-weekly-scoring">
+    <h2 class="settings-section__title" id="settings-weekly-scoring">
+      Weekly bonuses &amp; penalties
+    </h2>
 
-    <p class="settings-section__hint">These ranges are fixed for now.</p>
+    <dl class="thresholds">
+      <div class="threshold" style="--tone: var(--color-score-great)">
+        <dt class="threshold__label">
+          <span class="threshold__dot" aria-hidden="true"></span>
+          Weekly minimum
+        </dt>
+        <dd class="threshold__value">+5 pp</dd>
+      </div>
+
+      <div class="threshold" style="--tone: var(--color-score-needs-work)">
+        <dt class="threshold__label">
+          <span class="threshold__dot" aria-hidden="true"></span>
+          Weekly maximum
+        </dt>
+        <dd class="threshold__value">−5 pp</dd>
+      </div>
+    </dl>
+
+    <p class="settings-section__hint">
+      Bonuses and penalties are added together, then capped at −10 to +10 percentage points.
+    </p>
   </section>
   <section class="settings-section" aria-labelledby="settings-about">
     <h2 class="settings-section__title" id="settings-about">About</h2>

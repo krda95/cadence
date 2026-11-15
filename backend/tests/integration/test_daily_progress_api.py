@@ -239,7 +239,7 @@ def test_daily_progress_with_weekly_adjustments() -> None:
 
             payload = response.json()
 
-                        assert payload["date"] == today_string
+            assert payload["date"] == today_string
             assert payload["timezone"] == "Europe/Warsaw"
             assert payload["is_final"] is False
             assert payload["has_entries"] is True
