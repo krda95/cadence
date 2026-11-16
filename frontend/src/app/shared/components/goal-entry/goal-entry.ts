@@ -21,6 +21,14 @@ import { Button } from '@shared/ui/button/button';
 import { Icon } from '@shared/ui/icon/icon';
 import { InputComponent } from '@shared/ui/input/input';
 
+/** What today's entry of a weekly goal does to the daily score. */
+export interface DailyImpact {
+  /** +5 / -5 pp before the threshold is crossed, otherwise 0. */
+  adjustmentPp: number;
+  /** 0 or 100 once the threshold is crossed (the goal counts in the average), otherwise null. */
+  countedScore: number | null;
+}
+
 @Component({
   selector: 'app-goal-entry',
   templateUrl: './goal-entry.html',
@@ -34,6 +42,7 @@ export class GoalEntry {
   readonly isEditing = input(false);
   readonly isSaving = input(false);
   readonly saveError = input<string | null>(null);
+  readonly dailyImpact = input<DailyImpact | null>(null);
 
   readonly entryValue = signal<number | null>(null);
   readonly entryNote = signal('');
@@ -64,6 +73,34 @@ export class GoalEntry {
     const goal = this.goal();
 
     return goal.period === 'daily' ? 0 : goal.period_value - (goal.entry_value ?? 0);
+  });
+
+  /** Small tag under the goal name, shown only for a weekly goal with an entry today. */
+  readonly impactTag = computed<{ text: string; tone: 'positive' | 'negative' } | null>(() => {
+    const goal = this.goal();
+    const impact = this.dailyImpact();
+    const hasEntryToday = (goal.entry_value ?? 0) > 0;
+
+    if (!impact || !this.isWeekly() || !hasEntryToday) {
+      return null;
+    }
+
+    if (impact.adjustmentPp > 0) {
+      return { text: 'Bonus', tone: 'positive' };
+    }
+
+    if (impact.adjustmentPp < 0) {
+      return { text: 'Penalty', tone: 'negative' };
+    }
+
+    if (impact.countedScore !== null) {
+      // The threshold is crossed: a minimum is reached (good), a maximum is breached (bad).
+      return goal.target_type === 'min'
+        ? { text: 'Reached', tone: 'positive' }
+        : { text: 'Breached', tone: 'negative' };
+    }
+
+    return null;
   });
 
   readonly progressPercent = computed(() => {

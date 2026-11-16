@@ -5,7 +5,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { GoalsService } from '@core/api/goals.service';
 import { AssistantService } from '@core/api/assistant.service';
 
-import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
+import { DailyImpact, GoalEntry } from '@shared/components/goal-entry/goal-entry';
 import { ScrollHeader } from '@shared/components/scroll-header/scroll-header';
 import { scoreBand } from '@shared/utils/score-band';
 import { RouterLink } from '@angular/router';
@@ -54,6 +54,30 @@ export class Today {
   readonly score = computed(() =>
     this.scoreResource.hasValue() ? this.scoreResource.value() : null,
   );
+
+  /** Per weekly goal: how today's entry changes the daily score (from the daily progress). */
+  readonly dailyImpacts = computed(() => {
+    const impacts = new Map<string, DailyImpact>();
+    const score = this.score();
+
+    if (!score) {
+      return impacts;
+    }
+
+    for (const item of score.periodic_progress ?? []) {
+      impacts.set(item.goal_id, { adjustmentPp: item.daily_adjustment_pp, countedScore: null });
+    }
+
+    for (const component of score.components ?? []) {
+      if (component.period !== 'weekly') {
+        continue;
+      }
+
+      impacts.set(component.goal_id, { adjustmentPp: 0, countedScore: component.score });
+    }
+
+    return impacts;
+  });
 
   readonly sections = computed(() => [
     { title: 'Daily', goals: this.goals().filter((goal) => goal.period === 'daily') },

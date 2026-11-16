@@ -128,6 +128,64 @@ describe('GoalEntry', () => {
     expect(component.canSave()).toBe(false);
   });
 
+  describe('daily impact tag', () => {
+    const tag = () =>
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('.goal-entry__impact')
+        ?.textContent?.trim();
+
+    function renderWeekly(
+      goal: GoalEntryDayResponse,
+      impact: { adjustmentPp: number; countedScore: number | null } | null,
+    ): void {
+      fixture.componentRef.setInput('dailyImpact', impact);
+      render(goal);
+    }
+
+    it('shows a bonus for a weekly minimum below its target', () => {
+      renderWeekly(WEEKLY, { adjustmentPp: 5, countedScore: null });
+      expect(tag()).toBe('Bonus');
+    });
+
+    it('shows a penalty for a weekly maximum that is still within its limit', () => {
+      renderWeekly({ ...WEEKLY, target_type: 'max' }, { adjustmentPp: -5, countedScore: null });
+      expect(tag()).toBe('Penalty');
+    });
+
+    it('shows that a crossed threshold counts in the average', () => {
+      renderWeekly({ ...WEEKLY, target_type: 'max' }, { adjustmentPp: 0, countedScore: 0 });
+      expect(tag()).toBe('Breached');
+
+      renderWeekly(WEEKLY, { adjustmentPp: 0, countedScore: 100 });
+      expect(tag()).toBe('Reached');
+    });
+
+    it('shows nothing without an entry today or for daily goals', () => {
+      renderWeekly(
+        { ...WEEKLY, entry_value: null, period_value: 3 },
+        {
+          adjustmentPp: 5,
+          countedScore: null,
+        },
+      );
+      expect(tag()).toBeUndefined();
+
+      renderWeekly(DAILY, { adjustmentPp: 5, countedScore: null });
+      expect(tag()).toBeUndefined();
+
+      renderWeekly(WEEKLY, null);
+      expect(tag()).toBeUndefined();
+    });
+  });
+
+  it('uses the same wording for earlier weekly progress in both modes', () => {
+    render(WEEKLY);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Earlier this week: 3 km');
+
+    render(WEEKLY, true);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Earlier this week: 3 km');
+  });
+
   it('keeps the editor open after saving; the parent closes it on success', () => {
     render(DAILY, true);
     let cancelled = 0;

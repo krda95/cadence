@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import moment from 'moment';
 
 import { GoalEntryDayResponse } from '@models/goalModel';
@@ -42,7 +43,7 @@ describe('History', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [History],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);

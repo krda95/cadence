@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 
 import { AuthService } from '@core/services/auth.service';
 import { UserProfile } from '@models/loginModel';
@@ -15,7 +16,7 @@ describe('Settings', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Settings],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     auth = TestBed.inject(AuthService);
@@ -46,9 +47,9 @@ describe('Settings', () => {
   it('lists the score bands from the shared thresholds', () => {
     fixture.detectChanges();
 
-    const values = Array.from(el().querySelectorAll('.threshold__value')).map((node) =>
-      node.textContent?.trim(),
-    );
+    const values = Array.from(
+      el().querySelectorAll('[aria-labelledby="settings-thresholds"] .threshold__value'),
+    ).map((node) => node.textContent?.trim());
 
     expect(values).toEqual(['91–100%', '76–90%', '61–75%', '0–60%']);
   });

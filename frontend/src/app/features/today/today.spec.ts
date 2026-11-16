@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 
 import { DailyProgressResponse } from '@models/progressModel';
 import { GoalEntryDayResponse } from '@models/goalModel';
@@ -47,7 +48,7 @@ describe('Today', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Today],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);
@@ -158,5 +159,27 @@ describe('Today', () => {
     expect(component.editingGoalId()).toBe('g1');
     expect(component.saveError()).toContain("Couldn't delete");
     expect(component.savingGoalId()).toBeNull();
+  });
+
+  it('passes the weekly bonus or penalty of a goal to its card', async () => {
+    const weekly = {
+      ...GOAL,
+      goal_id: 'g2',
+      name: 'Beer',
+      period: 'weekly' as const,
+      target_type: 'max' as const,
+      target_value: 2,
+      entry_value: 1,
+      period_value: 1,
+    };
+    entries().flush([weekly]);
+    daily().flush({
+      ...SCORE,
+      components: [],
+      periodic_progress: [{ goal_id: 'g2', daily_adjustment_pp: -5 }],
+    } as unknown as DailyProgressResponse);
+    await settle();
+
+    expect(el().querySelector('.goal-entry__impact')?.textContent).toContain('Penalty');
   });
 });

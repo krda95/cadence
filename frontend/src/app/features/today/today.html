@@ -72,6 +72,7 @@
             @for (goal of section.goals; track goal.goal_id) {
               <app-goal-entry
                 [goal]="goal"
+                [dailyImpact]="dailyImpacts().get(goal.goal_id) ?? null"
                 [isEditing]="editingGoalId() === goal.goal_id"
                 [isSaving]="savingGoalId() === goal.goal_id"
                 [saveError]="editingGoalId() === goal.goal_id ? saveError() : null"

@@ -10,6 +10,9 @@
         <span class="goal-entry__kind">
           {{ goal().target_type === 'min' ? 'At least' : 'At most' }}
         </span>
+        @if (impactTag(); as tag) {
+          <span class="goal-entry__impact" [attr.data-tone]="tag.tone">{{ tag.text }}</span>
+        }
       </div>
     </div>
 
@@ -62,7 +65,7 @@
 
         @if (isWeekly() && todayValue() > 0) {
           <p class="goal-entry__hint">
-            Before today: {{ valueBeforeToday() | number: '1.0-2' }} {{ goal().unit }}
+            Earlier this week: {{ valueBeforeToday() | number: '1.0-2' }} {{ goal().unit }}
           </p>
         }
       </div>
@@ -82,7 +85,7 @@
       <div class="goal-entry__editor">
         @if (isWeekly()) {
           <p class="goal-entry__hint">
-            Week total · {{ valueBeforeToday() | number: '1.0-2' }} {{ goal().unit }} before today
+            Earlier this week: {{ valueBeforeToday() | number: '1.0-2' }} {{ goal().unit }}
           </p>
         }
 

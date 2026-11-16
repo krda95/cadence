@@ -1,6 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+  TestRequest,
+} from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 
 import { DashboardResponse } from '@models/dashboardModel';
@@ -37,6 +41,16 @@ describe('Dashboard', () => {
   // The dashboard and the activity chart both request /dashboard.
   const dashboardRequests = () => http.match((req) => req.url.endsWith('/dashboard'));
 
+  // Answers the pending /dashboard requests and lets the page render. fixture.whenStable() is not
+  // used: the activity chart keeps the zone busy, so it never resolves in this test setup.
+  async function flushAllDashboardRequests(answer: (req: TestRequest) => void): Promise<void> {
+    dashboardRequests().forEach(answer);
+    fixture.detectChanges();
+
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+  }
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Dashboard],
@@ -53,32 +67,38 @@ describe('Dashboard', () => {
     expect(dashboardRequests().length).toBeGreaterThan(0);
   });
 
-  it('renders scores, handles a null week score and pluralises', async () => {
-    dashboardRequests().forEach((req) => req.flush(RESPONSE));
-    await fixture.whenStable();
-    fixture.detectChanges();
+  it('shows the first-week message when no week has a score yet', async () => {
+    await flushAllDashboardRequests((req) => req.flush(RESPONSE));
 
     const rings = el().querySelectorAll('.score-ring[role="img"]');
-    expect(rings[0].getAttribute('aria-label')).toBe('This week: no score');
-    expect(rings[1].getAttribute('aria-label')).toContain('Today: 82%');
-    expect(el().querySelector('.week-card .stat__label')?.textContent?.trim()).toBe('day counted');
+    expect(el().querySelector('.week-card')?.textContent).toContain('Your journey starts here');
+    expect(rings[0].getAttribute('aria-label')).toContain('Today: 82%');
+  });
+
+  it('falls back to last week when this week has no score and pluralises the days', async () => {
+    const withLastWeek: DashboardResponse = {
+      ...RESPONSE,
+      previous_week: { score: 70, days_count: 3 },
+    };
+
+    await flushAllDashboardRequests((req) => req.flush(withLastWeek));
+
+    const rings = el().querySelectorAll('.score-ring[role="img"]');
+    expect(rings[0].getAttribute('aria-label')).toContain('Last week: 70%');
+    expect(el().querySelector('.week-card .stat__label')?.textContent?.trim()).toBe('days counted');
   });
 
   it('shows an error with retry that reloads the data', async () => {
-    dashboardRequests().forEach((req) =>
+    await flushAllDashboardRequests((req) =>
       req.flush('boom', { status: 500, statusText: 'Server Error' }),
     );
-    await fixture.whenStable();
-    fixture.detectChanges();
 
     const retry = el().querySelector<HTMLButtonElement>('.dashboard__retry');
     expect(retry).toBeTruthy();
 
     retry!.click();
     fixture.detectChanges();
-    dashboardRequests().forEach((req) => req.flush(RESPONSE));
-    await fixture.whenStable();
-    fixture.detectChanges();
+    await flushAllDashboardRequests((req) => req.flush(RESPONSE));
 
     expect(el().querySelector('.dashboard__retry')).toBeNull();
     expect(el().querySelector('.today-card')).toBeTruthy();
