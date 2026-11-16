@@ -9,7 +9,7 @@ from app.services.progress_rules import (
     calculate_max_score,
     calculate_min_score,
     calculate_period_score,
-    calculate_weekly_daily_adjustment,
+    calculate_weekly_entry_effect,
     calculate_weekly_score,
     causes_period_max_daily_penalty,
 )
@@ -280,28 +280,37 @@ def test_weekly_score_without_eligible_goals_is_none() -> None:
 
 
 @pytest.mark.parametrize(
-    ("target_type", "entry_value", "expected"),
+    ("target_type", "entry_value", "period_total", "target_value", "adjustment", "component"),
     [
-        (GoalTargetType.MIN, 0, 0.0),
-        (GoalTargetType.MIN, 1, 5.0),
-        (GoalTargetType.MIN, 2, 5.0),
-        (GoalTargetType.MAX, 0, 0.0),
-        (GoalTargetType.MAX, 1, -5.0),
-        (GoalTargetType.MAX, 2, -5.0),
+        (GoalTargetType.MIN, 0, 0, 4, 0.0, None),
+        (GoalTargetType.MIN, 1, 1, 4, 5.0, None),
+        (GoalTargetType.MIN, 3, 3, 4, 5.0, None),
+        (GoalTargetType.MIN, 1, 4, 4, 0.0, 100.0),
+        (GoalTargetType.MIN, 1, 6, 4, 0.0, 100.0),
+        (GoalTargetType.MAX, 0, 3, 2, 0.0, None),
+        (GoalTargetType.MAX, 1, 1, 2, -5.0, None),
+        (GoalTargetType.MAX, 1, 2, 2, -5.0, None),
+        (GoalTargetType.MAX, 1, 3, 2, 0.0, 0.0),
+        (GoalTargetType.MAX, 1, 5, 2, 0.0, 0.0),
     ],
 )
-def test_weekly_daily_adjustment(
+def test_weekly_entry_effect(
     target_type: GoalTargetType,
     entry_value: float,
-    expected: float,
+    period_total: float,
+    target_value: float,
+    adjustment: float,
+    component: float | None,
 ) -> None:
-    assert (
-        calculate_weekly_daily_adjustment(
-            target_type=target_type,
-            entry_value=entry_value,
-        )
-        == expected
+    effect = calculate_weekly_entry_effect(
+        target_type=target_type,
+        entry_value=entry_value,
+        period_total=period_total,
+        target_value=target_value,
     )
+
+    assert effect.adjustment_pp == adjustment
+    assert effect.component_score == component
 
 
 @pytest.mark.parametrize(

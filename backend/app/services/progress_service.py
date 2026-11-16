@@ -31,7 +31,7 @@ from app.services.progress_rules import (
     calculate_max_score,
     calculate_min_score,
     calculate_period_score,
-    calculate_weekly_daily_adjustment,
+    calculate_weekly_entry_effect,
     calculate_weekly_score,
 )
 
@@ -391,15 +391,40 @@ def build_daily_progress(
             continue
 
         # WEEKLY GOALS
-        # Korekta zależy od wpisu tego dnia, a nie od sumy tygodnia.
+        # Wpis tego dnia + suma tygodnia decydują, co dzieje się z wynikiem dnia:
+        # - przed progiem: korekta +5 / -5 pp,
+        # - po przekroczeniu progu: cel wchodzi do średniej (100% MIN / 0% MAX).
         daily_adjustment_pp = 0.0
 
         if goal.period == GoalPeriod.WEEKLY and entry_value is not None:
-            daily_adjustment_pp = calculate_weekly_daily_adjustment(
+            effect = calculate_weekly_entry_effect(
                 target_type=goal.target_type,
                 entry_value=entry_value,
+                period_total=period_current_value,
+                target_value=float(goal.target_value),
             )
-            weekly_adjustments.append(daily_adjustment_pp)
+            daily_adjustment_pp = effect.adjustment_pp
+
+            if effect.adjustment_pp != 0.0:
+                weekly_adjustments.append(effect.adjustment_pp)
+
+            if effect.component_score is not None:
+                is_max_goal = goal.target_type == GoalTargetType.MAX
+                components.append(
+                    DailyScoreComponent(
+                        **base_component,
+                        current_value=period_current_value,
+                        score=effect.component_score,
+                        status=(
+                            ProgressStatus.EXCEEDED
+                            if is_max_goal
+                            else ProgressStatus.ACHIEVED
+                        ),
+                        included_in_daily_score=True,
+                        is_period_limit_penalty=is_max_goal,
+                    )
+                )
+                component_scores.append(effect.component_score)
 
         caused_daily_penalty = daily_adjustment_pp < 0
         if goal.target_type == GoalTargetType.MIN:

@@ -24,3 +24,5 @@ htmlcov/
 
 # Custom files
 /demo/
+# Local planning docs (superpowers)
+docs/superpowers/

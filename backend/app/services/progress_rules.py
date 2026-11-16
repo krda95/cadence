@@ -15,6 +15,12 @@ class ScoreResult:
 
 
 @dataclass(frozen=True)
+class WeeklyEntryEffect:
+    adjustment_pp: float  # +5.0, -5.0 or 0.0
+    component_score: float | None  # 0.0 / 100.0 once the threshold is crossed
+
+
+@dataclass(frozen=True)
 class DailyScoreResult:
     base_score: float
     weekly_adjustment_pp: float
@@ -197,18 +203,42 @@ def calculate_weekly_score(
     return calculate_average_score(goal_scores)
 
 
-def calculate_weekly_daily_adjustment(
+def calculate_weekly_entry_effect(
     target_type: GoalTargetType,
     entry_value: float,
-) -> float:
-    """Adds an adjustment for a daily score, based on the status of the weekly goal."""
+    period_total: float,
+    target_value: float,
+) -> WeeklyEntryEffect:
+    """
+    What a single day's entry of a weekly goal does to the daily score.
+
+    period_total is the week total up to and including this day.
+
+    Step 1: no positive entry -> nothing happens.
+    Step 2: MIN goal
+      - target reached (total >= target) -> counts as 100% in the average
+      - otherwise -> +5 p.p. bonus
+    Step 3: MAX goal
+      - limit exceeded (total > limit) -> counts as 0% in the average
+      - otherwise (also exactly at the limit) -> -5 p.p. penalty
+    """
     if entry_value <= 0:
-        return 0.0
+        return WeeklyEntryEffect(adjustment_pp=0.0, component_score=None)
 
     if target_type == GoalTargetType.MIN:
-        return WEEKLY_MIN_BONUS_PP
+        if period_total >= target_value:
+            return WeeklyEntryEffect(adjustment_pp=0.0, component_score=100.0)
+        return WeeklyEntryEffect(
+            adjustment_pp=WEEKLY_MIN_BONUS_PP,
+            component_score=None,
+        )
 
-    return WEEKLY_MAX_PENALTY_PP
+    if period_total > target_value:
+        return WeeklyEntryEffect(adjustment_pp=0.0, component_score=0.0)
+    return WeeklyEntryEffect(
+        adjustment_pp=WEEKLY_MAX_PENALTY_PP,
+        component_score=None,
+    )
 
 
 def calculate_daily_score(
@@ -217,7 +247,8 @@ def calculate_daily_score(
 ) -> DailyScoreResult:
     """
     Calculates the final daily score, including weekly adjustments.
-    - base_score: average of daily scores for all goals;
+    - base_score: average of daily scores for all goals, including weekly goals
+      that crossed their threshold (0% or 100%);
     - weekly_adjustment_pp: sum of weekly adjustments, limited to ±10 p.p.;
     - daily_score: base_score + weekly_adjustment_pp, limited to 0-100
     """
