@@ -18,6 +18,7 @@ import { DayProgressResponse } from '@models/progressModel';
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
 import { ScrollHeader } from '@shared/components/scroll-header/scroll-header';
 import { Button } from '@shared/ui/button/button';
+import { buildDailyImpacts } from '@shared/utils/daily-impact';
 import { scoreBand } from '@shared/utils/score-band';
 import { RouterLink } from '@angular/router';
 
@@ -89,6 +90,14 @@ export class History {
   >({
     source: () => (this.rangeResource.hasValue() ? this.rangeResource.value() : undefined),
     computation: (scores, previous) => scores ?? previous?.value ?? null,
+  });
+
+  /** Per weekly goal: how the selected day's entry changed that day's score. */
+  readonly dailyImpacts = computed(() => {
+    const selected = this.selectedDate();
+    const day = this.rangeScore()?.find((item) => moment(item.date).isSame(selected, 'd'));
+
+    return buildDailyImpacts(day ?? null);
   });
 
   readonly sections = computed(() => [

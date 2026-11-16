@@ -197,4 +197,28 @@ describe('History', () => {
     expect(pill?.getAttribute('aria-hidden')).toBe('true');
     expect(el().querySelector('.selectedDate')).toBeTruthy();
   });
+
+  it('shows the bonus or penalty of a weekly goal on the selected day', async () => {
+    const weekly = {
+      ...GOAL,
+      goal_id: 'g2',
+      name: 'Beer',
+      period: 'weekly' as const,
+      target_type: 'max' as const,
+      target_value: 2,
+      entry_value: 1,
+      period_value: 1,
+    };
+    entries().flush([weekly]);
+    range().flush([
+      {
+        ...day(95),
+        components: [],
+        periodic_progress: [{ goal_id: 'g2', daily_adjustment_pp: -5 }],
+      } as unknown as DayProgressResponse,
+    ]);
+    await settle();
+
+    expect(el().querySelector('.goal-entry__impact')?.textContent).toContain('Penalty');
+  });
 });
