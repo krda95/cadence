@@ -22,14 +22,6 @@ import { Icon } from '@shared/ui/icon/icon';
 import { InputComponent } from '@shared/ui/input/input';
 import { DailyImpact } from '@shared/utils/daily-impact';
 
-/** What today's entry of a weekly goal does to the daily score. */
-export interface DailyImpact {
-  /** +5 / -5 pp before the threshold is crossed, otherwise 0. */
-  adjustmentPp: number;
-  /** 0 or 100 once the threshold is crossed (the goal counts in the average), otherwise null. */
-  countedScore: number | null;
-}
-
 @Component({
   selector: 'app-goal-entry',
   templateUrl: './goal-entry.html',
