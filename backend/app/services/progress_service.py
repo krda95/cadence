@@ -524,6 +524,8 @@ async def get_goal_entries_for_date(
             period=state.goal.period,
             target_type=state.goal.target_type,
             target_value=float(state.goal.target_value),
+            quick_action_type=state.goal.quick_action_type,
+            quick_action_step=state.goal.quick_action_step,
             unit=state.goal.unit,
             entry_value=state.entry_value,
             period_value=round(

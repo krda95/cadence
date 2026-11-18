@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.dependencies.auth import CurrentUser, get_current_user
+from app.models.enums import GoalQuickActionType
 from app.models.goal import Goal
 from app.models.goal_entry import GoalEntry
 from app.schemas.goal import (
@@ -14,6 +15,7 @@ from app.schemas.goal import (
     GoalReorderRequest,
     GoalResponse,
     GoalUpdate,
+    validate_goal_quick_action,
     validate_goal_target,
 )
 from app.schemas.goal_entry import (
@@ -77,6 +79,12 @@ async def create_goal(
         period=payload.period,
         target_type=payload.target_type,
         target_value=payload.target_value,
+        quick_action_type=payload.quick_action_type,
+        quick_action_step=(
+            payload.quick_action_step
+            if payload.quick_action_type == GoalQuickActionType.INCREMENT
+            else None
+        ),
         is_active=payload.is_active,
         position=next_position,
     )
@@ -313,6 +321,32 @@ async def update_my_goal(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(error),
         ) from error
+
+    period = update_data.get("period", goal.period)
+    quick_action_type = update_data.get("quick_action_type", goal.quick_action_type)
+    quick_action_step = update_data.get("quick_action_step", goal.quick_action_step)
+
+    if period is None or quick_action_type is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Period and quick action type cannot be null",
+        )
+
+    try:
+        validate_goal_quick_action(
+            period=period,
+            target_type=target_type,
+            quick_action_type=quick_action_type,
+            quick_action_step=quick_action_step,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(error),
+        ) from error
+
+    if quick_action_type != GoalQuickActionType.INCREMENT:
+        update_data["quick_action_step"] = None
 
     for field_name, value in update_data.items():
         setattr(goal, field_name, value)

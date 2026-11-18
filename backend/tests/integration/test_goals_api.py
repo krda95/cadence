@@ -53,6 +53,35 @@ def create_goal(
     return response.json()
 
 
+def create_quick_action_goal(
+    client: httpx.Client,
+    headers: dict[str, str],
+    *,
+    name: str,
+    period: str = "daily",
+    target_type: str = "min",
+    quick_action_type: str = "none",
+    quick_action_step: float | None = None,
+) -> dict:
+    response = client.post(
+        GOALS_PATH,
+        headers=headers,
+        json={
+            "name": name,
+            "unit": "test",
+            "period": period,
+            "target_type": target_type,
+            "target_value": 10,
+            "quick_action_type": quick_action_type,
+            "quick_action_step": quick_action_step,
+        },
+    )
+
+    assert response.status_code == 201, response.text
+
+    return response.json()
+
+
 def archive_goal(
     client: httpx.Client,
     headers: dict[str, str],
@@ -292,3 +321,118 @@ def test_new_goals_are_appended_to_period() -> None:
                     headers,
                     goal_id,
                 )
+
+
+def test_patch_preserves_quick_action_when_fields_omitted() -> None:
+    unique_suffix = uuid.uuid4().hex[:8]
+    headers = {
+        "Authorization": f"Bearer {TEST_TOKEN}",
+        "X-Timezone": "Europe/Warsaw",
+    }
+
+    with httpx.Client(base_url=API_BASE_URL, timeout=15.0) as client:
+        goal = create_quick_action_goal(
+            client,
+            headers,
+            name=f"[TEST {unique_suffix}] Preserve",
+            quick_action_type="increment",
+            quick_action_step=2,
+        )
+
+        try:
+            response = client.patch(
+                f"{GOALS_PATH}/{goal['id']}",
+                headers=headers,
+                json={"name": f"[TEST {unique_suffix}] Renamed"},
+            )
+
+            assert response.status_code == 200, response.text
+            body = response.json()
+            assert body["quick_action_type"] == "increment"
+            assert body["quick_action_step"] == 2
+        finally:
+            archive_goal(client, headers, goal["id"])
+
+
+def test_patch_rejects_period_change_that_invalidates_quick_action() -> None:
+    unique_suffix = uuid.uuid4().hex[:8]
+    headers = {
+        "Authorization": f"Bearer {TEST_TOKEN}",
+        "X-Timezone": "Europe/Warsaw",
+    }
+
+    with httpx.Client(base_url=API_BASE_URL, timeout=15.0) as client:
+        goal = create_quick_action_goal(
+            client,
+            headers,
+            name=f"[TEST {unique_suffix}] Check",
+            quick_action_type="check",
+        )
+
+        try:
+            response = client.patch(
+                f"{GOALS_PATH}/{goal['id']}",
+                headers=headers,
+                json={"period": "weekly"},
+            )
+
+            assert response.status_code == 422, response.text
+        finally:
+            archive_goal(client, headers, goal["id"])
+
+
+def test_patch_clears_step_when_switching_to_none() -> None:
+    unique_suffix = uuid.uuid4().hex[:8]
+    headers = {
+        "Authorization": f"Bearer {TEST_TOKEN}",
+        "X-Timezone": "Europe/Warsaw",
+    }
+
+    with httpx.Client(base_url=API_BASE_URL, timeout=15.0) as client:
+        goal = create_quick_action_goal(
+            client,
+            headers,
+            name=f"[TEST {unique_suffix}] Clear step",
+            quick_action_type="increment",
+            quick_action_step=5,
+        )
+
+        try:
+            response = client.patch(
+                f"{GOALS_PATH}/{goal['id']}",
+                headers=headers,
+                json={"quick_action_type": "none"},
+            )
+
+            assert response.status_code == 200, response.text
+            body = response.json()
+            assert body["quick_action_type"] == "none"
+            assert body["quick_action_step"] is None
+        finally:
+            archive_goal(client, headers, goal["id"])
+
+
+def test_patch_rejects_null_quick_action_type() -> None:
+    unique_suffix = uuid.uuid4().hex[:8]
+    headers = {
+        "Authorization": f"Bearer {TEST_TOKEN}",
+        "X-Timezone": "Europe/Warsaw",
+    }
+
+    with httpx.Client(base_url=API_BASE_URL, timeout=15.0) as client:
+        goal = create_quick_action_goal(
+            client,
+            headers,
+            name=f"[TEST {unique_suffix}] Null type",
+        )
+
+        try:
+            response = client.patch(
+                f"{GOALS_PATH}/{goal['id']}",
+                headers=headers,
+                json={"quick_action_type": None},
+            )
+
+            assert response.status_code == 422, response.text
+        finally:
+            archive_goal(client, headers, goal["id"])

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import GoalPeriod, GoalTargetType
+from app.models.enums import GoalPeriod, GoalQuickActionType, GoalTargetType
 
 
 class GoalEntryUpsert(BaseModel):
@@ -42,6 +42,8 @@ class GoalEntryDayResponse(BaseModel):
     target_type: GoalTargetType
     target_value: float
     unit: str | None
+    quick_action_type: GoalQuickActionType
+    quick_action_step: float | None
 
     entry_value: float | None
     period_value: float
