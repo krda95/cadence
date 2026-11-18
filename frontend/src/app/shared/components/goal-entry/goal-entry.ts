@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucidePencil, LucidePencilLine } from '@lucide/angular';
+import { LucideMinus, LucidePencil, LucidePencilLine, LucidePlus } from '@lucide/angular';
 
 import { GoalEntryDayResponse } from '@models/goalModel';
 import { Button } from '@shared/ui/button/button';
@@ -22,11 +22,25 @@ import { Icon } from '@shared/ui/icon/icon';
 import { InputComponent } from '@shared/ui/input/input';
 import { DailyImpact } from '@shared/utils/daily-impact';
 
+function roundValue(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 @Component({
   selector: 'app-goal-entry',
   templateUrl: './goal-entry.html',
   styleUrl: './goal-entry.scss',
-  imports: [Icon, DecimalPipe, LucidePencilLine, LucidePencil, Button, InputComponent, FormsModule],
+  imports: [
+    Icon,
+    DecimalPipe,
+    LucidePencilLine,
+    LucidePencil,
+    LucideMinus,
+    LucidePlus,
+    Button,
+    InputComponent,
+    FormsModule,
+  ],
 })
 export class GoalEntry {
   private readonly injector = inject(Injector);
@@ -142,6 +156,16 @@ export class GoalEntry {
     return value !== null && value >= this.valueBeforeToday();
   });
 
+  /** Quick actions are hidden while the editor is open, so the two never fight over a value. */
+  readonly canDecrement = computed(() => (this.goal().entry_value ?? 0) > 0 && !this.isSaving());
+
+  /** Derived from the saved number: ON when the entry meets or exceeds the target. */
+  readonly isChecked = computed(() => {
+    const goal = this.goal();
+
+    return goal.entry_value !== null && goal.entry_value >= goal.target_value;
+  });
+
   constructor() {
     let wasEditing = false;
 
@@ -237,5 +261,39 @@ export class GoalEntry {
       value: enteredValue - this.valueBeforeToday(),
       note: this.entryNote().trim() || null,
     });
+  }
+
+  increment(): void {
+    const step = this.goal().quick_action_step;
+
+    if (step === null || this.isSaving()) {
+      return;
+    }
+
+    this.saveQuickValue(roundValue((this.goal().entry_value ?? 0) + step));
+  }
+
+  decrement(): void {
+    const step = this.goal().quick_action_step;
+
+    if (step === null || !this.canDecrement()) {
+      return;
+    }
+
+    this.saveQuickValue(Math.max(0, roundValue(this.goal().entry_value! - step)));
+  }
+
+  toggleCheck(): void {
+    if (this.isSaving()) {
+      return;
+    }
+
+    this.saveQuickValue(this.isChecked() ? 0 : this.goal().target_value);
+  }
+
+  private saveQuickValue(value: number): void {
+    const goal = this.goal();
+
+    this.entrySaved.emit({ goalId: goal.goal_id, value, note: goal.note });
   }
 }

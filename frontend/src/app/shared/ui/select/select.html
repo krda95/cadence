@@ -22,6 +22,10 @@
       role="listbox"
       [id]="listId"
       [attr.aria-label]="label()"
+      [style.top.px]="listPosition().top"
+      [style.bottom.px]="listPosition().bottom"
+      [style.left.px]="listPosition().left"
+      [style.min-width.px]="listPosition().width"
       animate.enter="select__list--in"
       animate.leave="select__list--out"
     >

@@ -202,7 +202,7 @@ export class AssistantPanel {
     const maxHeight = lineHeight * 5 + padding;
 
     textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
-    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    textarea.classList.toggle('is-scrollable', textarea.scrollHeight > maxHeight);
   }
 
   addSuggestion(text: string): void {

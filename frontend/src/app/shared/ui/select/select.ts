@@ -1,4 +1,12 @@
-import { Component, ElementRef, HostListener, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  inject,
+  input,
+  OnDestroy,
+  signal,
+} from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { LucideCheck, LucideChevronDown } from '@lucide/angular';
 
@@ -16,7 +24,7 @@ let nextId = 0;
   styleUrl: './select.scss',
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: Select, multi: true }],
 })
-export class Select implements ControlValueAccessor {
+export class Select implements ControlValueAccessor, OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly options = input.required<SelectOption[]>();
@@ -28,6 +36,18 @@ export class Select implements ControlValueAccessor {
   readonly isOpen = signal(false);
   readonly isDisabled = signal(false);
   readonly activeIndex = signal(0);
+
+  /** Viewport coordinates of the list, so it is not clipped by a scrolling parent (e.g. a modal). */
+  readonly listPosition = signal<{
+    top: number | null;
+    bottom: number | null;
+    left: number;
+    width: number;
+  }>({ top: 0, bottom: null, left: 0, width: 0 });
+
+  // A fixed list does not follow its parent when it scrolls, so close it instead.
+  // `capture: true` is needed because scroll events do not bubble up from elements.
+  private readonly closeOnScroll = () => this.close();
 
   private onChange: (value: string) => void = () => {};
   private onTouched: () => void = () => {};
@@ -66,10 +86,34 @@ export class Select implements ControlValueAccessor {
     const selected = this.options().findIndex((option) => option.value === this.value());
 
     this.activeIndex.set(Math.max(selected, 0));
+    this.placeList();
+    window.addEventListener('scroll', this.closeOnScroll, true);
     this.isOpen.set(true);
   }
 
+  private placeList(): void {
+    const trigger = this.host.nativeElement.querySelector('.select__trigger') as HTMLElement;
+    const rect = trigger.getBoundingClientRect();
+
+    // Open upwards when there is no room below but more room above.
+    const listHeight = this.options().length * 44 + 8;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const opensUp = spaceBelow < listHeight + 16 && rect.top > spaceBelow;
+
+    this.listPosition.set({
+      top: opensUp ? null : rect.bottom + 8,
+      bottom: opensUp ? window.innerHeight - rect.top + 8 : null,
+      left: rect.left,
+      width: rect.width,
+    });
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('scroll', this.closeOnScroll, true);
+  }
+
   close(): void {
+    window.removeEventListener('scroll', this.closeOnScroll, true);
     this.isOpen.set(false);
     this.onTouched();
   }

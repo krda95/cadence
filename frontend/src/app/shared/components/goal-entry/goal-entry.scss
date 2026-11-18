@@ -252,6 +252,131 @@
     }
   }
 
+  &__actions {
+    display: flex;
+    gap: var(--space-2);
+    align-items: stretch;
+
+    // The primary button takes whatever the quick controls leave.
+    .goal-entry__action {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  &__quick {
+    display: grid;
+    place-items: center;
+
+    flex: none;
+    width: 3.25rem;
+
+    border: 1px solid color-mix(in srgb, var(--goal-color) 18%, var(--color-border));
+    border-radius: var(--radius-control);
+
+    background: color-mix(in srgb, var(--goal-color) 5%, var(--color-surface-hover));
+    color: var(--color-text-primary);
+
+    cursor: pointer;
+
+    transition:
+      border-color 150ms ease,
+      background 150ms ease,
+      transform 100ms ease-out,
+      opacity 150ms ease;
+
+    &:hover:not(:disabled) {
+      border-color: color-mix(in srgb, var(--goal-color) 32%, var(--color-border));
+      background: color-mix(in srgb, var(--goal-color) 10%, var(--color-surface-hover));
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--goal-color);
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    > svg {
+      width: var(--space-5);
+    }
+  }
+
+  &__toggle {
+    position: relative;
+
+    flex: none;
+    align-self: center;
+    width: 3.25rem;
+    height: 1.75rem;
+    padding: 0;
+
+    border: 1px solid color-mix(in srgb, var(--goal-color) 30%, var(--color-border));
+    border-radius: 999px;
+
+    background: color-mix(in srgb, var(--goal-color) 5%, var(--color-surface-hover));
+
+    cursor: pointer;
+
+    transition:
+      background 150ms ease,
+      border-color 150ms ease;
+
+    &::after {
+      content: '';
+
+      position: absolute;
+      top: 50%;
+      left: 3px;
+
+      width: 1.25rem;
+      aspect-ratio: 1;
+
+      border-radius: 50%;
+
+      background: var(--color-text-secondary);
+      transform: translateY(-50%);
+
+      transition:
+        transform 150ms ease,
+        background 150ms ease;
+    }
+
+    &[aria-checked='true'] {
+      border-color: var(--goal-color);
+      background: var(--goal-color);
+
+      &::after {
+        background: var(--color-button-text);
+        transform: translate(1.5rem, -50%);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--goal-color);
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &,
+      &::after {
+        transition: none;
+      }
+    }
+  }
+
   &__editor {
     display: flex;
     flex: 1;

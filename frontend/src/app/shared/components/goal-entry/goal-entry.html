@@ -70,17 +70,55 @@
         }
       </div>
 
-      <button
-        #actionButton
-        class="goal-entry__action"
-        type="button"
-        [attr.aria-label]="'Enter value for ' + goal().name"
-        (click)="startEditing()"
-      >
-        <svg lucidePencil aria-hidden="true"></svg>
+      <div class="goal-entry__actions">
+        @if (goal().quick_action_type === 'increment') {
+          <button
+            class="goal-entry__quick"
+            type="button"
+            [attr.aria-label]="'Decrease ' + goal().name"
+            [disabled]="!canDecrement()"
+            (click)="decrement()"
+          >
+            <svg lucideMinus aria-hidden="true"></svg>
+          </button>
+        }
 
-        <span>Enter value</span>
-      </button>
+        @if (goal().quick_action_type === 'check') {
+          <button
+            class="goal-entry__toggle"
+            type="button"
+            role="switch"
+            [attr.aria-checked]="isChecked()"
+            [attr.aria-label]="goal().name + ' completed'"
+            [disabled]="isSaving()"
+            (click)="toggleCheck()"
+          ></button>
+        }
+
+        <button
+          #actionButton
+          class="goal-entry__action"
+          type="button"
+          [attr.aria-label]="'Enter value for ' + goal().name"
+          (click)="startEditing()"
+        >
+          <svg lucidePencil aria-hidden="true"></svg>
+
+          <span>Enter value</span>
+        </button>
+
+        @if (goal().quick_action_type === 'increment') {
+          <button
+            class="goal-entry__quick"
+            type="button"
+            [attr.aria-label]="'Increase ' + goal().name"
+            [disabled]="isSaving()"
+            (click)="increment()"
+          >
+            <svg lucidePlus aria-hidden="true"></svg>
+          </button>
+        }
+      </div>
     } @else {
       <div class="goal-entry__editor">
         @if (isWeekly()) {

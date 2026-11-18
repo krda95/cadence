@@ -274,7 +274,8 @@
       width: 100%;
 
       box-sizing: border-box;
-      min-height: 64px;
+      // fits a two-line placeholder: 2 × 24px line + 2 × 12px padding + 2px border, with a little air
+      min-height: 76px;
       max-height: 160px;
 
       // right padding reserves room for the send button (36px + 10px inset + gap)
@@ -289,12 +290,21 @@
       font: inherit;
       line-height: 1.5;
 
-      resize: none;
+      // resizeTextarea() adds `is-scrollable` once the content outgrows the max height.
       overflow-y: hidden;
+      color-scheme: dark;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--color-text-secondary) 60%, var(--color-surface))
+        transparent;
+      resize: none;
 
       transition:
         border-color 150ms ease-out,
         box-shadow 150ms ease-out;
+
+      &.is-scrollable {
+        overflow-y: auto;
+      }
 
       &:focus {
         outline: none;
