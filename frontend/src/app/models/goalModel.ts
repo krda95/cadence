@@ -1,5 +1,6 @@
 export type GoalPeriod = 'daily' | 'weekly' | 'monthly';
 export type GoalTargetType = 'min' | 'max';
+export type GoalQuickActionType = 'none' | 'increment' | 'check';
 
 export interface GoalCreate {
   name: string;
@@ -9,6 +10,8 @@ export interface GoalCreate {
   period: GoalPeriod;
   target_type: GoalTargetType;
   target_value: number;
+  quick_action_type: GoalQuickActionType;
+  quick_action_step: number | null;
   is_active: boolean;
 }
 
@@ -20,6 +23,8 @@ export interface GoalUpdate {
   period?: GoalPeriod;
   target_type?: GoalTargetType;
   target_value?: number;
+  quick_action_type?: GoalQuickActionType;
+  quick_action_step?: number | null;
   is_active?: boolean;
 }
 
@@ -34,6 +39,8 @@ export interface GoalResponse {
   position: number;
   target_type: GoalTargetType;
   target_value: number;
+  quick_action_type: GoalQuickActionType;
+  quick_action_step: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -48,6 +55,8 @@ export interface GoalEntryDayResponse {
   period: GoalPeriod;
   target_type: GoalTargetType;
   target_value: number;
+  quick_action_type: GoalQuickActionType;
+  quick_action_step: number | null;
   entry_value: number | null;
   period_value: number;
   note: string | null;

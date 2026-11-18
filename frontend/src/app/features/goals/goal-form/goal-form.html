@@ -93,6 +93,31 @@
           </label>
         </div>
       </div>
+      <div class="goal-form__field">
+        <div class="goal-form__quick-actions">
+          <div class="goal-form__control">
+            <label id="goal-quick-action-label">Quick actions</label>
+            <app-select
+              label="Quick actions"
+              [options]="quickActionOptions()"
+              formControlName="quick_action_type"
+            />
+          </div>
+
+          @if (form.controls.quick_action_type.value === 'increment') {
+            <app-input
+              id="goal-quick-action-step"
+              label="Step"
+              [min]="0"
+              [step]="1"
+              [variant]="'filled'"
+              showErrorsOn="dirty"
+              placeholder="e.g. 500"
+              formControlName="quick_action_step"
+            />
+          }
+        </div>
+      </div>
 
       @if (isInactive()) {
         <div class="goal-form__field" role="radiogroup" aria-labelledby="goal-state-label">

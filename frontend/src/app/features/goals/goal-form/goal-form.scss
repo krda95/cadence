@@ -38,6 +38,17 @@
     }
   }
 
+  &__quick-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+
+    > * {
+      min-width: 0;
+    }
+  }
+
   &__control {
     display: flex;
     flex-direction: column;

@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal, computed } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -9,7 +9,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { GoalsService } from '@core/api/goals.service';
-import { GoalCreate, GoalPeriod, GoalTargetType } from '@models/goalModel';
+import { GoalCreate, GoalPeriod, GoalQuickActionType, GoalTargetType } from '@models/goalModel';
 import { IconPicker } from '@shared/components/icon-picker/icon-picker';
 import { Button } from '@shared/ui/button/button';
 import { InputComponent } from '@shared/ui/input/input';
@@ -18,10 +18,36 @@ import { Modal } from '@shared/ui/modal/modal';
 import { Select, SelectOption } from '@shared/ui/select/select';
 import type { GoalDeactivatedState } from '../goals';
 import { Combobox, ComboboxOption } from '@shared/ui/combobox/combobox';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { merge, startWith } from 'rxjs';
 
-/** Like `required`, but a field containing only spaces does not count as filled in. */
+const QUICK_ACTION_LABELS: Record<GoalQuickActionType, string> = {
+  none: 'Disabled',
+  increment: 'Increment / Decrement',
+  check: 'Completion toggle',
+};
+
 function notBlank(control: AbstractControl): ValidationErrors | null {
   return String(control.value ?? '').trim() ? null : { required: true };
+}
+
+function allowedQuickActions(
+  period: GoalPeriod,
+  targetType: GoalTargetType,
+): GoalQuickActionType[] {
+  if (period === 'daily' && targetType === 'min') {
+    return ['none', 'increment', 'check'];
+  }
+  if (period === 'daily' || period === 'weekly') {
+    return ['none', 'increment'];
+  }
+  return ['none'];
+}
+
+function positiveNumber(control: AbstractControl): ValidationErrors | null {
+  const value = Number(control.value);
+
+  return Number.isFinite(value) && value > 0 ? null : { positive: true };
 }
 
 @Component({
@@ -53,6 +79,8 @@ export class GoalForm implements OnInit, OnDestroy {
     period: ['daily' as GoalPeriod, Validators.required],
     target_type: ['min' as GoalTargetType, Validators.required],
     target_value: [0, [Validators.required, Validators.min(0)]],
+    quick_action_type: ['none' as GoalQuickActionType],
+    quick_action_step: [null as number | null],
     is_active: [true, Validators.required],
   });
 
@@ -60,6 +88,24 @@ export class GoalForm implements OnInit, OnDestroy {
     { value: 'min', label: 'At least' },
     { value: 'max', label: 'At most' },
   ];
+
+  private readonly period = toSignal(
+    this.form.controls.period.valueChanges.pipe(startWith(this.form.controls.period.value)),
+    { requireSync: true },
+  );
+  private readonly targetType = toSignal(
+    this.form.controls.target_type.valueChanges.pipe(
+      startWith(this.form.controls.target_type.value),
+    ),
+    { requireSync: true },
+  );
+
+  readonly quickActionOptions = computed<SelectOption<GoalQuickActionType>[]>(() =>
+    allowedQuickActions(this.period(), this.targetType()).map((type) => ({
+      value: type,
+      label: QUICK_ACTION_LABELS[type],
+    })),
+  );
 
   readonly unitOptions: ComboboxOption[] = [
     { value: 'km', label: 'Kilometers (km)' },
@@ -92,6 +138,33 @@ export class GoalForm implements OnInit, OnDestroy {
   /** Whatever opened the modal, so focus can go back to it. */
   private readonly opener = document.activeElement as HTMLElement | null;
 
+  constructor() {
+    merge(this.form.controls.period.valueChanges, this.form.controls.target_type.valueChanges)
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        const allowed = allowedQuickActions(this.period(), this.targetType());
+        const current = this.form.controls.quick_action_type.value;
+
+        if (!allowed.includes(current)) {
+          this.form.controls.quick_action_type.setValue('none');
+        }
+      });
+
+    this.form.controls.quick_action_type.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((type) => {
+        const step = this.form.controls.quick_action_step;
+
+        if (type === 'increment') {
+          step.setValidators([Validators.required, positiveNumber]);
+        } else {
+          step.clearValidators();
+        }
+
+        step.updateValueAndValidity();
+      });
+  }
+
   ngOnDestroy(): void {
     this.opener?.focus?.();
   }
@@ -113,6 +186,8 @@ export class GoalForm implements OnInit, OnDestroy {
           period: goal.period,
           target_type: goal.target_type,
           target_value: goal.target_value,
+          quick_action_type: goal.quick_action_type,
+          quick_action_step: goal.quick_action_step,
           is_active: goal.is_active,
         });
         this.isLoading.set(false);
@@ -191,6 +266,9 @@ export class GoalForm implements OnInit, OnDestroy {
       period: value.period,
       target_type: value.target_type,
       target_value: value.target_value,
+      quick_action_type: value.quick_action_type || 'none',
+      quick_action_step:
+        value.quick_action_type === 'increment' ? Number(value.quick_action_step) : null,
       is_active: value.is_active,
     };
 
