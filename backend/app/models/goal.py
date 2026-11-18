@@ -1,8 +1,9 @@
-from datetime import datetime
 import uuid
+from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     Float,
@@ -10,13 +11,12 @@ from sqlalchemy import (
     Integer,
     String,
     func,
-    CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
-from app.models.enums import GoalPeriod, GoalTargetType
+from app.models.enums import GoalPeriod, GoalQuickActionType, GoalTargetType
 
 
 class Goal(Base):
@@ -65,6 +65,18 @@ class Goal(Base):
     )
 
     target_value: Mapped[float] = mapped_column(Float, nullable=False)
+    quick_action_type: Mapped[GoalQuickActionType] = mapped_column(
+        Enum(
+            GoalQuickActionType,
+            name="goal_quick_action_type",
+            values_callable=lambda enum: [item.value for item in enum],
+        ),
+        nullable=False,
+        default=GoalQuickActionType.NONE,
+        server_default=GoalQuickActionType.NONE.value,
+    )
+    quick_action_step: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
