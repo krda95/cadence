@@ -327,19 +327,49 @@ describe('GoalEntry', () => {
       expect(root().querySelector('.goal-entry__quick')).toBeNull();
     });
 
-    it('ignores quick actions while a save is in flight', () => {
+    it('keeps the buttons usable during a save and sends the newest value once it ends', () => {
       render(STEPS);
-      fixture.componentRef.setInput('isSaving', true);
-      fixture.detectChanges();
       const saved = collectSaves();
 
-      expect(button('Increase Steps').disabled).toBe(true);
+      // First burst goes out and the parent starts saving.
+      button('Increase Steps').click();
+      vi.advanceTimersByTime(QUICK_ACTION_DELAY_MS);
+      fixture.componentRef.setInput('isSaving', true);
+      fixture.detectChanges();
+      expect(saved).toHaveLength(1);
 
-      component.increment();
-      component.decrement();
-      component.toggleCheck();
+      // The user keeps going while that request is still running.
+      expect(button('Increase Steps').disabled).toBe(false);
+      button('Increase Steps').click();
+      vi.advanceTimersByTime(QUICK_ACTION_DELAY_MS);
 
-      expect(saved).toEqual([]);
+      // Still one request at a time...
+      expect(saved).toHaveLength(1);
+
+      // ...and the waiting value follows as soon as the save ends.
+      fixture.componentRef.setInput('isSaving', false);
+      fixture.detectChanges();
+
+      expect(saved.map((event) => event.value)).toEqual([11_000, 12_000]);
+    });
+
+    it('does not resend a value that is already on its way', () => {
+      render(STEPS);
+      const saved = collectSaves();
+
+      button('Increase Steps').click();
+      vi.advanceTimersByTime(QUICK_ACTION_DELAY_MS);
+      fixture.componentRef.setInput('isSaving', true);
+      fixture.detectChanges();
+
+      // + then − while the first request runs lands on the value that was already sent.
+      button('Increase Steps').click();
+      button('Decrease Steps').click();
+      vi.advanceTimersByTime(QUICK_ACTION_DELAY_MS);
+      fixture.componentRef.setInput('isSaving', false);
+      fixture.detectChanges();
+
+      expect(saved).toHaveLength(1);
     });
 
     it('shows a save error outside the editor', () => {
@@ -448,6 +478,56 @@ describe('GoalEntry', () => {
 
       expect(component.entryValue()).toBe(11_000);
       expect(saved).toEqual([]);
+    });
+
+    it('moves the ring together with the pending value', () => {
+      render({ ...STEPS, entry_value: 5_000, period_value: 5_000 });
+      const ring = () => root().querySelector('.goal-entry__ring')?.getAttribute('aria-label');
+      expect(ring()).toBe('50% of target');
+
+      button('Increase Steps').click();
+      fixture.detectChanges();
+
+      expect(ring()).toBe('60% of target');
+    });
+
+    it('marks the number as unconfirmed until fresh data arrives', () => {
+      const dimmed = () => root().querySelector('.goal-entry__current--unconfirmed') !== null;
+
+      render(STEPS);
+      expect(dimmed()).toBe(false);
+
+      button('Increase Steps').click();
+      fixture.detectChanges();
+      expect(dimmed()).toBe(true);
+
+      render({ ...STEPS, entry_value: 11_000, period_value: 11_000 });
+      expect(dimmed()).toBe(false);
+    });
+
+    it('offers Retry after a failed save and sends the same value again', () => {
+      render(STEPS);
+      const saved = collectSaves();
+
+      button('Increase Steps').click();
+      vi.advanceTimersByTime(QUICK_ACTION_DELAY_MS);
+      fixture.componentRef.setInput('saveError', "Couldn't save your entry. Try again.");
+      fixture.detectChanges();
+
+      const retry = root().querySelector<HTMLButtonElement>('.goal-entry__retry');
+      expect(retry).not.toBeNull();
+
+      retry!.click();
+
+      expect(saved.map((event) => event.value)).toEqual([11_000, 11_000]);
+    });
+
+    it('groups decrease and increase in one labelled control', () => {
+      render(STEPS);
+
+      const group = root().querySelector('.goal-entry__stepper');
+      expect(group?.getAttribute('role')).toBe('group');
+      expect(group?.querySelectorAll('button')).toHaveLength(2);
     });
   });
 

@@ -251,6 +251,10 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
       return `Use at least ${length} characters.`;
     }
 
+    if (control.errors['positive']) {
+      return 'Enter a number greater than 0.';
+    }
+
     if (control.errors['passwordMismatch']) {
       return 'Passwords do not match.';
     }

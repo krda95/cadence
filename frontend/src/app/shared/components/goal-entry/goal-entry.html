@@ -57,7 +57,11 @@
     @if (!isEditing()) {
       <div class="goal-entry__summary">
         <div class="goal-entry__value">
-          <span class="goal-entry__current">{{ todayValue() | number: '1.0-2' }}</span>
+          <span
+            class="goal-entry__current"
+            [class.goal-entry__current--unconfirmed]="hasUnconfirmedValue()"
+            >{{ todayValue() | number: '1.0-2' }}</span
+          >
           <span class="goal-entry__target">
             / {{ goal().target_value | number: '1.0-2' }} {{ goal().unit }}
           </span>
@@ -71,18 +75,6 @@
       </div>
 
       <div class="goal-entry__actions">
-        @if (goal().quick_action_type === 'increment') {
-          <button
-            class="goal-entry__quick"
-            type="button"
-            [attr.aria-label]="'Decrease ' + goal().name"
-            [disabled]="!canDecrement()"
-            (click)="decrement()"
-          >
-            <svg lucideMinus aria-hidden="true"></svg>
-          </button>
-        }
-
         <button
           #actionButton
           class="goal-entry__action"
@@ -95,6 +87,29 @@
           <span>Enter value</span>
         </button>
 
+        @if (goal().quick_action_type === 'increment') {
+          <div class="goal-entry__stepper" role="group" [attr.aria-label]="'Adjust ' + goal().name">
+            <button
+              class="goal-entry__quick"
+              type="button"
+              [attr.aria-label]="'Decrease ' + goal().name"
+              [disabled]="!canDecrement()"
+              (click)="decrement()"
+            >
+              <svg lucideMinus aria-hidden="true"></svg>
+            </button>
+
+            <button
+              class="goal-entry__quick"
+              type="button"
+              [attr.aria-label]="'Increase ' + goal().name"
+              (click)="increment()"
+            >
+              <svg lucidePlus aria-hidden="true"></svg>
+            </button>
+          </div>
+        }
+
         @if (goal().quick_action_type === 'check') {
           <button
             class="goal-entry__quick goal-entry__check"
@@ -102,7 +117,6 @@
             role="checkbox"
             [attr.aria-checked]="isChecked()"
             [attr.aria-label]="goal().name + ' completed'"
-            [disabled]="isSaving()"
             (click)="toggleCheck()"
           >
             @if (isChecked()) {
@@ -110,21 +124,15 @@
             }
           </button>
         }
-
-        @if (goal().quick_action_type === 'increment') {
-          <button
-            class="goal-entry__quick"
-            type="button"
-            [attr.aria-label]="'Increase ' + goal().name"
-            [disabled]="isSaving()"
-            (click)="increment()"
-          >
-            <svg lucidePlus aria-hidden="true"></svg>
-          </button>
-        }
       </div>
+
       @if (saveError(); as message) {
-        <p class="goal-entry__error" role="alert">{{ message }}</p>
+        <p class="goal-entry__error" role="alert">
+          {{ message }}
+          @if (canRetry()) {
+            <button class="goal-entry__retry" type="button" (click)="retry()">Retry</button>
+          }
+        </p>
       }
     } @else {
       <div class="goal-entry__editor">

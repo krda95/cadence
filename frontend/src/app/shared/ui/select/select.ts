@@ -43,7 +43,9 @@ export class Select implements ControlValueAccessor, OnDestroy {
     bottom: number | null;
     left: number;
     width: number;
-  }>({ top: 0, bottom: null, left: 0, width: 0 });
+    /** Opens above the trigger, so the animation has to start from the bottom edge. */
+    up: boolean;
+  }>({ top: 0, bottom: null, left: 0, width: 0, up: false });
 
   // A fixed list does not follow its parent when it scrolls, so close it instead.
   // `capture: true` is needed because scroll events do not bubble up from elements.
@@ -105,6 +107,7 @@ export class Select implements ControlValueAccessor, OnDestroy {
       bottom: opensUp ? window.innerHeight - rect.top + 8 : null,
       left: rect.left,
       width: rect.width,
+      up: opensUp,
     });
   }
 

@@ -68,7 +68,21 @@ export class GoalEntry {
 
   /** Today's entry as the card should show it right now. */
   private readonly dayValue = computed(() => this.pendingValue() ?? this.goal().entry_value);
+
+  /** True from the click until fresh data confirms it, so the number can look "not yet saved". */
+  readonly hasUnconfirmedValue = computed(() => this.pendingValue() !== null);
+
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** The value that was sent and is not yet confirmed by fresh data. Later saves compare to it. */
+  private sentValue: number | null = null;
+
+  /** A pause ended while a save was still running, so the newest value goes out once it ends. */
+  private sendWhenIdle = false;
+
+  /** What Retry sends again after a failed save. */
+  private readonly failedValue = signal<number | null>(null);
+  readonly canRetry = computed(() => this.failedValue() !== null);
 
   readonly entrySaved = output<{
     goalId: string;
@@ -134,11 +148,14 @@ export class GoalEntry {
       return 0;
     }
 
+    // Uses todayValue so the ring moves together with the number, before the save is confirmed.
+    const value = this.todayValue();
+
     if (goal.target_type === 'min') {
-      return Math.min((goal.period_value / goal.target_value) * 100, 100);
+      return Math.min((value / goal.target_value) * 100, 100);
     }
 
-    return goal.period_value / goal.target_value > 1 ? 0 : 100;
+    return value / goal.target_value > 1 ? 0 : 100;
   });
 
   readonly progressLabel = computed(() => {
@@ -173,7 +190,7 @@ export class GoalEntry {
     return value !== null && value >= this.valueBeforeToday();
   });
 
-  readonly canDecrement = computed(() => (this.dayValue() ?? 0) > 0 && !this.isSaving());
+  readonly canDecrement = computed(() => (this.dayValue() ?? 0) > 0);
 
   readonly isChecked = computed(() => {
     const value = this.dayValue();
@@ -197,7 +214,7 @@ export class GoalEntry {
 
       wasEditing = editing;
     });
-    // The server caught up with what was asked for, so the temporary value is no longer needed.
+    // Fresh data caught up with what was asked for or sent, so the temporary values are done.
     effect(() => {
       const stored = this.goal().entry_value;
 
@@ -205,13 +222,41 @@ export class GoalEntry {
         if (this.pendingValue() === stored) {
           this.pendingValue.set(null);
         }
+
+        if (this.sentValue === stored) {
+          this.sentValue = null;
+        }
       });
     });
 
+    // A failed save: go back to what is really stored, and remember the value for Retry.
+    // Declared before the idle effect below, so a failure cancels a queued send first.
     effect(() => {
-      if (this.saveError()) {
-        untracked(() => this.pendingValue.set(null));
-      }
+      const failed = this.saveError();
+
+      untracked(() => {
+        if (failed) {
+          this.failedValue.set(this.pendingValue() ?? this.sentValue);
+          this.pendingValue.set(null);
+          this.sentValue = null;
+          this.sendWhenIdle = false;
+          this.clearFlushTimer();
+        } else {
+          this.failedValue.set(null);
+        }
+      });
+    });
+
+    // One request at a time: a value that had to wait goes out as soon as the save ends.
+    effect(() => {
+      const saving = this.isSaving();
+
+      untracked(() => {
+        if (!saving && this.sendWhenIdle) {
+          this.sendWhenIdle = false;
+          this.flushPending();
+        }
+      });
     });
   }
 
@@ -219,6 +264,7 @@ export class GoalEntry {
     this.entryValidationError.set(null);
     this.entryValue.set(this.todayValue());
     this.clearFlushTimer();
+    this.sendWhenIdle = false;
     this.pendingValue.set(null);
 
     this.entryNote.set(this.goal().note ?? '');
@@ -300,7 +346,7 @@ export class GoalEntry {
   increment(): void {
     const step = this.goal().quick_action_step;
 
-    if (step === null || this.isSaving()) {
+    if (step === null) {
       return;
     }
 
@@ -318,41 +364,65 @@ export class GoalEntry {
   }
 
   toggleCheck(): void {
-    if (this.isSaving()) {
-      return;
-    }
-
     this.requestValue(this.isChecked() ? 0 : this.goal().target_value);
   }
 
-  private requestValue(value: number): void {
-    this.pendingValue.set(value);
-    this.saveQuickValue(value);
-  }
-
-  /** Show the value at once, but wait for a pause in clicking before saving it. */
-  private scheduleValue(value: number): void {
-    this.pendingValue.set(value);
-    this.clearFlushTimer();
-    this.flushTimer = setTimeout(() => this.flushPending(), QUICK_ACTION_DELAY_MS);
-  }
-
-  private flushPending(): void {
-    this.clearFlushTimer();
-
-    const value = this.pendingValue();
-    const stored = this.goal().entry_value;
+  /** Sends the value of the last failed save again. */
+  retry(): void {
+    const value = this.failedValue();
 
     if (value === null) {
       return;
     }
 
-    // Clicks that cancel out (+ then −) leave nothing to save
-    if (value === stored || (stored === null && value === 0)) {
-      this.pendingValue.set(null);
+    this.requestValue(value);
+  }
+
+  /** Show the value at once and save it right away (no pause), unless a save is running. */
+  private requestValue(value: number): void {
+    this.failedValue.set(null);
+    this.pendingValue.set(value);
+    this.flushPending();
+  }
+
+  /** Show the value at once, but wait for a pause in clicking before saving it. */
+  private scheduleValue(value: number): void {
+    this.failedValue.set(null);
+    this.pendingValue.set(value);
+    this.clearFlushTimer();
+    this.flushTimer = setTimeout(() => this.flushPending(), QUICK_ACTION_DELAY_MS);
+  }
+
+  private flushPending(force = false): void {
+    this.clearFlushTimer();
+
+    const value = this.pendingValue();
+
+    if (value === null) {
       return;
     }
 
+    // One request at a time, so two saves cannot arrive out of order. The newest value
+    // waits for the one in flight (`force` is for a card that is about to disappear).
+    if (this.isSaving() && !force) {
+      this.sendWhenIdle = true;
+      return;
+    }
+
+    // Compare with what the server holds, or will hold once the request in flight lands.
+    const baseline = this.sentValue ?? this.goal().entry_value;
+
+    // Clicks that cancel out (+ then −) leave nothing to save. From an empty day,
+    // "back to 0" means "no entry", not an explicit 0.
+    if (value === baseline || (baseline === null && value === 0)) {
+      if (this.sentValue === null) {
+        this.pendingValue.set(null);
+      }
+
+      return;
+    }
+
+    this.sentValue = value;
     this.saveQuickValue(value);
   }
 
@@ -364,8 +434,9 @@ export class GoalEntry {
   }
 
   ngOnDestroy(): void {
-    if (this.flushTimer !== null) {
-      this.flushPending();
+    // Leaving the page must not lose clicks the user has already seen on the card.
+    if (this.flushTimer !== null || this.sendWhenIdle) {
+      this.flushPending(true);
     }
   }
 

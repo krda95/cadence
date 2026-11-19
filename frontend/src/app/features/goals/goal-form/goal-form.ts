@@ -22,7 +22,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { merge, startWith } from 'rxjs';
 
 const QUICK_ACTION_LABELS: Record<GoalQuickActionType, string> = {
-  none: 'Disabled',
+  none: 'Off',
   increment: 'Increment / Decrement',
   check: 'Completion toggle',
 };
