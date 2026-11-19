@@ -251,6 +251,10 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
       return `Use at least ${length} characters.`;
     }
 
+    if (control.errors['nonNegative']) {
+      return 'Enter a number that is 0 or greater.';
+    }
+
     if (control.errors['positive']) {
       return 'Enter a number greater than 0.';
     }
