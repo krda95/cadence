@@ -83,18 +83,6 @@
           </button>
         }
 
-        @if (goal().quick_action_type === 'check') {
-          <button
-            class="goal-entry__toggle"
-            type="button"
-            role="switch"
-            [attr.aria-checked]="isChecked()"
-            [attr.aria-label]="goal().name + ' completed'"
-            [disabled]="isSaving()"
-            (click)="toggleCheck()"
-          ></button>
-        }
-
         <button
           #actionButton
           class="goal-entry__action"
@@ -106,6 +94,22 @@
 
           <span>Enter value</span>
         </button>
+
+        @if (goal().quick_action_type === 'check') {
+          <button
+            class="goal-entry__quick goal-entry__check"
+            type="button"
+            role="checkbox"
+            [attr.aria-checked]="isChecked()"
+            [attr.aria-label]="goal().name + ' completed'"
+            [disabled]="isSaving()"
+            (click)="toggleCheck()"
+          >
+            @if (isChecked()) {
+              <svg lucideCheck aria-hidden="true"></svg>
+            }
+          </button>
+        }
 
         @if (goal().quick_action_type === 'increment') {
           <button
@@ -119,6 +123,9 @@
           </button>
         }
       </div>
+      @if (saveError(); as message) {
+        <p class="goal-entry__error" role="alert">{{ message }}</p>
+      }
     } @else {
       <div class="goal-entry__editor">
         @if (isWeekly()) {

@@ -43,6 +43,7 @@ export class History {
   readonly editingGoalId = signal<string | null>(null);
   readonly savingGoalId = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
+  readonly errorGoalId = signal<string | null>(null);
 
   /** Placeholders for the day picker while scores load. */
   readonly pickerPlaceholders = Array.from({ length: 7 });
@@ -212,6 +213,7 @@ export class History {
         error: (error) => {
           console.error('Failed to save entry', error);
           this.savingGoalId.set(null);
+          this.errorGoalId.set(event.goalId);
           this.saveError.set("Couldn't save your entry. Try again.");
         },
       });

@@ -75,7 +75,7 @@
                 [dailyImpact]="dailyImpacts().get(goal.goal_id) ?? null"
                 [isEditing]="editingGoalId() === goal.goal_id"
                 [isSaving]="savingGoalId() === goal.goal_id"
-                [saveError]="editingGoalId() === goal.goal_id ? saveError() : null"
+                [saveError]="errorGoalId() === goal.goal_id ? saveError() : null"
                 (entrySaved)="saveEntry($event)"
                 (entryDeleted)="deleteEntry($event)"
                 (editStarted)="startEditing(goal.goal_id)"

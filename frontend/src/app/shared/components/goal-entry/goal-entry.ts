@@ -14,7 +14,13 @@ import {
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideMinus, LucidePencil, LucidePencilLine, LucidePlus } from '@lucide/angular';
+import {
+  LucideCheck,
+  LucideMinus,
+  LucidePencil,
+  LucidePencilLine,
+  LucidePlus,
+} from '@lucide/angular';
 
 import { GoalEntryDayResponse } from '@models/goalModel';
 import { Button } from '@shared/ui/button/button';
@@ -26,6 +32,8 @@ function roundValue(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+export const QUICK_ACTION_DELAY_MS = 500;
+
 @Component({
   selector: 'app-goal-entry',
   templateUrl: './goal-entry.html',
@@ -33,6 +41,7 @@ function roundValue(value: number): number {
   imports: [
     Icon,
     DecimalPipe,
+    LucideCheck,
     LucidePencilLine,
     LucidePencil,
     LucideMinus,
@@ -54,6 +63,12 @@ export class GoalEntry {
   readonly entryValue = signal<number | null>(null);
   readonly entryNote = signal('');
   readonly entryValidationError = signal<string | null>(null);
+  /** What the user just asked for but the server has not confirmed yet. */
+  private readonly pendingValue = signal<number | null>(null);
+
+  /** Today's entry as the card should show it right now. */
+  private readonly dayValue = computed(() => this.pendingValue() ?? this.goal().entry_value);
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly entrySaved = output<{
     goalId: string;
@@ -71,8 +86,10 @@ export class GoalEntry {
 
   readonly todayValue = computed(() => {
     const goal = this.goal();
+    const entry = this.dayValue() ?? 0;
 
-    return goal.period === 'daily' ? (goal.entry_value ?? 0) : goal.period_value;
+    // Weekly: what was logged on earlier days plus today's (possibly pending) entry.
+    return goal.period === 'daily' ? entry : this.valueBeforeToday() + entry;
   });
 
   /* For non-daily goals: what was logged in the period before today. */
@@ -156,14 +173,12 @@ export class GoalEntry {
     return value !== null && value >= this.valueBeforeToday();
   });
 
-  /** Quick actions are hidden while the editor is open, so the two never fight over a value. */
-  readonly canDecrement = computed(() => (this.goal().entry_value ?? 0) > 0 && !this.isSaving());
+  readonly canDecrement = computed(() => (this.dayValue() ?? 0) > 0 && !this.isSaving());
 
-  /** Derived from the saved number: ON when the entry meets or exceeds the target. */
   readonly isChecked = computed(() => {
-    const goal = this.goal();
+    const value = this.dayValue();
 
-    return goal.entry_value !== null && goal.entry_value >= goal.target_value;
+    return value !== null && value >= this.goal().target_value;
   });
 
   constructor() {
@@ -182,11 +197,30 @@ export class GoalEntry {
 
       wasEditing = editing;
     });
+    // The server caught up with what was asked for, so the temporary value is no longer needed.
+    effect(() => {
+      const stored = this.goal().entry_value;
+
+      untracked(() => {
+        if (this.pendingValue() === stored) {
+          this.pendingValue.set(null);
+        }
+      });
+    });
+
+    effect(() => {
+      if (this.saveError()) {
+        untracked(() => this.pendingValue.set(null));
+      }
+    });
   }
 
   startEditing(): void {
     this.entryValidationError.set(null);
     this.entryValue.set(this.todayValue());
+    this.clearFlushTimer();
+    this.pendingValue.set(null);
+
     this.entryNote.set(this.goal().note ?? '');
     this.valueInput()?.focusAndSelect();
     this.editStarted.emit();
@@ -270,7 +304,7 @@ export class GoalEntry {
       return;
     }
 
-    this.saveQuickValue(roundValue((this.goal().entry_value ?? 0) + step));
+    this.scheduleValue(roundValue((this.dayValue() ?? 0) + step));
   }
 
   decrement(): void {
@@ -280,7 +314,7 @@ export class GoalEntry {
       return;
     }
 
-    this.saveQuickValue(Math.max(0, roundValue(this.goal().entry_value! - step)));
+    this.scheduleValue(Math.max(0, roundValue(this.dayValue()! - step)));
   }
 
   toggleCheck(): void {
@@ -288,7 +322,51 @@ export class GoalEntry {
       return;
     }
 
-    this.saveQuickValue(this.isChecked() ? 0 : this.goal().target_value);
+    this.requestValue(this.isChecked() ? 0 : this.goal().target_value);
+  }
+
+  private requestValue(value: number): void {
+    this.pendingValue.set(value);
+    this.saveQuickValue(value);
+  }
+
+  /** Show the value at once, but wait for a pause in clicking before saving it. */
+  private scheduleValue(value: number): void {
+    this.pendingValue.set(value);
+    this.clearFlushTimer();
+    this.flushTimer = setTimeout(() => this.flushPending(), QUICK_ACTION_DELAY_MS);
+  }
+
+  private flushPending(): void {
+    this.clearFlushTimer();
+
+    const value = this.pendingValue();
+    const stored = this.goal().entry_value;
+
+    if (value === null) {
+      return;
+    }
+
+    // Clicks that cancel out (+ then −) leave nothing to save
+    if (value === stored || (stored === null && value === 0)) {
+      this.pendingValue.set(null);
+      return;
+    }
+
+    this.saveQuickValue(value);
+  }
+
+  private clearFlushTimer(): void {
+    if (this.flushTimer !== null) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.flushTimer !== null) {
+      this.flushPending();
+    }
   }
 
   private saveQuickValue(value: number): void {

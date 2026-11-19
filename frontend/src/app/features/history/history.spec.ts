@@ -16,6 +16,8 @@ const GOAL: GoalEntryDayResponse = {
   unit: 'L',
   period: 'daily',
   target_type: 'min',
+  quick_action_type: 'none',
+  quick_action_step: null,
   target_value: 2,
   entry_value: 1,
   period_value: 1,

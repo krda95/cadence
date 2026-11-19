@@ -17,6 +17,8 @@ const goal = (overrides: Partial<GoalResponse>): GoalResponse => ({
   position: 0,
   target_type: 'min',
   target_value: 2,
+  quick_action_type: 'none',
+  quick_action_step: null,
   is_active: true,
   created_at: '',
   updated_at: '',
