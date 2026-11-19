@@ -16,6 +16,7 @@ import { InputComponent } from '@shared/ui/input/input';
 import { Loader } from '@shared/ui/loader/loader';
 import { Modal } from '@shared/ui/modal/modal';
 import { Select, SelectOption } from '@shared/ui/select/select';
+import { parseDecimal } from '@shared/utils/parse-decimal';
 import type { GoalDeactivatedState } from '../goals';
 import { Combobox, ComboboxOption } from '@shared/ui/combobox/combobox';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -44,10 +45,17 @@ function allowedQuickActions(
   return ['none'];
 }
 
-function positiveNumber(control: AbstractControl): ValidationErrors | null {
-  const value = Number(control.value);
+/** The target must be a number, zero or greater. Accepts "0,5" as well as "0.5". */
+function nonNegativeNumber(control: AbstractControl): ValidationErrors | null {
+  const value = parseDecimal(control.value);
 
-  return Number.isFinite(value) && value > 0 ? null : { positive: true };
+  return value !== null && value >= 0 ? null : { nonNegative: true };
+}
+
+function positiveNumber(control: AbstractControl): ValidationErrors | null {
+  const value = parseDecimal(control.value);
+
+  return value !== null && value > 0 ? null : { positive: true };
 }
 
 @Component({
@@ -78,7 +86,7 @@ export class GoalForm implements OnInit, OnDestroy {
     unit: ['', notBlank],
     period: ['daily' as GoalPeriod, Validators.required],
     target_type: ['min' as GoalTargetType, Validators.required],
-    target_value: [0, [Validators.required, Validators.min(0)]],
+    target_value: [0, [Validators.required, nonNegativeNumber]],
     quick_action_type: ['none' as GoalQuickActionType],
     quick_action_step: [null as number | null],
     is_active: [true, Validators.required],
@@ -265,10 +273,10 @@ export class GoalForm implements OnInit, OnDestroy {
       unit: value.unit,
       period: value.period,
       target_type: value.target_type,
-      target_value: value.target_value,
+      target_value: parseDecimal(value.target_value) ?? 0,
       quick_action_type: value.quick_action_type || 'none',
       quick_action_step:
-        value.quick_action_type === 'increment' ? Number(value.quick_action_step) : null,
+        value.quick_action_type === 'increment' ? parseDecimal(value.quick_action_step) : null,
       is_active: value.is_active,
     };
 

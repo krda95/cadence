@@ -100,6 +100,57 @@ describe('GoalForm', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it('accepts a comma as the decimal separator in the step', async () => {
+    await setup(null);
+    component.form.patchValue({ name: 'Read', unit: 'pages', quick_action_type: 'increment' });
+    // The text input hands over what was typed, so the control holds a string at runtime.
+    component.form.controls.quick_action_step.setValue('0,5' as unknown as number);
+
+    expect(component.form.controls.quick_action_step.valid).toBe(true);
+
+    component.submit();
+
+    const request = http.expectOne((req) => req.method === 'POST');
+    expect(request.request.body.quick_action_step).toBe(0.5);
+    request.flush(GOAL);
+  });
+
+  it('accepts a comma as the decimal separator in the target value', async () => {
+    await setup(null);
+    component.form.patchValue({ name: 'Run', unit: 'km' });
+    component.form.controls.target_value.setValue('2,5' as unknown as number);
+
+    expect(component.form.controls.target_value.valid).toBe(true);
+
+    component.submit();
+
+    const request = http.expectOne((req) => req.method === 'POST');
+    expect(request.request.body.target_value).toBe(2.5);
+    request.flush(GOAL);
+  });
+
+  it('rejects a target value that is not a number or is negative', async () => {
+    await setup(null);
+
+    for (const typed of ['', 'abc', '-1']) {
+      component.form.controls.target_value.setValue(typed as unknown as number);
+      expect(component.form.controls.target_value.valid).toBe(false);
+    }
+
+    component.form.controls.target_value.setValue('0' as unknown as number);
+    expect(component.form.controls.target_value.valid).toBe(true);
+  });
+
+  it('still rejects a step that is not a positive number', async () => {
+    await setup(null);
+    component.form.patchValue({ quick_action_type: 'increment' });
+
+    for (const typed of ['', '0', '-1', 'abc']) {
+      component.form.controls.quick_action_step.setValue(typed as unknown as number);
+      expect(component.form.controls.quick_action_step.valid).toBe(false);
+    }
+  });
+
   it('deactivates and hands the goal to the list so it can offer undo', async () => {
     await setup('g1');
 

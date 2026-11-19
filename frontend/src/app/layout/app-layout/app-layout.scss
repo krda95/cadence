@@ -3,6 +3,11 @@
 $sidebar-width: 280px;
 $mobile-bar-height: 72px;
 
+// The floating assistant button. On mobile it sits above the bottom navigation, and the page
+// keeps enough room under its content to scroll the last item clear of it.
+$assistant-trigger-size: 64px;
+$assistant-trigger-mobile-bottom: 100px;
+
 @mixin material {
   background: color-mix(in srgb, var(--color-surface) 78%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
@@ -390,8 +395,8 @@ $mobile-bar-height: 72px;
   align-items: center;
   justify-content: center;
 
-  width: 64px;
-  height: 64px;
+  width: $assistant-trigger-size;
+  height: $assistant-trigger-size;
 
   border: 0;
   border-radius: 20px;
@@ -417,7 +422,7 @@ $mobile-bar-height: 72px;
 
 @media (max-width: bp.$desktop) {
   .assistant-trigger {
-    bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(#{$assistant-trigger-mobile-bottom} + env(safe-area-inset-bottom, 0px));
     right: var(--space-4);
   }
 }
@@ -533,8 +538,12 @@ $mobile-bar-height: 72px;
   }
 
   .page-container {
+    // Bottom: the assistant button's top edge plus a gap, so the last item can scroll above it.
     padding: calc(#{$mobile-bar-height} + var(--space-6)) var(--space-4)
-      calc(80px + var(--space-6) + env(safe-area-inset-bottom));
+      calc(
+        #{$assistant-trigger-mobile-bottom} + #{$assistant-trigger-size} + var(--space-4) +
+          env(safe-area-inset-bottom, 0px)
+      );
   }
 
   .user-card {
