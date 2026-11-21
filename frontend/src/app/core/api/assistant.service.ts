@@ -20,8 +20,12 @@ export class AssistantService {
 
   readonly dataVersion = this.refreshCounter.asReadonly();
 
-  notifyDataChanged(): void {
-    this.refreshCounter.update((value) => value + 1);
+  notifyDataChanged(affectedDates: readonly string[]): void {
+    if (affectedDates.length === 0) {
+      return;
+    }
+
+    this.refreshCounter.update((value) => ++value);
   }
 
   sendMessage(request: AssistantChatRequest): Observable<AssistantChatResponse> {

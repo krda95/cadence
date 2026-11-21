@@ -62,7 +62,7 @@ export class AssistantPanel {
           role: 'assistant',
           content: response.message,
         });
-        this.assistantService.notifyDataChanged();
+        this.assistantService.notifyDataChanged(response.affected_dates ?? []);
         this.failedRequest = null;
         this.isLoading.set(false);
       },

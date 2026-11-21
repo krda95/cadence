@@ -72,7 +72,7 @@ describe('AssistantPanel sending messages', () => {
     expect(fixture.componentInstance.isLoading()).toBe(true);
     expect(fixture.componentInstance.draft()).toBe('');
 
-    request.flush({ message: 'Logged 8500 steps.' });
+    request.flush({ message: 'Logged 8500 steps.', affected_dates: ['2026-01-15'] });
     await settle();
 
     const messages = fixture.componentInstance.messages();
@@ -107,5 +107,14 @@ describe('AssistantPanel sending messages', () => {
 
     expect(uuid).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.isLoading()).toBe(false);
+  });
+
+  it('does not publish a data change for a reply that saved nothing', async () => {
+    await typeMessage('What goals do I have?');
+    sendButton().click();
+    chatRequest().flush({ message: 'You track Water.', affected_dates: [] });
+    await settle();
+
+    expect(TestBed.inject(AssistantService).dataVersion()).toBe(0);
   });
 });
