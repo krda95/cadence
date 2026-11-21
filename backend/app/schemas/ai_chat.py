@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -18,3 +19,4 @@ class AIChatRequest(BaseModel):
 
 class AIChatResponse(BaseModel):
     message: str
+    affected_dates: list[date] = Field(default_factory=list)

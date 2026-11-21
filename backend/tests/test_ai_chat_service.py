@@ -11,7 +11,7 @@ from openai import APIConnectionError
 from pydantic import ValidationError
 
 import app.services.ai_chat_service as ai_service
-from app.schemas.ai_chat import AIChatRequest
+from app.schemas.ai_chat import AIChatRequest, AIChatResponse
 from app.services.ai_chat_service import (
     SUMMARY_PROMPT,
     SaveGoalEntryArguments,
@@ -1161,3 +1161,29 @@ async def test_empty_summary_returns_fallback(monkeypatch):
     )
 
     assert result["message"] == "Updated Steps to 3000 for today."
+
+
+def test_ai_chat_response_defaults_affected_dates_to_empty():
+    response = AIChatResponse(message="Hello!")
+
+    assert response.model_dump(mode="json") == {
+        "message": "Hello!",
+        "affected_dates": [],
+    }
+
+
+def test_ai_chat_response_serializes_affected_dates_as_iso_strings():
+    response = AIChatResponse(
+        message="Saved.",
+        affected_dates=["2025-12-31", "2026-01-15"],
+    )
+
+    assert response.model_dump(mode="json")["affected_dates"] == [
+        "2025-12-31",
+        "2026-01-15",
+    ]
+
+
+def test_ai_chat_response_rejects_invalid_affected_date():
+    with pytest.raises(ValidationError):
+        AIChatResponse(message="Saved.", affected_dates=["yesterday"])
