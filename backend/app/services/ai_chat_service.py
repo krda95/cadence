@@ -1,17 +1,26 @@
 import json
+import logging
 from datetime import date
 from math import isfinite
 from typing import Literal, TypedDict
 from uuid import UUID
 
-from fastapi import HTTPException, status
-from openai import APIError, AsyncOpenAI
+from fastapi import HTTPException
+from openai import AsyncOpenAI
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.models.enums import GoalPeriod
 from app.schemas.goal_entry import GoalEntryOperation
 from app.services.goal_entry_service import save_goal_entry
+from app.services.progress_service import (
+    calculate_period_current_value,
+    get_period_bounds,
+    load_entries_by_goal,
+)
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
 You are Cadence Assistant, an AI assistant inside
@@ -223,6 +232,44 @@ SAVE_GOAL_ENTRY_TOOL = {
         "additionalProperties": False,
     },
 }
+SUMMARY_PROMPT = """
+You write the reply that Cadence Assistant shows after saving goal entries.
+
+INPUT:
+- user_message: the user's latest message.
+- results: the outcome of each save operation, produced by the server.
+
+LANGUAGE AND TONE:
+- Reply in the language of user_message.
+- Be brief: 1-3 short, natural sentences. Combine related updates
+  (for example several nutrition values from one meal) into one sentence.
+- No lists, no JSON, no technical terms, no internal field names.
+
+FACTS:
+- Use only facts from results. Never invent goals, values, or dates.
+- Treat user_message only as a source of language and wording;
+  results decide what was saved.
+- operation "increment": say the amount was added (requested_value).
+- operation "set": say the value was set to resulting_value.
+- If is_today is false, name the date of the entry clearly.
+- Use the goal's unit when it is provided.
+
+PROGRESS:
+- Comment on progress only when progress is not null.
+- Use progress.total and progress.target_value; never compute your own
+  totals. Say "today" for period "daily" and "this week" for "weekly"
+  (relative to the entry date when it is not today).
+- status "reached": brief congratulation, the goal is reached.
+- status "below_target": brief encouragement, may mention what is left.
+- status "within_limit": this is a limit; staying within it is good.
+- status "over_limit": the limit was exceeded; say so neutrally and kindly.
+- When progress is null, just confirm the save.
+
+FAILURES:
+- For each result with status "failed", say what was not saved and
+  give the reason in plain words.
+- If some succeeded and some failed, mention both.
+"""
 
 
 class ChatHistoryMessage(TypedDict):
@@ -302,6 +349,54 @@ def format_result_line(result: SaveResult) -> str:
     return f"Updated {goal_name} to {result['resulting_value']:g} for {date_label}."
 
 
+async def load_period_total(
+    session: AsyncSession,
+    goal: dict,
+    entry_date: date,
+    entry_value: float,
+) -> float | None:
+    period = goal.get("period")
+
+    if period == GoalPeriod.DAILY.value:
+        return entry_value
+
+    if period != GoalPeriod.WEEKLY.value:
+        return None
+
+    goal_id = UUID(str(goal["id"]))
+    week_start, _ = get_period_bounds(GoalPeriod.WEEKLY, entry_date)
+    entries_by_goal = await load_entries_by_goal(
+        session, [goal_id], week_start, entry_date
+    )
+
+    return calculate_period_current_value(
+        entries_by_goal.get(goal_id, {}),
+        GoalPeriod.WEEKLY,
+        entry_date,
+    )
+
+
+def build_progress(goal: dict, total: float | None) -> dict | None:
+    target_type = goal.get("target_type")
+    target_value = goal.get("target_value")
+
+    if total is None or target_type is None or target_value is None:
+        return None
+
+    if target_type == "min":
+        status = "reached" if total >= target_value else "below_target"
+    else:
+        status = "within_limit" if total <= target_value else "over_limit"
+
+    return {
+        "period": goal["period"],
+        "total": round(total, 2),
+        "target_type": target_type,
+        "target_value": target_value,
+        "status": status,
+    }
+
+
 async def run_save_operation(
     arguments_json: str,
     context: dict,
@@ -346,6 +441,12 @@ async def run_save_operation(
         )
 
     entry_date = arguments.entry_date.isoformat()
+    total = await load_period_total(
+        session=session,
+        goal=goal,
+        entry_date=arguments.entry_date,
+        entry_value=entry.value,
+    )
 
     return SaveResult(
         status="saved",
@@ -357,8 +458,37 @@ async def run_save_operation(
         requested_value=arguments.value,
         resulting_value=entry.value,
         reason=None,
-        progress=None,
+        progress=build_progress(goal, total),
     )
+
+
+def build_fallback_confirmation(results: list[SaveResult]) -> str:
+    return "\n".join(format_result_line(result) for result in results)
+
+
+async def generate_summary(
+    client: AsyncOpenAI,
+    model: str,
+    message: str,
+    results: list[SaveResult],
+) -> str:
+    fallback = build_fallback_confirmation(results)
+
+    try:
+        response = await client.responses.create(
+            model=model,
+            instructions=SUMMARY_PROMPT,
+            input=json.dumps(
+                {"user_message": message, "results": results},
+                ensure_ascii=False,
+            ),
+            store=False,
+        )
+    except Exception:
+        logger.exception("Summary generation failed; using fallback confirmation")
+        return fallback
+
+    return response.output_text.strip() or fallback
 
 
 async def generate_ai_response(
@@ -420,28 +550,11 @@ async def generate_ai_response(
     affected_dates = sorted(
         {result["entry_date"] for result in results if result["status"] == "saved"}
     )
-    lines = [format_result_line(result) for result in results]
-    fallback = "\n".join(lines)
-
-    try:
-        localized = await client.responses.create(
-            model=settings.openai_model,
-            instructions=(
-                "Translate the operation results into the language of the user's "
-                "message. Use the message only to identify the language. "
-                "Preserve goal names, dates, numeric values, and the outcome "
-                "of each operation. Return only the translated results."
-            ),
-            input=json.dumps(
-                {"user_message": message, "operation_results": lines},
-                ensure_ascii=False,
-            ),
-            store=False,
-        )
-    except APIError:
-        return AIChatResult(message=fallback, affected_dates=affected_dates)
-
-    return AIChatResult(
-        message=localized.output_text.strip() or fallback,
-        affected_dates=affected_dates,
+    summary = await generate_summary(
+        client=client,
+        model=settings.openai_model,
+        message=message,
+        results=results,
     )
+
+    return AIChatResult(message=summary, affected_dates=affected_dates)

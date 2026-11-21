@@ -4,16 +4,23 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
+import httpx
 import pytest
 from fastapi import HTTPException
+from openai import APIConnectionError
 from pydantic import ValidationError
 
 import app.services.ai_chat_service as ai_service
 from app.schemas.ai_chat import AIChatRequest
 from app.services.ai_chat_service import (
+    SUMMARY_PROMPT,
     SaveGoalEntryArguments,
+    build_fallback_confirmation,
+    build_progress,
     format_result_line,
     generate_ai_response,
+    load_period_total,
+    run_save_operation,
 )
 
 TEST_TODAY = date(2026, 1, 15)
@@ -67,7 +74,11 @@ def make_save_response_mock(*function_calls):
             return make_ai_response(output=list(function_calls))
 
         payload = json.loads(kwargs["input"])
-        return make_ai_response(output_text="\n".join(payload["operation_results"]))
+        return make_ai_response(
+            output_text="\n".join(
+                format_result_line(result) for result in payload["results"]
+            )
+        )
 
     return AsyncMock(side_effect=respond)
 
@@ -588,36 +599,24 @@ async def test_generate_ai_response_increment_entry(monkeypatch, entry_date):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "message, expected_reply",
-    [
-        (
-            "Add 1500 steps",
-            "Added 1500 to Steps. Your total for today is now 4500.",
-        ),
-        (
-            "Dodaj 1500 kroków",
-            "Dodano 1500 do celu Steps. Dzisiejsza suma to 4500.",
-        ),
-    ],
-)
-async def test_generate_ai_response_returns_localized_confirmation(
-    monkeypatch, message, expected_reply
-):
+async def test_summary_call_receives_structured_results(monkeypatch):
     goal_id = uuid4()
     mock_client = MagicMock()
     mock_client.responses.create = AsyncMock(
         side_effect=[
             make_ai_response(output=[make_function_call(goal_id, "increment", 1500)]),
-            make_ai_response(output_text=expected_reply),
+            make_ai_response(output_text="Dodałem 1500 kroków."),
         ]
     )
-    mock_save = AsyncMock(return_value=SimpleNamespace(value=4500))
     monkeypatch.setattr(ai_service, "AsyncOpenAI", lambda **kwargs: mock_client)
-    monkeypatch.setattr(ai_service, "save_goal_entry", mock_save)
+    monkeypatch.setattr(
+        ai_service,
+        "save_goal_entry",
+        AsyncMock(return_value=SimpleNamespace(value=4500)),
+    )
 
     result = await generate_ai_response(
-        message=message,
+        message="Dodaj 1500 kroków",
         context={
             "today": TEST_TODAY.isoformat(),
             "goals": [{"id": str(goal_id), "name": "Steps"}],
@@ -626,15 +625,17 @@ async def test_generate_ai_response_returns_localized_confirmation(
         owner_id=uuid4(),
     )
 
-    assert result["message"] == expected_reply
-    mock_save.assert_awaited_once()
-    assert mock_client.responses.create.await_count == 2
-
-    translation_call = mock_client.responses.create.await_args_list[1].kwargs
-    assert "tools" not in translation_call
-    assert json.loads(translation_call["input"]) == {
-        "user_message": message,
-        "operation_results": ["Added 1500 to Steps. Your total for today is now 4500."],
+    assert result["message"] == "Dodałem 1500 kroków."
+    summary_call = mock_client.responses.create.await_args_list[1].kwargs
+    assert "tools" not in summary_call
+    assert summary_call["instructions"] == SUMMARY_PROMPT
+    assert json.loads(summary_call["input"]) == {
+        "user_message": "Dodaj 1500 kroków",
+        "results": [
+            make_result(
+                operation="increment", requested_value=1500, resulting_value=4500
+            )
+        ],
     }
 
 
@@ -936,3 +937,227 @@ async def test_partial_success_keeps_affected_dates(monkeypatch):
     lines = result["message"].splitlines()
     assert lines[0] == "Added 2000 to Steps. Your total for today is now 2000."
     assert lines[1].startswith("Could not update")
+
+
+def make_goal(goal_id, period="daily", target_type="min", target_value=10000):
+    return {
+        "id": str(goal_id),
+        "name": "Steps",
+        "unit": "steps",
+        "period": period,
+        "target_type": target_type,
+        "target_value": target_value,
+    }
+
+
+@pytest.mark.parametrize(
+    "target_type, total, expected_status",
+    [
+        ("min", 10000, "reached"),
+        ("min", 9999, "below_target"),
+        ("max", 2000, "within_limit"),
+        ("max", 2001, "over_limit"),
+    ],
+)
+def test_build_progress_status(target_type, total, expected_status):
+    goal = make_goal(
+        uuid4(),
+        target_type=target_type,
+        target_value=10000 if target_type == "min" else 2000,
+    )
+
+    progress = build_progress(goal, total)
+
+    assert progress["status"] == expected_status
+    assert progress["total"] == total
+    assert progress["period"] == "daily"
+
+
+def test_build_progress_is_none_without_total():
+    assert build_progress(make_goal(uuid4()), None) is None
+
+
+@pytest.mark.asyncio
+async def test_load_period_total_for_daily_goal_uses_entry_value_without_query(
+    monkeypatch,
+):
+    mock_load = AsyncMock()
+    monkeypatch.setattr(ai_service, "load_entries_by_goal", mock_load)
+
+    total = await load_period_total(
+        MagicMock(), make_goal(uuid4()), TEST_TODAY, entry_value=10000
+    )
+
+    assert total == 10000
+    mock_load.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_load_period_total_for_weekly_goal_sums_week_up_to_entry_date(
+    monkeypatch,
+):
+    goal_id = uuid4()
+    week_start = date(2026, 1, 12)
+    mock_load = AsyncMock(
+        return_value={
+            goal_id: {
+                date(2026, 1, 12): SimpleNamespace(value=2),
+                date(2026, 1, 14): SimpleNamespace(value=3),
+                date(2026, 1, 16): SimpleNamespace(value=4),
+            }
+        }
+    )
+    monkeypatch.setattr(ai_service, "load_entries_by_goal", mock_load)
+    session = MagicMock()
+
+    total = await load_period_total(
+        session, make_goal(goal_id, period="weekly"), date(2026, 1, 14), entry_value=3
+    )
+
+    assert total == 5
+    mock_load.assert_awaited_once_with(
+        session, [goal_id], week_start, date(2026, 1, 14)
+    )
+
+
+@pytest.mark.asyncio
+async def test_load_period_total_is_none_for_unsupported_period():
+    total = await load_period_total(
+        MagicMock(), make_goal(uuid4(), period="monthly"), TEST_TODAY, entry_value=1
+    )
+
+    assert total is None
+
+
+@pytest.mark.asyncio
+async def test_run_save_operation_attaches_progress(monkeypatch):
+    goal_id = uuid4()
+    monkeypatch.setattr(
+        ai_service,
+        "save_goal_entry",
+        AsyncMock(return_value=SimpleNamespace(value=10000)),
+    )
+
+    result = await run_save_operation(
+        arguments_json=make_function_call(goal_id, "increment", 2000).arguments,
+        context={"today": TEST_TODAY.isoformat(), "goals": [make_goal(goal_id)]},
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    assert result["progress"] == {
+        "period": "daily",
+        "total": 10000,
+        "target_type": "min",
+        "target_value": 10000,
+        "status": "reached",
+    }
+
+
+@pytest.mark.asyncio
+async def test_run_save_operation_has_no_progress_when_goal_lacks_target(monkeypatch):
+    goal_id = uuid4()
+    monkeypatch.setattr(
+        ai_service, "save_goal_entry", AsyncMock(return_value=SimpleNamespace(value=1))
+    )
+
+    result = await run_save_operation(
+        arguments_json=make_function_call(goal_id, "set", 1).arguments,
+        context={
+            "today": TEST_TODAY.isoformat(),
+            "goals": [{"id": str(goal_id), "name": "Steps"}],
+        },
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    assert result["status"] == "saved"
+    assert result["progress"] is None
+
+
+def test_build_fallback_confirmation_reports_success_and_failure():
+    results = [
+        make_result(operation="increment", requested_value=2000, resulting_value=10000),
+        make_result(
+            status="failed",
+            goal_name="Calories",
+            resulting_value=None,
+            reason="Cannot update an inactive goal",
+        ),
+    ]
+
+    assert build_fallback_confirmation(results) == (
+        "Added 2000 to Steps. Your total for today is now 10000.\n"
+        "Could not update Calories for today. Cannot update an inactive goal."
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "summary_error",
+    [
+        APIConnectionError(request=httpx.Request("POST", "https://api.openai.com")),
+        RuntimeError("Unexpected SDK failure"),
+    ],
+)
+async def test_summary_failure_returns_fallback_and_saves_once(
+    monkeypatch, summary_error
+):
+    goal_id = uuid4()
+    mock_client = MagicMock()
+    mock_client.responses.create = AsyncMock(
+        side_effect=[
+            make_ai_response(output=[make_function_call(goal_id, "increment", 2000)]),
+            summary_error,
+        ]
+    )
+    mock_save = AsyncMock(return_value=SimpleNamespace(value=10000))
+    monkeypatch.setattr(ai_service, "AsyncOpenAI", lambda **kwargs: mock_client)
+    monkeypatch.setattr(ai_service, "save_goal_entry", mock_save)
+
+    result = await generate_ai_response(
+        message="Add 2000 steps",
+        context={
+            "today": TEST_TODAY.isoformat(),
+            "goals": [{"id": str(goal_id), "name": "Steps"}],
+        },
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    assert result == {
+        "message": "Added 2000 to Steps. Your total for today is now 10000.",
+        "affected_dates": [TEST_TODAY.isoformat()],
+    }
+    mock_save.assert_awaited_once()
+    assert mock_client.responses.create.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_empty_summary_returns_fallback(monkeypatch):
+    goal_id = uuid4()
+    mock_client = MagicMock()
+    mock_client.responses.create = AsyncMock(
+        side_effect=[
+            make_ai_response(output=[make_function_call(goal_id, "set", 3000)]),
+            make_ai_response(output_text="   "),
+        ]
+    )
+    monkeypatch.setattr(ai_service, "AsyncOpenAI", lambda **kwargs: mock_client)
+    monkeypatch.setattr(
+        ai_service,
+        "save_goal_entry",
+        AsyncMock(return_value=SimpleNamespace(value=3000)),
+    )
+
+    result = await generate_ai_response(
+        message="Set steps to 3000",
+        context={
+            "today": TEST_TODAY.isoformat(),
+            "goals": [{"id": str(goal_id), "name": "Steps"}],
+        },
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    assert result["message"] == "Updated Steps to 3000 for today."
