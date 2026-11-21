@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from openai import APIError, AsyncOpenAI
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -230,6 +230,24 @@ class ChatHistoryMessage(TypedDict):
     content: str
 
 
+class SaveResult(TypedDict):
+    status: Literal["saved", "failed"]
+    goal_name: str | None
+    unit: str | None
+    entry_date: str | None
+    is_today: bool
+    operation: Literal["set", "increment"] | None
+    requested_value: float | None
+    resulting_value: float | None
+    reason: str | None
+    progress: dict | None
+
+
+class AIChatResult(TypedDict):
+    message: str
+    affected_dates: list[str]
+
+
 class SaveGoalEntryArguments(BaseModel):
     goal_id: UUID
     entry_date: date
@@ -244,23 +262,103 @@ class SaveGoalEntryArguments(BaseModel):
         return value
 
 
-def build_entry_confirmation(
-    goal_name: str,
-    operation: str,
-    value: float,
-    current_value: float,
-    date_label: str = "today",
-) -> str:
-    formatted_value = f"{value:g}"
-    formatted_total = f"{current_value:g}"
+def build_failed_result(
+    reason: str,
+    goal: dict | None = None,
+    arguments: SaveGoalEntryArguments | None = None,
+    today: str | None = None,
+) -> SaveResult:
+    entry_date = arguments.entry_date.isoformat() if arguments else None
 
-    if operation == "increment":
+    return SaveResult(
+        status="failed",
+        goal_name=goal["name"] if goal else None,
+        unit=goal.get("unit") if goal else None,
+        entry_date=entry_date,
+        is_today=entry_date is not None and entry_date == today,
+        operation=arguments.operation if arguments else None,
+        requested_value=arguments.value if arguments else None,
+        resulting_value=None,
+        reason=reason,
+        progress=None,
+    )
+
+
+def format_result_line(result: SaveResult) -> str:
+    goal_name = result["goal_name"] or "an entry"
+    date_label = "today" if result["is_today"] else result["entry_date"]
+
+    if result["status"] == "failed":
+        if result["entry_date"] is None:
+            return f"Could not save an entry. {result['reason']}."
+        return f"Could not update {goal_name} for {date_label}. {result['reason']}."
+
+    if result["operation"] == "increment":
         return (
-            f"Added {formatted_value} to {goal_name}. "
-            f"Your total for {date_label} is now {formatted_total}."
+            f"Added {result['requested_value']:g} to {goal_name}. "
+            f"Your total for {date_label} is now {result['resulting_value']:g}."
         )
 
-    return f"Updated {goal_name} to {formatted_total} for {date_label}."
+    return f"Updated {goal_name} to {result['resulting_value']:g} for {date_label}."
+
+
+async def run_save_operation(
+    arguments_json: str,
+    context: dict,
+    session: AsyncSession,
+    owner_id: UUID,
+) -> SaveResult:
+    today = context.get("today")
+
+    try:
+        arguments = SaveGoalEntryArguments.model_validate_json(arguments_json)
+    except ValidationError:
+        return build_failed_result("The values for this entry were invalid")
+
+    goal = next(
+        (
+            goal
+            for goal in context["goals"]
+            if UUID(str(goal["id"])) == arguments.goal_id
+        ),
+        None,
+    )
+
+    if goal is None:
+        return build_failed_result(
+            "This goal is not available", arguments=arguments, today=today
+        )
+
+    try:
+        entry = await save_goal_entry(
+            session=session,
+            goal_id=arguments.goal_id,
+            owner_id=owner_id,
+            entry_date=arguments.entry_date,
+            payload=GoalEntryOperation(
+                operation=arguments.operation,
+                value=arguments.value,
+            ),
+        )
+    except HTTPException as error:
+        return build_failed_result(
+            str(error.detail), goal=goal, arguments=arguments, today=today
+        )
+
+    entry_date = arguments.entry_date.isoformat()
+
+    return SaveResult(
+        status="saved",
+        goal_name=goal["name"],
+        unit=goal.get("unit"),
+        entry_date=entry_date,
+        is_today=entry_date == today,
+        operation=arguments.operation,
+        requested_value=arguments.value,
+        resulting_value=entry.value,
+        reason=None,
+        progress=None,
+    )
 
 
 async def generate_ai_response(
@@ -269,7 +367,7 @@ async def generate_ai_response(
     session: AsyncSession,
     owner_id: UUID,
     history: list[ChatHistoryMessage] | None = None,
-) -> str:
+) -> AIChatResult:
     settings = get_settings()
 
     client = AsyncOpenAI(
@@ -298,8 +396,7 @@ async def generate_ai_response(
         store=False,
     )
     # print("AI RESPONSE OUTPUT:", response.output)
-
-    results = []
+    results: list[SaveResult] = []
 
     for item in response.output:
         if item.type != "function_call":
@@ -308,58 +405,24 @@ async def generate_ai_response(
         if item.name != "save_goal_entry":
             raise ValueError(f"Unsupported function: {item.name}")
 
-        arguments = SaveGoalEntryArguments.model_validate_json(item.arguments)
-        goal = next(
-            (
-                goal
-                for goal in context["goals"]
-                if UUID(str(goal["id"])) == arguments.goal_id
-            ),
-            None,
-        )
-
-        if goal is None:
-            raise ValueError(
-                "The requested goal is not available in the user's context."
-            )
-
-        entry_date = arguments.entry_date.isoformat()
-        date_label = "today" if entry_date == context["today"] else entry_date
-        payload = GoalEntryOperation(
-            operation=arguments.operation,
-            value=arguments.value,
-        )
-
-        try:
-            entry = await save_goal_entry(
-                session=session,
-                goal_id=arguments.goal_id,
-                owner_id=owner_id,
-                entry_date=arguments.entry_date,
-                payload=payload,
-            )
-        except HTTPException as error:
-            if error.status_code != status.HTTP_422_UNPROCESSABLE_CONTENT:
-                raise
-            results.append(
-                f"Could not update {goal['name']} for {date_label}. {error.detail}."
-            )
-            continue
-
         results.append(
-            build_entry_confirmation(
-                goal_name=goal["name"],
-                operation=arguments.operation,
-                value=arguments.value,
-                current_value=entry.value,
-                date_label=date_label,
+            await run_save_operation(
+                arguments_json=item.arguments,
+                context=context,
+                session=session,
+                owner_id=owner_id,
             )
         )
 
     if not results:
-        return response.output_text
+        return AIChatResult(message=response.output_text, affected_dates=[])
 
-    fallback = "\n".join(results)
+    affected_dates = sorted(
+        {result["entry_date"] for result in results if result["status"] == "saved"}
+    )
+    lines = [format_result_line(result) for result in results]
+    fallback = "\n".join(lines)
+
     try:
         localized = await client.responses.create(
             model=settings.openai_model,
@@ -370,12 +433,15 @@ async def generate_ai_response(
                 "of each operation. Return only the translated results."
             ),
             input=json.dumps(
-                {"user_message": message, "operation_results": results},
+                {"user_message": message, "operation_results": lines},
                 ensure_ascii=False,
             ),
             store=False,
         )
     except APIError:
-        return fallback
+        return AIChatResult(message=fallback, affected_dates=affected_dates)
 
-    return localized.output_text.strip() or fallback
+    return AIChatResult(
+        message=localized.output_text.strip() or fallback,
+        affected_dates=affected_dates,
+    )
