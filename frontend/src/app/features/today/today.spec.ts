@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
+import { AssistantService } from '@core/api/assistant.service';
 
 import { DailyProgressResponse } from '@models/progressModel';
 import { GoalEntryDayResponse } from '@models/goalModel';
@@ -183,5 +184,43 @@ describe('Today', () => {
     await settle();
 
     expect(el().querySelector('.goal-entry__impact')?.textContent).toContain('Penalty');
+  });
+
+  it('reloads entries and score once after an assistant save', async () => {
+    entries().flush([GOAL]);
+    daily().flush(SCORE);
+    await settle();
+
+    TestBed.inject(AssistantService).notifyDataChanged(['2026-01-15']);
+    fixture.detectChanges();
+
+    entries().flush([GOAL]);
+    daily().flush(SCORE);
+  });
+
+  it('does not reload when the assistant saved nothing', async () => {
+    entries().flush([GOAL]);
+    daily().flush(SCORE);
+    await settle();
+
+    TestBed.inject(AssistantService).notifyDataChanged([]);
+    fixture.detectChanges();
+
+    http.expectNone((req) => req.url.endsWith('/entries'));
+    http.expectNone((req) => req.url.endsWith('/progress/daily'));
+  });
+
+  it('loads only once when opened after an earlier assistant save', async () => {
+    entries().flush([GOAL]);
+    daily().flush(SCORE);
+    await settle();
+    fixture.destroy();
+
+    TestBed.inject(AssistantService).notifyDataChanged(['2026-01-15']);
+    fixture = TestBed.createComponent(Today);
+    fixture.detectChanges();
+
+    expect(http.match((req) => req.url.endsWith('/entries'))).toHaveLength(1);
+    expect(http.match((req) => req.url.endsWith('/progress/daily'))).toHaveLength(1);
   });
 });

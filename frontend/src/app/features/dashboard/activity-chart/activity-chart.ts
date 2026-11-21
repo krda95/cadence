@@ -14,6 +14,7 @@ import { LucideChevronLeft, LucideChevronRight } from '@lucide/angular';
 import { DashboardService } from '@core/api/dashboard.service';
 import { DashboardActivityResponse } from '@models/dashboardModel';
 import { scoreBand } from '@shared/utils/score-band';
+import { reloadOnAssistantUpdate } from '@shared/utils/reload-on-assistant-update';
 
 const TOUCH_TOOLTIP_LINGER_MS = 1500;
 const TOOLTIP_EDGE_MARGIN_PX = 8;
@@ -125,6 +126,7 @@ export class ActivityChart {
   private pointerInside = false;
 
   constructor() {
+    reloadOnAssistantUpdate(() => this.resource.reload());
     // Runs after the new bars are in the DOM: slide them in from the direction of travel.
     afterRenderEffect(() => {
       const key = this.activity()?.date_from ?? null;

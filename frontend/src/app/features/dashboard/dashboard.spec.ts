@@ -9,6 +9,10 @@ import { provideRouter } from '@angular/router';
 
 import { DashboardResponse } from '@models/dashboardModel';
 import { Dashboard } from './dashboard';
+import { By } from '@angular/platform-browser';
+
+import { AssistantService } from '@core/api/assistant.service';
+import { ActivityChart } from './activity-chart/activity-chart';
 
 const RESPONSE: DashboardResponse = {
   today: { score: 82, scored_components_count: 3, pending_components_count: 1, has_entries: true },
@@ -49,6 +53,12 @@ describe('Dashboard', () => {
 
     await new Promise((resolve) => setTimeout(resolve));
     fixture.detectChanges();
+  }
+
+  // The chart renders only after the summary arrives, so its own request comes in a second round.
+  async function loadDashboard(): Promise<void> {
+    await flushAllDashboardRequests((req) => req.flush(RESPONSE));
+    await flushAllDashboardRequests((req) => req.flush(RESPONSE));
   }
 
   beforeEach(async () => {
@@ -102,5 +112,34 @@ describe('Dashboard', () => {
 
     expect(el().querySelector('.dashboard__retry')).toBeNull();
     expect(el().querySelector('.today-card')).toBeTruthy();
+  });
+
+  it('reloads the summary and the chart on its current period after an assistant save', async () => {
+    await loadDashboard();
+
+    const chart = fixture.debugElement.query(By.directive(ActivityChart))
+      .componentInstance as ActivityChart;
+    chart.setPeriod('month');
+    fixture.detectChanges();
+    await flushAllDashboardRequests((req) =>
+      req.flush({ ...RESPONSE, activity: { ...RESPONSE.activity, period: 'month' } }),
+    );
+
+    TestBed.inject(AssistantService).notifyDataChanged(['2026-11-03']);
+    fixture.detectChanges();
+
+    const periods = dashboardRequests()
+      .map((req) => req.request.params.get('period'))
+      .sort();
+    expect(periods).toEqual(['month', 'week']);
+  });
+
+  it('does not reload when the assistant saved nothing', async () => {
+    await loadDashboard();
+
+    TestBed.inject(AssistantService).notifyDataChanged([]);
+    fixture.detectChanges();
+
+    expect(dashboardRequests()).toHaveLength(0);
   });
 });

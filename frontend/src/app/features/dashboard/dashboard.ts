@@ -9,6 +9,7 @@ import { AuthService } from '@core/services/auth.service';
 import { scoreBand } from '@shared/utils/score-band';
 import { streakColor } from './streak-color';
 import { ActivityChart } from './activity-chart/activity-chart';
+import { reloadOnAssistantUpdate } from '@shared/utils/reload-on-assistant-update';
 
 @Component({
   selector: 'app-dashboard',
@@ -71,4 +72,8 @@ export class Dashboard {
   });
   readonly currentStreakColor = computed(() => streakColor(this.data()?.streak.current ?? 0));
   readonly longestStreakColor = computed(() => streakColor(this.data()?.streak.longest ?? 0));
+
+  constructor() {
+    reloadOnAssistantUpdate(() => this.dashboard.reload());
+  }
 }
