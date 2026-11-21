@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from datetime import date
 from math import isfinite
 from typing import Literal, TypedDict
@@ -89,6 +90,12 @@ MULTIPLE OPERATIONS:
 - Never invent a replacement goal for a missing goal.
 - Use a separate save_goal_entry tool call for each valid update.
 - Do not omit valid operations.
+- For every requested operation you do not execute, call
+  report_skipped_operation once, in the same response as the saves.
+  Never skip an operation silently.
+- Use reason "no_matching_goal" when no goal in the context fits,
+  and "unclear_request" when the goal, date, value, or operation
+  is ambiguous.
 
 OPERATION TYPES:
 - Use "increment" when the user asks to add an amount
@@ -112,6 +119,8 @@ RESPONSE RULES:
 - Do not suggest creating new goals unless the user asks
   about creating goals.
 - Keep responses concise, natural, and helpful.
+- Never use em dashes or en dashes. Use a comma, a period, or a
+  new sentence instead.
 
 EXAMPLES:
 
@@ -131,6 +140,8 @@ User: "Add 1 mile and 600 kcal to food"
 Expected behavior:
 - Increment Running by 1.
 - Do not update any goal for "food" because it does not exist.
+- Call report_skipped_operation with request "600 kcal to food"
+  and reason "no_matching_goal".
 - Confirm the Running update.
 - Explain that the food entry was not saved.
 
@@ -232,6 +243,36 @@ SAVE_GOAL_ENTRY_TOOL = {
         "additionalProperties": False,
     },
 }
+
+SKIP_REASONS = ("no_matching_goal", "unclear_request")
+
+REPORT_SKIPPED_OPERATION_TOOL = {
+    "type": "function",
+    "name": "report_skipped_operation",
+    "description": (
+        "Report one requested goal update that you did not execute, "
+        "so the user is told about it. Call it once per skipped update."
+    ),
+    "strict": True,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "request": {
+                "type": "string",
+                "description": (
+                    "The skipped part of the user's message, in the user's words."
+                ),
+            },
+            "reason": {
+                "type": "string",
+                "enum": list(SKIP_REASONS),
+            },
+        },
+        "required": ["request", "reason"],
+        "additionalProperties": False,
+    },
+}
+
 SUMMARY_PROMPT = """
 You write the reply that Cadence Assistant shows after saving goal entries.
 
@@ -244,6 +285,8 @@ LANGUAGE AND TONE:
 - Be brief: 1-3 short, natural sentences. Combine related updates
   (for example several nutrition values from one meal) into one sentence.
 - No lists, no JSON, no technical terms, no internal field names.
+- Never use em dashes or en dashes. Use a comma, a period, or a
+  new sentence instead.
 
 FACTS:
 - Use only facts from results. Never invent goals, values, or dates.
@@ -253,12 +296,15 @@ FACTS:
 - operation "set": say the value was set to resulting_value.
 - If is_today is false, name the date of the entry clearly.
 - Use the goal's unit when it is provided.
+- When is_today is false, never say "today": refer to the entry date
+  (for example "yesterday" or the date itself), and for period "weekly"
+  say "that week".
 
 PROGRESS:
 - Comment on progress only when progress is not null.
 - Use progress.total and progress.target_value; never compute your own
-  totals. Say "today" for period "daily" and "this week" for "weekly"
-  (relative to the entry date when it is not today).
+  totals. When is_today is true, say "today" for period "daily" and
+  "this week" for "weekly". Otherwise follow the rule in FACTS.
 - status "reached": brief congratulation, the goal is reached.
 - status "below_target": brief encouragement, may mention what is left.
 - status "within_limit": this is a limit; staying within it is good.
@@ -269,6 +315,14 @@ FAILURES:
 - For each result with status "failed", say what was not saved and
   give the reason in plain words.
 - If some succeeded and some failed, mention both.
+
+SKIPPED:
+- A result with status "skipped" was not attempted; request holds that
+  part of the user's message.
+- reason "no_matching_goal": say briefly that the user has no goal for it.
+  Do not suggest creating one.
+- reason "unclear_request": ask the user to clarify that part.
+- If some were saved and some skipped, mention both.
 """
 
 
@@ -278,7 +332,7 @@ class ChatHistoryMessage(TypedDict):
 
 
 class SaveResult(TypedDict):
-    status: Literal["saved", "failed"]
+    status: Literal["saved", "failed", "skipped"]
     goal_name: str | None
     unit: str | None
     entry_date: str | None
@@ -288,6 +342,7 @@ class SaveResult(TypedDict):
     resulting_value: float | None
     reason: str | None
     progress: dict | None
+    request: str | None
 
 
 class AIChatResult(TypedDict):
@@ -309,6 +364,11 @@ class SaveGoalEntryArguments(BaseModel):
         return value
 
 
+class ReportSkippedOperationArguments(BaseModel):
+    request: str = Field(min_length=1)
+    reason: Literal["no_matching_goal", "unclear_request"]
+
+
 def build_failed_result(
     reason: str,
     goal: dict | None = None,
@@ -328,12 +388,50 @@ def build_failed_result(
         resulting_value=None,
         reason=reason,
         progress=None,
+        request=None,
     )
+
+
+def build_skipped_result(arguments_json: str) -> SaveResult:
+    try:
+        arguments = ReportSkippedOperationArguments.model_validate_json(
+            arguments_json
+        )
+    except ValidationError:
+        request, reason = None, "unclear_request"
+    else:
+        request, reason = arguments.request, arguments.reason
+
+    return SaveResult(
+        status="skipped",
+        goal_name=None,
+        unit=None,
+        entry_date=None,
+        is_today=False,
+        operation=None,
+        requested_value=None,
+        resulting_value=None,
+        reason=reason,
+        progress=None,
+        request=request,
+    )
+
+
+SKIP_REASON_TEXT = {
+    "no_matching_goal": "You have no goal that matches it",
+    "unclear_request": "Please say more precisely what to save",
+}
 
 
 def format_result_line(result: SaveResult) -> str:
     goal_name = result["goal_name"] or "an entry"
     date_label = "today" if result["is_today"] else result["entry_date"]
+
+    if result["status"] == "skipped":
+        subject = (
+            f'"{result["request"]}"' if result["request"] else "part of your request"
+        )
+        return f"Skipped {subject}. {SKIP_REASON_TEXT[result['reason']]}."
 
     if result["status"] == "failed":
         if result["entry_date"] is None:
@@ -459,7 +557,17 @@ async def run_save_operation(
         resulting_value=entry.value,
         reason=None,
         progress=build_progress(goal, total),
+        request=None,
     )
+
+
+SPACED_LONG_DASH = re.compile(r"\s+[–—]\s+")
+LONG_DASH = re.compile(r"[–—]")
+
+
+def replace_ai_dashes(text: str) -> str:
+    """Swaps em/en dashes for a plain hyphen; the prompts forbid them, this guarantees it."""
+    return LONG_DASH.sub("-", SPACED_LONG_DASH.sub(" - ", text))
 
 
 def build_fallback_confirmation(results: list[SaveResult]) -> str:
@@ -488,7 +596,7 @@ async def generate_summary(
         logger.exception("Summary generation failed; using fallback confirmation")
         return fallback
 
-    return response.output_text.strip() or fallback
+    return replace_ai_dashes(response.output_text.strip()) or fallback
 
 
 async def generate_ai_response(
@@ -521,15 +629,18 @@ async def generate_ai_response(
         model=settings.openai_model,
         instructions=SYSTEM_PROMPT,
         input=input_messages,
-        tools=[SAVE_GOAL_ENTRY_TOOL],
+        tools=[SAVE_GOAL_ENTRY_TOOL, REPORT_SKIPPED_OPERATION_TOOL],
         parallel_tool_calls=True,
         store=False,
     )
-    # print("AI RESPONSE OUTPUT:", response.output)
     results: list[SaveResult] = []
 
     for item in response.output:
         if item.type != "function_call":
+            continue
+
+        if item.name == "report_skipped_operation":
+            results.append(build_skipped_result(item.arguments))
             continue
 
         if item.name != "save_goal_entry":
@@ -545,7 +656,9 @@ async def generate_ai_response(
         )
 
     if not results:
-        return AIChatResult(message=response.output_text, affected_dates=[])
+        return AIChatResult(
+            message=replace_ai_dashes(response.output_text), affected_dates=[]
+        )
 
     affected_dates = sorted(
         {result["entry_date"] for result in results if result["status"] == "saved"}

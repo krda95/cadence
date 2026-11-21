@@ -44,12 +44,27 @@
   </div>
 
   <footer class="assistant-panel__footer">
-    @if (!isLoading()) {
-      <div class="assistant-panel__suggestions">
-        <button type="button" (click)="addSuggestion('10000 steps today')">10000 steps</button>
+    @if (showSuggestions()) {
+      <div
+        class="assistant-panel__suggestions-row"
+        animate.enter="assistant-panel__suggestions-row--in"
+        animate.leave="assistant-panel__suggestions-row--out"
+      >
+        <div class="assistant-panel__suggestions">
+          <button type="button" (click)="addSuggestion('10000 steps today')">10000 steps</button>
 
-        <button type="button" (click)="addSuggestion('studied 45 min & read 20 min today')">
-          studied 45 min & read 20 min
+          <button type="button" (click)="addSuggestion('studied 45 min & read 20 min today')">
+            studied 45 min & read 20 min
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="assistant-panel__suggestions-dismiss"
+          aria-label="Hide suggestions"
+          (click)="hideSuggestions()"
+        >
+          <svg lucideX aria-hidden="true"></svg>
         </button>
       </div>
     }

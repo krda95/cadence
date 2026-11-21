@@ -117,4 +117,24 @@ describe('AssistantPanel sending messages', () => {
 
     expect(TestBed.inject(AssistantService).dataVersion()).toBe(0);
   });
+
+  it('hides the suggestions once the conversation has started', async () => {
+    await typeMessage('8500 steps');
+    sendButton().click();
+    chatRequest().flush({ message: 'Logged 8500 steps.', affected_dates: ['2026-01-15'] });
+    await settle();
+
+    expect(el().querySelector('.assistant-panel__suggestions')).toBeNull();
+  });
+
+  it('hides the suggestions with the dismiss button', async () => {
+    const suggestions = () => el().querySelector('.assistant-panel__suggestions');
+    expect(suggestions()).toBeTruthy();
+
+    el().querySelector<HTMLButtonElement>('[aria-label="Hide suggestions"]')!.click();
+    await settle();
+
+    expect(suggestions()).toBeNull();
+    expect(el().querySelector('textarea')).toBeTruthy();
+  });
 });

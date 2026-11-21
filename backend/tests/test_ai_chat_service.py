@@ -20,6 +20,7 @@ from app.services.ai_chat_service import (
     format_result_line,
     generate_ai_response,
     load_period_total,
+    replace_ai_dashes,
     run_save_operation,
 )
 
@@ -61,6 +62,17 @@ def make_function_call(
     )
 
 
+def make_skip_call(request, reason="no_matching_goal", call_id="call_skip"):
+    arguments = json.dumps({"request": request, "reason": reason})
+
+    return SimpleNamespace(
+        type="function_call",
+        name="report_skipped_operation",
+        arguments=arguments,
+        call_id=call_id,
+    )
+
+
 def make_ai_response(output=None, output_text=""):
     return SimpleNamespace(
         output=output or [],
@@ -95,6 +107,7 @@ def make_result(**overrides):
         "resulting_value": 3000,
         "reason": None,
         "progress": None,
+        "request": None,
     }
     result.update(overrides)
     return result
@@ -230,6 +243,88 @@ def test_format_result_line_for_failure_on_past_date():
         "Could not update Steps for 2025-12-31. "
         "Goal did not exist on the specified date."
     )
+
+
+def make_skipped_result(**overrides):
+    return make_result(
+        status="skipped",
+        goal_name=None,
+        entry_date=None,
+        is_today=False,
+        operation=None,
+        requested_value=None,
+        resulting_value=None,
+        **overrides,
+    )
+
+
+def test_format_result_line_for_skipped_operation_without_goal():
+    result = make_skipped_result(reason="no_matching_goal", request="one coffee")
+
+    assert format_result_line(result) == (
+        'Skipped "one coffee". You have no goal that matches it.'
+    )
+
+
+def test_format_result_line_for_unclear_skipped_operation():
+    result = make_skipped_result(reason="unclear_request", request="add some water")
+
+    assert format_result_line(result) == (
+        'Skipped "add some water". Please say more precisely what to save.'
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Cel osiągnięty — 2000/1000.", "Cel osiągnięty - 2000/1000."),
+        ("Goal reached \u2013 well done.", "Goal reached - well done."),
+        ("Read 10\u201320 pages.", "Read 10-20 pages."),
+        ("Done—nice.", "Done-nice."),
+        ("No dashes here.", "No dashes here."),
+    ],
+)
+def test_replace_ai_dashes(text, expected):
+    assert replace_ai_dashes(text) == expected
+
+
+@pytest.mark.asyncio
+async def test_generate_ai_response_removes_long_dashes_from_replies(monkeypatch):
+    goal_id = uuid4()
+    mock_client = MagicMock()
+    mock_client.responses.create = AsyncMock(
+        side_effect=[
+            make_ai_response(output=[make_function_call(goal_id, "increment", 500)]),
+            make_ai_response(output_text="Dodałem 500 kroków — cel osiągnięty."),
+            make_ai_response(output_text="Masz dwa cele — kroki i wodę."),
+        ]
+    )
+    monkeypatch.setattr(ai_service, "AsyncOpenAI", lambda **kwargs: mock_client)
+    monkeypatch.setattr(
+        ai_service,
+        "save_goal_entry",
+        AsyncMock(return_value=SimpleNamespace(value=2500)),
+    )
+    context = {
+        "today": TEST_TODAY.isoformat(),
+        "goals": [{"id": str(goal_id), "name": "Steps"}],
+    }
+
+    saved = await generate_ai_response(
+        message="Dodaj 500 kroków",
+        context=context,
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+    answered = await generate_ai_response(
+        message="Jakie mam cele?",
+        context=context,
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    assert saved["message"] == "Dodałem 500 kroków - cel osiągnięty."
+    assert answered["message"] == "Masz dwa cele - kroki i wodę."
 
 
 @pytest.mark.asyncio
@@ -497,6 +592,83 @@ async def test_generate_ai_response_reports_invalid_arguments(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_generate_ai_response_reports_skipped_operation_next_to_save(monkeypatch):
+    goal_id = uuid4()
+    mock_client = MagicMock()
+    mock_client.responses.create = make_save_response_mock(
+        make_function_call(goal_id, "increment", 500),
+        make_skip_call("jedna kawa"),
+    )
+    mock_save = AsyncMock(return_value=SimpleNamespace(value=2500))
+    monkeypatch.setattr(ai_service, "AsyncOpenAI", lambda **kwargs: mock_client)
+    monkeypatch.setattr(ai_service, "save_goal_entry", mock_save)
+
+    result = await generate_ai_response(
+        message="dodaj jeszcze 500 krokow i jedna kawa",
+        context={
+            "today": TEST_TODAY.isoformat(),
+            "goals": [{"id": str(goal_id), "name": "Steps"}],
+        },
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    mock_save.assert_awaited_once()
+    summary_call = mock_client.responses.create.await_args_list[1].kwargs
+    results = json.loads(summary_call["input"])["results"]
+    assert [r["status"] for r in results] == ["saved", "skipped"]
+    assert results[1] == make_skipped_result(
+        reason="no_matching_goal", request="jedna kawa"
+    )
+    assert result["affected_dates"] == [TEST_TODAY.isoformat()]
+    assert 'Skipped "jedna kawa". You have no goal that matches it.' in result["message"]
+
+
+@pytest.mark.asyncio
+async def test_generate_ai_response_with_only_skipped_operation(monkeypatch):
+    mock_client = MagicMock()
+    mock_client.responses.create = make_save_response_mock(make_skip_call("one coffee"))
+    mock_save = AsyncMock()
+    monkeypatch.setattr(ai_service, "AsyncOpenAI", lambda **kwargs: mock_client)
+    monkeypatch.setattr(ai_service, "save_goal_entry", mock_save)
+
+    result = await generate_ai_response(
+        message="Add one coffee",
+        context={"today": TEST_TODAY.isoformat(), "goals": []},
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    mock_save.assert_not_awaited()
+    assert result == {
+        "message": 'Skipped "one coffee". You have no goal that matches it.',
+        "affected_dates": [],
+    }
+
+
+@pytest.mark.asyncio
+async def test_generate_ai_response_treats_invalid_skip_arguments_as_unclear(
+    monkeypatch,
+):
+    mock_client = MagicMock()
+    mock_client.responses.create = make_save_response_mock(
+        make_skip_call("one coffee", reason="something_else")
+    )
+    monkeypatch.setattr(ai_service, "AsyncOpenAI", lambda **kwargs: mock_client)
+
+    result = await generate_ai_response(
+        message="Add one coffee",
+        context={"today": TEST_TODAY.isoformat(), "goals": []},
+        session=MagicMock(),
+        owner_id=uuid4(),
+    )
+
+    assert result["message"] == (
+        "Skipped part of your request. Please say more precisely what to save."
+    )
+
+
+@pytest.mark.asyncio
 async def test_generate_ai_response_passes_date_context_and_tool_to_model(monkeypatch):
     mock_client = MagicMock()
     mock_client.responses.create = AsyncMock(
@@ -526,8 +698,9 @@ async def test_generate_ai_response_passes_date_context_and_tool_to_model(monkey
     context_message = kwargs["input"][0]
     assert context_message["role"] == "developer"
     assert json.loads(context_message["content"].split("\n", 1)[1]) == context
-    (tool,) = kwargs["tools"]
-    assert tool["name"] == "save_goal_entry"
+    tools = {tool["name"]: tool for tool in kwargs["tools"]}
+    assert set(tools) == {"save_goal_entry", "report_skipped_operation"}
+    tool = tools["save_goal_entry"]
     assert "entry_date" in tool["parameters"]["required"]
     assert tool["parameters"]["properties"]["entry_date"]["type"] == "string"
 
