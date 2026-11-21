@@ -21,6 +21,7 @@ import { Button } from '@shared/ui/button/button';
 import { buildDailyImpacts } from '@shared/utils/daily-impact';
 import { scoreBand } from '@shared/utils/score-band';
 import { RouterLink } from '@angular/router';
+import { reloadOnAssistantUpdate } from '@shared/utils/reload-on-assistant-update';
 
 /** A day button or its skeleton in the picker, as last laid out. */
 interface PickerSlot {
@@ -116,6 +117,10 @@ export class History {
   private pickerPillX: number | null = null;
 
   constructor() {
+    reloadOnAssistantUpdate(() => {
+      this.goalsResource.reload();
+      this.rangeResource.reload();
+    });
     // Whenever the selection or the scores change, re-centre the picker and slide the days
     // from where they were to where they are now.
     effect(() => {

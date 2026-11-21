@@ -28,7 +28,42 @@
   }
 }
 
+// Same path both ways: the row folds into the composer and unfolds from it. The negative margin
+// takes back the footer gap, so nothing jumps when the row is removed.
+@keyframes suggestions-out {
+  from {
+    grid-template-rows: 1fr;
+    margin-bottom: 0;
+    opacity: 1;
+  }
+
+  to {
+    grid-template-rows: 0fr;
+    margin-bottom: calc(-1 * var(--space-3));
+    opacity: 0;
+  }
+}
+
+@keyframes suggestions-in {
+  from {
+    grid-template-rows: 0fr;
+    margin-bottom: calc(-1 * var(--space-3));
+    opacity: 0;
+  }
+
+  to {
+    grid-template-rows: 1fr;
+    margin-bottom: 0;
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .assistant-panel__suggestions-row--in,
+  .assistant-panel__suggestions-row--out {
+    animation-duration: 1ms;
+  }
+
   .assistant-panel__typing span {
     animation: none;
     opacity: 0.7;
@@ -226,14 +261,32 @@
     flex-direction: column;
     gap: var(--space-3);
 
+    position: relative;
     padding: var(--space-5);
     border-top: 1px solid var(--color-border);
+  }
+
+  // Grid row so the chips can collapse to 0 height; the composer then glides up instead of jumping.
+  &__suggestions-row {
+    display: grid;
+    grid-template-rows: 1fr;
+
+    &--in {
+      overflow: hidden;
+      animation: suggestions-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    &--out {
+      overflow: hidden;
+      animation: suggestions-out 200ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+    }
   }
 
   &__suggestions {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
+    min-height: 0;
 
     button {
       padding: var(--space-2) var(--space-3);
@@ -263,6 +316,58 @@
       &:active {
         transform: scale(0.97);
       }
+    }
+  }
+
+  // Sits in the footer's top-right padding so it never takes room from the chips.
+  &__suggestions-dismiss {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: var(--space-5);
+    height: var(--space-5);
+    padding: 0;
+    border: 0;
+    border-radius: 20%;
+
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+
+    transition:
+      color 150ms ease-out,
+      background-color 150ms ease-out,
+      transform 100ms ease-out;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--color-text-primary);
+      background: var(--color-surface-hover);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--color-primary);
+    }
+
+    &:active {
+      transform: scale(0.94);
+    }
+
+    // Invisible 44px touch target around the small visible button.
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
     }
   }
 

@@ -20,6 +20,22 @@ export class AssistantHistoryService {
   readonly messages = this.messagesSignal.asReadonly();
   readonly draft = signal('');
 
+  private readonly suggestionsKey = 'cadence_assistant_suggestions_hidden';
+  private readonly suggestionsHiddenSignal = signal(this.loadSuggestionsHidden());
+
+  /** True once the user dismissed the suggestion chips; kept for the browser session. */
+  readonly suggestionsHidden = this.suggestionsHiddenSignal.asReadonly();
+
+  hideSuggestions(): void {
+    this.suggestionsHiddenSignal.set(true);
+
+    try {
+      sessionStorage.setItem(this.suggestionsKey, 'true');
+    } catch {
+      // Storage unavailable (e.g. private mode): stay hidden for this page only.
+    }
+  }
+
   addMessage(message: AssistantMessage): void {
     this.clearIfExpired();
 
@@ -64,6 +80,14 @@ export class AssistantHistoryService {
     }
 
     return stored.messages.slice(-this.maxMessages);
+  }
+
+  private loadSuggestionsHidden(): boolean {
+    try {
+      return sessionStorage.getItem(this.suggestionsKey) === 'true';
+    } catch {
+      return false;
+    }
   }
 
   private readStorage(): StoredAssistantHistory | null {

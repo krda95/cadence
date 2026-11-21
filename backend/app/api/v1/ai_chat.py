@@ -26,7 +26,7 @@ async def chat(
     )
 
     try:
-        message = await generate_ai_response(
+        result = await generate_ai_response(
             message=payload.message,
             context=context,
             session=session,
@@ -52,4 +52,4 @@ async def chat(
             detail="AI service returned an error",
         ) from error
 
-    return AIChatResponse(message=message)
+    return AIChatResponse(**result)

@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import moment from 'moment';
+import { AssistantService } from '@core/api/assistant.service';
 
 import { GoalEntryDayResponse } from '@models/goalModel';
 import { DayProgressResponse } from '@models/progressModel';
@@ -222,5 +223,37 @@ describe('History', () => {
     await settle();
 
     expect(el().querySelector('.goal-entry__impact')?.textContent).toContain('Penalty');
+  });
+
+  it('reloads the selected day and the picker scores after an assistant save', async () => {
+    entries().flush([GOAL]);
+    range().flush([day(80)]);
+    await settle();
+
+    const component = fixture.componentInstance;
+    const selected = component.dates()[8];
+    component.selectDate(selected);
+    fixture.detectChanges();
+    entries().flush([GOAL]);
+    await settle();
+
+    TestBed.inject(AssistantService).notifyDataChanged([yesterday()]);
+    fixture.detectChanges();
+
+    expect(entries().request.params.get('date')).toBe(moment(selected).format('YYYY-MM-DD'));
+    range();
+    expect(component.selectedDate()).toEqual(selected);
+  });
+
+  it('does not reload when the assistant saved nothing', async () => {
+    entries().flush([GOAL]);
+    range().flush([day(80)]);
+    await settle();
+
+    TestBed.inject(AssistantService).notifyDataChanged([]);
+    fixture.detectChanges();
+
+    http.expectNone((req) => req.url.endsWith('/entries'));
+    http.expectNone((req) => req.url.endsWith('/progress/range'));
   });
 });

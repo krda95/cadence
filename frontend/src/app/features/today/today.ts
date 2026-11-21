@@ -1,15 +1,15 @@
-import { Component, computed, inject, signal, effect } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe } from '@angular/common';
 
 import { GoalsService } from '@core/api/goals.service';
-import { AssistantService } from '@core/api/assistant.service';
 
 import { GoalEntry } from '@shared/components/goal-entry/goal-entry';
 import { buildDailyImpacts } from '@shared/utils/daily-impact';
 import { ScrollHeader } from '@shared/components/scroll-header/scroll-header';
 import { scoreBand } from '@shared/utils/score-band';
 import { RouterLink } from '@angular/router';
+import { reloadOnAssistantUpdate } from '@shared/utils/reload-on-assistant-update';
 
 @Component({
   selector: 'app-today',
@@ -19,7 +19,6 @@ import { RouterLink } from '@angular/router';
 })
 export class Today {
   private readonly goalsService = inject(GoalsService);
-  private readonly assistantService = inject(AssistantService);
 
   readonly selectedDate = signal(this.getTodayDate());
   readonly editingGoalId = signal<string | null>(null);
@@ -28,13 +27,7 @@ export class Today {
   readonly errorGoalId = signal<string | null>(null);
 
   constructor() {
-    effect(() => {
-      const version = this.assistantService.dataVersion();
-
-      if (version === 0) {
-        return;
-      }
-
+    reloadOnAssistantUpdate(() => {
       this.goalsResource.reload();
       this.scoreResource.reload();
     });

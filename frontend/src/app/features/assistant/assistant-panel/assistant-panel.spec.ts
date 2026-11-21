@@ -72,7 +72,7 @@ describe('AssistantPanel sending messages', () => {
     expect(fixture.componentInstance.isLoading()).toBe(true);
     expect(fixture.componentInstance.draft()).toBe('');
 
-    request.flush({ message: 'Logged 8500 steps.' });
+    request.flush({ message: 'Logged 8500 steps.', affected_dates: ['2026-01-15'] });
     await settle();
 
     const messages = fixture.componentInstance.messages();
@@ -107,5 +107,34 @@ describe('AssistantPanel sending messages', () => {
 
     expect(uuid).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.isLoading()).toBe(false);
+  });
+
+  it('does not publish a data change for a reply that saved nothing', async () => {
+    await typeMessage('What goals do I have?');
+    sendButton().click();
+    chatRequest().flush({ message: 'You track Water.', affected_dates: [] });
+    await settle();
+
+    expect(TestBed.inject(AssistantService).dataVersion()).toBe(0);
+  });
+
+  it('hides the suggestions once the conversation has started', async () => {
+    await typeMessage('8500 steps');
+    sendButton().click();
+    chatRequest().flush({ message: 'Logged 8500 steps.', affected_dates: ['2026-01-15'] });
+    await settle();
+
+    expect(el().querySelector('.assistant-panel__suggestions')).toBeNull();
+  });
+
+  it('hides the suggestions with the dismiss button', async () => {
+    const suggestions = () => el().querySelector('.assistant-panel__suggestions');
+    expect(suggestions()).toBeTruthy();
+
+    el().querySelector<HTMLButtonElement>('[aria-label="Hide suggestions"]')!.click();
+    await settle();
+
+    expect(suggestions()).toBeNull();
+    expect(el().querySelector('textarea')).toBeTruthy();
   });
 });

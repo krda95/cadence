@@ -18,4 +18,5 @@ export interface AssistantChatRequest {
 
 export interface AssistantChatResponse {
   message: string;
+  affected_dates: string[];
 }

@@ -8,6 +8,7 @@ import {
   inject,
   DestroyRef,
   afterNextRender,
+  computed,
 } from '@angular/core';
 import { LucideX, LucideArrowUp, LucideBot } from '@lucide/angular';
 
@@ -42,6 +43,7 @@ export class AssistantPanel {
   };
 
   readonly draft = this.historyService.draft;
+  private readonly suggestionsHidden = this.historyService.suggestionsHidden;
   private readonly messageInput = viewChild<ElementRef<HTMLTextAreaElement>>('messageInput');
 
   private readonly messagesContainer = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
@@ -49,6 +51,11 @@ export class AssistantPanel {
   private readonly assistantService = inject(AssistantService);
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+
+  /** Chips only help start a conversation: hidden once it has begun, while loading, or when dismissed. */
+  readonly showSuggestions = computed(
+    () => this.messages().length === 0 && !this.isLoading() && !this.suggestionsHidden(),
+  );
   private failedRequest: AssistantChatRequest | null = null;
 
   private requestAssistant(request: AssistantChatRequest): void {
@@ -62,7 +69,7 @@ export class AssistantPanel {
           role: 'assistant',
           content: response.message,
         });
-        this.assistantService.notifyDataChanged();
+        this.assistantService.notifyDataChanged(response.affected_dates ?? []);
         this.failedRequest = null;
         this.isLoading.set(false);
       },
@@ -203,6 +210,10 @@ export class AssistantPanel {
 
     textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
     textarea.classList.toggle('is-scrollable', textarea.scrollHeight > maxHeight);
+  }
+
+  hideSuggestions(): void {
+    this.historyService.hideSuggestions();
   }
 
   addSuggestion(text: string): void {
