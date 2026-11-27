@@ -39,6 +39,8 @@ let nextInputId = 0;
 export class InputComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnDestroy {
   readonly label = input('');
   readonly placeholder = input('');
+  /** Guidance shown under the field, e.g. a length rule; an error message takes its place. */
+  readonly hint = input('');
   readonly type = input<'text' | 'email' | 'password'>('text');
   readonly inputMode = input<
     'text' | 'numeric' | 'decimal' | 'email' | 'tel' | 'search' | 'url' | null
@@ -53,6 +55,7 @@ export class InputComponent implements ControlValueAccessor, OnInit, AfterViewIn
   /** Ties the visible label and the error message to the real input. */
   readonly inputId = `app-input-${nextInputId++}`;
   readonly errorId = `${this.inputId}-error`;
+  readonly hintId = `${this.inputId}-hint`;
   /**
    * When validation messages become eligible to show: after the field was left (`touched`, the
    * default) or only once the user has changed it (`dirty`). `dirty` keeps a freshly opened,

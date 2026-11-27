@@ -60,14 +60,6 @@
     @include banner;
   }
 
-  .hint {
-    margin: calc(var(--space-1) * -1) 0 0;
-
-    color: var(--color-text-secondary);
-
-    font-size: var(--font-size-sm);
-  }
-
   .back-link,
   .footer a,
   .link {
