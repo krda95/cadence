@@ -26,17 +26,17 @@ Freemium model (future consideration).
 
 ### Backlog
 
-- [v] Different progress treatment of lack of entries input
+- [x] Different progress treatment of lack of entries input
 - [ ] Edit username
 - [ ] Merge goals (sum, diff)
 
 ### Phase 1 – Product Experience
 
-- [v] Activity Chart
-- [v] Historical Entries Editing
-- [v] Change of weekly algorithm
-- [v] Quick Increment
-- [x] Google OAuth, Change Password, Close Account
+- [x] Activity Chart
+- [x] Historical Entries Editing
+- [x] Change of weekly algorithm
+- [x] Quick Increment
+- [-] Google OAuth, Change Password, Close Account
 - [ ] Onboarding Wizard
 - [ ] Goal Templates
 
