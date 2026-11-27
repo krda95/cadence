@@ -26,17 +26,17 @@ Freemium model (future consideration).
 
 ### Backlog
 
-- [ ] Different progress treatment of lack of entries input
+- [v] Different progress treatment of lack of entries input
 - [ ] Edit username
 - [ ] Merge goals (sum, diff)
 
 ### Phase 1 – Product Experience
 
-- [x] Activity Chart
-- [x] Historical Entries Editing
-- [x] Change of weekly algorithm
-- [ ] Quick Increment
-- [ ] Google OAuth
+- [v] Activity Chart
+- [v] Historical Entries Editing
+- [v] Change of weekly algorithm
+- [v] Quick Increment
+- [x] Google OAuth, Change Password, Close Account
 - [ ] Onboarding Wizard
 - [ ] Goal Templates
 
@@ -68,7 +68,6 @@ Freemium model (future consideration).
 ### Frontend
 
 - Angular 22
-- SCSS
 
 ### Backend
 
@@ -83,24 +82,14 @@ Freemium model (future consideration).
 - Web Push API
 - AI Tool Calling
 
-## 5. Current Focus
-
-### Next Feature
-
-Activity Chart
-
-### Status
-
-Not started
-
-## 6. Ideas & Backlog
+## 5. Ideas & Backlog
 
 - Calendar Heatmap
 - PWA
 - AI-generated weekly insights
 - Product Analytics
 
-## 7. Decision Log
+## 6. Decision Log
 
 ### 2026-10-28
 
