@@ -22,7 +22,6 @@
       label="Email"
       type="email"
       autocomplete="email"
-      placeholder="you@email.com"
     />
 
     <app-input
@@ -30,16 +29,14 @@
       label="Password"
       type="password"
       autocomplete="new-password"
-      placeholder="••••••••"
+      [hint]="'At least ' + minPasswordLength + ' characters.'"
     />
-    <p class="hint">At least {{ minPasswordLength }} characters.</p>
 
     <app-input
       formControlName="confirmPassword"
       label="Confirm password"
       type="password"
       autocomplete="new-password"
-      placeholder="••••••••"
     />
 
     @if (errorMessage(); as message) {

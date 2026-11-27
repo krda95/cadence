@@ -7,10 +7,11 @@ import { scoreBandRanges } from '@shared/utils/score-band';
 
 import { AvatarEditor } from './avatar-editor/avatar-editor';
 import { RouterLink } from '@angular/router';
+import { ChangePassword } from './change-password/change-password';
 
 @Component({
   selector: 'app-settings',
-  imports: [AvatarEditor, LucideChevronRight, LucidePencil, RouterLink],
+  imports: [AvatarEditor, ChangePassword, LucideChevronRight, LucidePencil, RouterLink],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })

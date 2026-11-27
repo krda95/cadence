@@ -16,7 +16,7 @@
       [attr.inputmode]="inputMode()"
       [attr.autocomplete]="autocomplete()"
       [attr.aria-invalid]="hasError() || null"
-      [attr.aria-describedby]="errorMessage() ? errorId : null"
+      [attr.aria-describedby]="errorMessage() ? errorId : hint() ? hintId : null"
       [min]="min()"
       [max]="max()"
       class="input__control"
@@ -45,10 +45,13 @@
       </button>
     }
   </div>
+  <!-- One slot under the field: the hint, replaced by the error when there is one. -->
   @if (errorMessage(); as message) {
     <span class="error-message" role="alert" [id]="errorId">
       {{ message }}
     </span>
+  } @else if (hint()) {
+    <span class="hint-message" [id]="hintId">{{ hint() }}</span>
   } @else {
     <span class="error-message-placeholder"></span>
   }

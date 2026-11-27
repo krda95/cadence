@@ -6,14 +6,25 @@ import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
 
+// Endpoints called without a session: they must never carry a token or trigger a refresh.
+const PUBLIC_AUTH_PATHS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
+
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
   const isApiRequest = request.url.startsWith(`${environment.apiUrl}/`);
-  const isAuthRequest = request.url.startsWith(`${environment.apiUrl}/auth/`);
+  const isPublicAuthRequest = PUBLIC_AUTH_PATHS.some(
+    (path) => request.url === `${environment.apiUrl}${path}`,
+  );
 
-  if (!isApiRequest || isAuthRequest) {
+  if (!isApiRequest || isPublicAuthRequest) {
     return next(request);
   }
 

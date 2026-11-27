@@ -15,7 +15,7 @@ import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, UserProfile } from '@models/loginModel';
 import { RegisterRequest, RegisterResponse } from '@models/registerModel';
 import { ForgotPasswordRequest, MessageResponse } from '@models/forgotModel';
-import { ResetPasswordRequest } from '@models/resetModel';
+import { ChangePasswordRequest, ResetPasswordRequest } from '@models/resetModel';
 import { AssistantHistoryService } from '@features/assistant/services/assistant-history.service';
 
 @Injectable({ providedIn: 'root' })
@@ -139,5 +139,9 @@ export class AuthService {
 
   resetPassword(request: ResetPasswordRequest): Observable<MessageResponse> {
     return this.http.post<MessageResponse>(`${this.apiAuthUrl}/reset-password`, request);
+  }
+
+  changePassword(request: ChangePasswordRequest): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiAuthUrl}/change-password`, request);
   }
 }

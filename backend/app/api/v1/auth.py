@@ -1,8 +1,11 @@
 import httpx
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import ValidationError
+
 from app.core.config import get_settings
+from app.dependencies.auth import CurrentUser, get_current_user
 from app.schemas.auth import (
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
     LoginResponse,
@@ -13,20 +16,18 @@ from app.schemas.auth import (
     ResetPasswordRequest,
 )
 
-
 router = APIRouter(
     prefix="/auth",
     tags=["Auth"],
 )
 
 
-@router.post("/login", response_model=LoginResponse)
-async def login(payload: LoginRequest) -> LoginResponse:
+async def _password_grant(email: str, password: str) -> httpx.Response:
     settings = get_settings()
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
+            return await client.post(
                 f"{settings.supabase_url.rstrip('/')}/auth/v1/token",
                 params={
                     "grant_type": "password",
@@ -36,8 +37,8 @@ async def login(payload: LoginRequest) -> LoginResponse:
                     "Content-Type": "application/json",
                 },
                 json={
-                    "email": str(payload.email),
-                    "password": payload.password,
+                    "email": email,
+                    "password": password,
                 },
             )
     except httpx.RequestError as error:
@@ -45,6 +46,34 @@ async def login(payload: LoginRequest) -> LoginResponse:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication service is temporarily unavailable",
         ) from error
+
+
+async def _update_password(access_token: str, password: str) -> httpx.Response:
+    settings = get_settings()
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            return await client.put(
+                f"{settings.supabase_url.rstrip('/')}/auth/v1/user",
+                headers={
+                    "apikey": settings.supabase_api_key,
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "password": password,
+                },
+            )
+    except httpx.RequestError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service is temporarily unavailable",
+        ) from error
+
+
+@router.post("/login", response_model=LoginResponse)
+async def login(payload: LoginRequest) -> LoginResponse:
+    response = await _password_grant(str(payload.email), payload.password)
 
     if response.status_code in {
         status.HTTP_400_BAD_REQUEST,
@@ -245,26 +274,7 @@ async def forgot_password(
 async def reset_password(
     payload: ResetPasswordRequest,
 ) -> MessageResponse:
-    settings = get_settings()
-
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.put(
-                f"{settings.supabase_url.rstrip('/')}/auth/v1/user",
-                headers={
-                    "apikey": settings.supabase_api_key,
-                    "Authorization": (f"Bearer {payload.access_token}"),
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "password": payload.password,
-                },
-            )
-    except httpx.RequestError as error:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=("Authentication service is temporarily unavailable"),
-        ) from error
+    response = await _update_password(payload.access_token, payload.password)
 
     if response.status_code in {
         status.HTTP_401_UNAUTHORIZED,
@@ -283,4 +293,56 @@ async def reset_password(
 
     return MessageResponse(
         message="Password has been updated successfully",
+    )
+
+
+@router.post(
+    "/change-password",
+    response_model=MessageResponse,
+)
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> MessageResponse:
+    if not current_user.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This account has no email address",
+        )
+
+    grant = await _password_grant(current_user.email, payload.current_password)
+
+    if grant.status_code in {
+        status.HTTP_400_BAD_REQUEST,
+        status.HTTP_401_UNAUTHORIZED,
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    if grant.status_code != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unable to verify current password",
+        )
+
+    try:
+        fresh_access_token = grant.json()["access_token"]
+    except (ValueError, KeyError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Authentication service returned an invalid response",
+        ) from error
+
+    response = await _update_password(fresh_access_token, payload.new_password)
+
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unable to update password",
+        )
+
+    return MessageResponse(
+        message="Password has been changed successfully",
     )

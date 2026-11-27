@@ -1,3 +1,28 @@
+// Result of an action that does not belong to a single field.
+@mixin banner {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+
+  &--error {
+    border-color: color-mix(in srgb, var(--color-score-needs-work) 35%, var(--color-border));
+
+    background: color-mix(in srgb, var(--color-score-needs-work) 8%, var(--color-surface));
+    color: var(--color-text-primary);
+  }
+
+  &--success {
+    border-color: color-mix(in srgb, var(--color-score-great) 35%, var(--color-border));
+
+    background: color-mix(in srgb, var(--color-score-great) 8%, var(--color-surface));
+    color: var(--color-text-primary);
+  }
+}
 // Shared look of the signed-out pages (sign in, sign up, forgot and reset password).
 // Included once inside each page's root class.
 @mixin page {
@@ -31,38 +56,8 @@
     margin-top: var(--space-7);
   }
 
-  // Result of an action that does not belong to a single field.
   .banner {
-    margin: 0;
-    padding: var(--space-3) var(--space-4);
-
-    border: 1px solid transparent;
-    border-radius: var(--radius-control);
-
-    font-size: var(--font-size-sm);
-    line-height: 1.4;
-
-    &--error {
-      border-color: color-mix(in srgb, var(--color-score-needs-work) 35%, var(--color-border));
-
-      background: color-mix(in srgb, var(--color-score-needs-work) 8%, var(--color-surface));
-      color: var(--color-text-primary);
-    }
-
-    &--success {
-      border-color: color-mix(in srgb, var(--color-score-great) 35%, var(--color-border));
-
-      background: color-mix(in srgb, var(--color-score-great) 8%, var(--color-surface));
-      color: var(--color-text-primary);
-    }
-  }
-
-  .hint {
-    margin: calc(var(--space-1) * -1) 0 0;
-
-    color: var(--color-text-secondary);
-
-    font-size: var(--font-size-sm);
+    @include banner;
   }
 
   .back-link,
