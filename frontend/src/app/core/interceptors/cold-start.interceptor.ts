@@ -17,7 +17,8 @@ export const coldStartInterceptor: HttpInterceptorFn = (request, next) => {
   const isStartupRequest =
     request.url === `${environment.apiUrl}/me` ||
     request.url === `${environment.apiUrl}/auth/login` ||
-    request.url === `${environment.apiUrl}/auth/refresh`;
+    request.url === `${environment.apiUrl}/auth/refresh` ||
+    request.url === new URL('/health', environment.apiUrl).href;
 
   if (!isStartupRequest) {
     return next(request);

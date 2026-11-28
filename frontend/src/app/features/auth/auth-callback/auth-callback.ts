@@ -6,11 +6,12 @@ import { defer, finalize } from 'rxjs';
 
 import { AuthService } from '@core/services/auth.service';
 import { StartupService } from '@core/services/startup.service';
+import { GoogleSignIn } from '../google-sign-in/google-sign-in';
 
 /** Landing page Supabase sends people back to after Google sign-in. */
 @Component({
   selector: 'app-auth-callback',
-  imports: [RouterLink, LucideArrowLeft],
+  imports: [RouterLink, LucideArrowLeft, GoogleSignIn],
   templateUrl: './auth-callback.html',
   styleUrl: './auth-callback.scss',
 })

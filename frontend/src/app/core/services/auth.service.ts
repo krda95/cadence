@@ -24,6 +24,8 @@ export class AuthService {
   private readonly assistantHistory = inject(AssistantHistoryService);
   private readonly apiAuthUrl = `${environment.apiUrl}/auth`;
   private readonly apiMeUrl = `${environment.apiUrl}/me`;
+  /** Lives at the API root, outside `/api/v1`. */
+  private readonly healthUrl = new URL('/health', environment.apiUrl).href;
   private readonly accessTokenKey = 'access_token';
   private readonly refreshTokenKey = 'refresh_token';
 
@@ -47,6 +49,14 @@ export class AuthService {
         return throwError(() => error);
       }),
     );
+  }
+
+  /**
+   * Completes once the API answers. On a host that sleeps when idle this is the slow part,
+   * so callers can show the wake-up screen before a full-page redirect through the API.
+   */
+  wakeApi(): Observable<void> {
+    return this.http.get(this.healthUrl).pipe(map(() => undefined));
   }
 
   startGoogleSignIn(): void {

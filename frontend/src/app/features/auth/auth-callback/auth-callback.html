@@ -7,6 +7,9 @@
 
     <h1>Sign-in didn't finish</h1>
     <p class="subtitle">{{ message }}</p>
+
+    <!-- Retrying is the likeliest next step, so it is one tap away. -->
+    <app-google-sign-in [divider]="false" />
   } @else {
     <h1>Signing you in…</h1>
     <p class="subtitle">Just a moment while we open Cadence.</p>

@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -9,6 +9,7 @@ import { AuthCallback } from './auth-callback';
 describe('AuthCallback', () => {
   let http: HttpTestingController;
   let navigate: ReturnType<typeof vi.fn>;
+  let fixture: ComponentFixture<AuthCallback>;
 
   const meUrl = `${environment.apiUrl}/me`;
   const tokens = '#access_token=access-1&refresh_token=refresh-1&expires_in=3600&token_type=bearer';
@@ -24,7 +25,7 @@ describe('AuthCallback', () => {
     http = TestBed.inject(HttpTestingController);
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
 
-    const fixture = TestBed.createComponent(AuthCallback);
+    fixture = TestBed.createComponent(AuthCallback);
     fixture.detectChanges();
 
     return fixture.componentInstance;
@@ -58,6 +59,15 @@ describe('AuthCallback', () => {
 
     expect(component.errorMessage()).toContain('cancelled');
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('offers to try Google again right from the error', async () => {
+    await create('#error=access_denied');
+
+    const retry = (fixture.nativeElement as HTMLElement).querySelector('app-google-sign-in');
+
+    expect(retry?.textContent).toContain('Continue with Google');
+    expect(retry?.querySelector('.google-sign-in__divider')).toBeNull();
   });
 
   it('reads errors Supabase puts in the query string too', async () => {

@@ -1,3 +1,5 @@
+@use '../auth-page' as auth;
+
 .google-sign-in {
   display: flex;
   flex-direction: column;
@@ -32,5 +34,9 @@
     height: 18px;
 
     margin-right: var(--space-1);
+  }
+
+  .banner {
+    @include auth.banner;
   }
 }

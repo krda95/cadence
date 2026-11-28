@@ -1,5 +1,7 @@
 <div class="google-sign-in">
-  <p class="google-sign-in__divider" aria-hidden="true"><span>or</span></p>
+  @if (divider()) {
+    <p class="google-sign-in__divider" aria-hidden="true"><span>or</span></p>
+  }
 
   <app-button
     variant="secondary"
@@ -29,4 +31,8 @@
     }
     {{ redirecting() ? 'Opening Google…' : 'Continue with Google' }}
   </app-button>
+
+  @if (errorMessage(); as message) {
+    <p class="banner banner--error" role="alert">{{ message }}</p>
+  }
 </div>
