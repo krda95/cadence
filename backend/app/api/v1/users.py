@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,6 +39,7 @@ async def get_my_profile(
         avatar_url=avatar_url,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
+        has_password="email" in current_user.providers,
     )
 
 
@@ -97,6 +97,7 @@ async def upload_my_avatar(
         avatar_url=profile.avatar_url,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
+        has_password="email" in current_user.providers,
     )
 
 

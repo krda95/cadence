@@ -1,5 +1,8 @@
+from urllib.parse import urlencode
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
 from app.core.config import get_settings
@@ -69,6 +72,22 @@ async def _update_password(access_token: str, password: str) -> httpx.Response:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication service is temporarily unavailable",
         ) from error
+
+
+@router.get("/oauth/google", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+async def start_google_oauth() -> RedirectResponse:
+    settings = get_settings()
+
+    query = urlencode(
+        {
+            "provider": "google",
+            "redirect_to": f"{settings.frontend_url.rstrip('/')}/auth/callback",
+        }
+    )
+
+    return RedirectResponse(
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/authorize?{query}"
+    )
 
 
 @router.post("/login", response_model=LoginResponse)
