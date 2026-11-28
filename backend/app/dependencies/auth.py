@@ -7,7 +7,6 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import get_settings
 
-
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -16,6 +15,27 @@ class CurrentUser:
     id: uuid.UUID
     email: str | None
     username: str | None
+    # Sign-in methods linked to the account, e.g. ("email",), ("google",), ("email", "google").
+    providers: tuple[str, ...] = ()
+
+
+def current_user_from_supabase(user_data: dict) -> CurrentUser:
+    user_metadata = user_data.get("user_metadata") or {}
+    app_metadata = user_data.get("app_metadata") or {}
+
+    # Our own sign-up sets display_name; Google sends full_name / name instead.
+    username = (
+        user_metadata.get("display_name")
+        or user_metadata.get("full_name")
+        or user_metadata.get("name")
+    )
+
+    return CurrentUser(
+        id=uuid.UUID(user_data["id"]),
+        email=user_data.get("email"),
+        username=username,
+        providers=tuple(app_metadata.get("providers") or ()),
+    )
 
 
 async def get_current_user(
@@ -52,15 +72,8 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_data = response.json()
-    user_metadata = user_data.get("user_metadata") or {}
-
     try:
-        return CurrentUser(
-            id=uuid.UUID(user_data["id"]),
-            email=user_data.get("email"),
-            username=user_metadata.get("display_name"),
-        )
+        return current_user_from_supabase(response.json())
     except (KeyError, ValueError) as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

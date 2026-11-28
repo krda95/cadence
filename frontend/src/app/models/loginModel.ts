@@ -15,5 +15,6 @@ export interface UserProfile {
   email: string;
   display_name?: string | null;
   avatar_url?: string | null;
+  has_password: boolean;
   profileInitial: string;
 }

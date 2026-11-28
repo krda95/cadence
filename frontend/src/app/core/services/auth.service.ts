@@ -24,6 +24,8 @@ export class AuthService {
   private readonly assistantHistory = inject(AssistantHistoryService);
   private readonly apiAuthUrl = `${environment.apiUrl}/auth`;
   private readonly apiMeUrl = `${environment.apiUrl}/me`;
+  /** Lives at the API root, outside `/api/v1`. */
+  private readonly healthUrl = new URL('/health', environment.apiUrl).href;
   private readonly accessTokenKey = 'access_token';
   private readonly refreshTokenKey = 'refresh_token';
 
@@ -32,18 +34,33 @@ export class AuthService {
   readonly currentUser = signal<UserProfile | null>(null);
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiAuthUrl}/login`, credentials).pipe(
-      tap((response) => this.saveSession(response)),
-      switchMap((response) =>
-        this.getCurrentUser().pipe(
-          map(() => response),
-          catchError((error) => {
-            this.logout();
-            return throwError(() => error);
-          }),
-        ),
-      ),
+    return this.http
+      .post<LoginResponse>(`${this.apiAuthUrl}/login`, credentials)
+      .pipe(switchMap((response) => this.establishSession(response)));
+  }
+
+  establishSession(response: LoginResponse): Observable<LoginResponse> {
+    this.saveSession(response);
+
+    return this.getCurrentUser().pipe(
+      map(() => response),
+      catchError((error) => {
+        this.logout();
+        return throwError(() => error);
+      }),
     );
+  }
+
+  /**
+   * Completes once the API answers. On a host that sleeps when idle this is the slow part,
+   * so callers can show the wake-up screen before a full-page redirect through the API.
+   */
+  wakeApi(): Observable<void> {
+    return this.http.get(this.healthUrl).pipe(map(() => undefined));
+  }
+
+  startGoogleSignIn(): void {
+    window.location.assign(`${this.apiAuthUrl}/oauth/google`);
   }
 
   register(credentials: RegisterRequest): Observable<RegisterResponse> {

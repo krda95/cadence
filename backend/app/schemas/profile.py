@@ -13,3 +13,4 @@ class ProfileResponse(BaseModel):
     avatar_url: str | None
     created_at: datetime
     updated_at: datetime
+    has_password: bool

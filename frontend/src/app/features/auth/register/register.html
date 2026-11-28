@@ -17,12 +17,7 @@
       [autoFocus]="true"
     />
 
-    <app-input
-      formControlName="email"
-      label="Email"
-      type="email"
-      autocomplete="email"
-    />
+    <app-input formControlName="email" label="Email" type="email" autocomplete="email" />
 
     <app-input
       formControlName="password"
@@ -47,6 +42,8 @@
       {{ isSubmitting() ? 'Creating account…' : 'Create account' }}
     </app-button>
   </form>
+
+  <app-google-sign-in [disabled]="isSubmitting()" />
 
   <p class="footer">
     Already have an account?

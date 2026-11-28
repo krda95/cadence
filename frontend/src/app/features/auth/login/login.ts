@@ -8,10 +8,11 @@ import { StartupService } from '@core/services/startup.service';
 import { Button } from '@shared/ui/button/button';
 import { InputComponent } from '@shared/ui/input/input';
 import { defer, finalize } from 'rxjs';
+import { GoogleSignIn } from '../google-sign-in/google-sign-in';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, Button, InputComponent],
+  imports: [ReactiveFormsModule, RouterLink, Button, InputComponent, GoogleSignIn],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
