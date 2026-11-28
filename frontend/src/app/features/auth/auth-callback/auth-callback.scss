@@ -1,0 +1,5 @@
+@use '../auth-page' as auth;
+
+.auth-callback {
+  @include auth.page;
+}

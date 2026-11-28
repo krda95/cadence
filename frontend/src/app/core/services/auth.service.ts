@@ -32,18 +32,25 @@ export class AuthService {
   readonly currentUser = signal<UserProfile | null>(null);
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiAuthUrl}/login`, credentials).pipe(
-      tap((response) => this.saveSession(response)),
-      switchMap((response) =>
-        this.getCurrentUser().pipe(
-          map(() => response),
-          catchError((error) => {
-            this.logout();
-            return throwError(() => error);
-          }),
-        ),
-      ),
+    return this.http
+      .post<LoginResponse>(`${this.apiAuthUrl}/login`, credentials)
+      .pipe(switchMap((response) => this.establishSession(response)));
+  }
+
+  establishSession(response: LoginResponse): Observable<LoginResponse> {
+    this.saveSession(response);
+
+    return this.getCurrentUser().pipe(
+      map(() => response),
+      catchError((error) => {
+        this.logout();
+        return throwError(() => error);
+      }),
     );
+  }
+
+  startGoogleSignIn(): void {
+    window.location.assign(`${this.apiAuthUrl}/oauth/google`);
   }
 
   register(credentials: RegisterRequest): Observable<RegisterResponse> {

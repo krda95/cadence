@@ -12,6 +12,7 @@ import { GoalForm } from '@features/goals/goal-form/goal-form';
 import { Settings } from '@features/settings/settings';
 import { Today } from '@features/today/today';
 import { History } from '@features/history/history';
+import { AuthCallback } from '@features/auth/auth-callback/auth-callback';
 
 export const routes: Routes = [
   {
@@ -42,6 +43,10 @@ export const routes: Routes = [
         path: 'reset-password',
         component: ResetPassword,
         canActivate: [guestGuard],
+      },
+      {
+        path: 'auth/callback',
+        component: AuthCallback,
       },
     ],
   },

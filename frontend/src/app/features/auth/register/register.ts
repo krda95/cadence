@@ -15,13 +15,10 @@ import { finalize } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
 import { Button } from '@shared/ui/button/button';
 import { InputComponent } from '@shared/ui/input/input';
+import { GoogleSignIn } from '../google-sign-in/google-sign-in';
 
 export const MIN_PASSWORD_LENGTH = 8;
 
-/**
- * Reports a mismatch on the confirmation field, where the user will look for it, without
- * touching any other error that field already has (such as `required`).
- */
 export const passwordsMatchValidator: ValidatorFn = (
   control: AbstractControl,
 ): ValidationErrors | null => {
@@ -45,7 +42,7 @@ export const passwordsMatchValidator: ValidatorFn = (
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink, Button, InputComponent, LucideArrowLeft],
+  imports: [ReactiveFormsModule, RouterLink, Button, InputComponent, LucideArrowLeft, GoogleSignIn],
   templateUrl: './register.html',
   styleUrl: './register.scss',
 })

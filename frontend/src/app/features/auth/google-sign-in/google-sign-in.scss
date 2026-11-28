@@ -1,0 +1,36 @@
+.google-sign-in {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  margin-top: var(--space-5);
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+
+    margin: 0;
+
+    color: var(--color-text-secondary);
+
+    font-size: var(--font-size-sm);
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+
+      height: 1px;
+
+      background: var(--color-border);
+    }
+  }
+
+  &__logo {
+    width: 18px;
+    height: 18px;
+
+    margin-right: var(--space-1);
+  }
+}
